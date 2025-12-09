@@ -86,6 +86,17 @@ namespace SafeGodseekerQoL.Settings
             {
                 foreach ((string name, (FieldInfo fi, Func<bool> getter, Action<bool> setter)) in boolFields)
                 {
+                    // FastSuperDash handled via custom UI.
+                    if (fi.DeclaringType == typeof(global::SafeGodseekerQoL.Modules.QoL.FastSuperDash))
+                    {
+                        continue;
+                    }
+                    // DreamshieldStartAngle has custom UI; skip auto-generation.
+                    if (fi.DeclaringType == typeof(global::SafeGodseekerQoL.Modules.QoL.DreamshieldStartAngle))
+                    {
+                        continue;
+                    }
+
                     if (!Attribute.IsDefined(fi, typeof(BoolOptionAttribute)))
                     {
                         continue;
@@ -134,6 +145,17 @@ namespace SafeGodseekerQoL.Settings
             {
                 foreach ((string name, (FieldInfo fi, Func<float> getter, Action<float> setter)) in floatFields)
                 {
+                    // FastSuperDash handled via custom UI.
+                    if (fi.DeclaringType == typeof(global::SafeGodseekerQoL.Modules.QoL.FastSuperDash))
+                    {
+                        continue;
+                    }
+                    // DreamshieldStartAngle has its own custom UI; skip auto-generation here.
+                    if (fi.DeclaringType == typeof(global::SafeGodseekerQoL.Modules.QoL.DreamshieldStartAngle))
+                    {
+                        continue;
+                    }
+
                     if (fi.GetCustomAttribute<FloatOptionAttribute>() is not FloatOptionAttribute attr)
                     {
                         continue;

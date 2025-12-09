@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using MenuButton = Satchel.BetterMenus.MenuButton;
 using SafeGodseekerQoL.Modules;
+using SafeGodseekerQoL.Modules.CollectorPhases;
+using SafeGodseekerQoL.Modules.QoL;
 
 namespace SafeGodseekerQoL;
 
@@ -42,7 +44,7 @@ public sealed partial class SafeGodseekerQoL : ICustomMenuMod
             ModuleManager
                 .Modules
                 .Values
-                .Filter(module => !module.Hidden)
+                .Filter(module => !module.Hidden && module is not CollectorPhases && module is not FastReload)
                 .GroupBy(module => module.Category)
                 .OrderBy(group => group.Key == nameof(Modules.Misc))
                 .ThenBy(group => group.Key)
@@ -52,7 +54,9 @@ public sealed partial class SafeGodseekerQoL : ICustomMenuMod
                     () => new Menu(
                         $"Categories/{group.Key}".Localize(),
                         [
-                            ..group.Map(module =>
+                            ..group
+                                .Filter(module => module is not FastSuperDash)
+                                .Map(module =>
                                 Blueprints.HorizontalBoolOption(
                                     $"Modules/{module.Name}".Localize(),
                                     module.Suppressed
@@ -66,10 +70,32 @@ public sealed partial class SafeGodseekerQoL : ICustomMenuMod
                                 )
                             ),
                             ..Setting.Global.GetMenuElements(group.Key),
+                            ..Setting.Local.GetMenuElements(group.Key),
                             ..CustomMenuElements(group.Key)
-                        ]).GetMenuScreen(menu.menuScreen)
+                        ]).GetMenuScreen(menu!.menuScreen)
                 ))
                 .ForEach(menu.AddElement);
+
+            menu.AddElement(Blueprints.NavigateToMenu(
+                "Tools".Localize(),
+                "",
+                () => new Menu(
+                    "Tools".Localize(),
+                    [
+                        Blueprints.NavigateToMenu("Modules/FastSuperDash".Localize(), "", () => FastSuperDash.GetMenu(menu.menuScreen)),
+                        Blueprints.NavigateToMenu("CollectorPhases".Localize(), "", () => CollectorPhasesMenu.GetMenu(menu.menuScreen)),
+                        Blueprints.NavigateToMenu("FastReload".Localize(), "", () => new Menu(
+                            "FastReload".Localize(),
+                            [..CustomMenuElements(nameof(FastReload))]
+                        ).GetMenuScreen(menu.menuScreen)),
+                        Blueprints.NavigateToMenu("DreamshieldSettings".Localize(), "", () => new Menu(
+                            "DreamshieldSettings".Localize(),
+                            [..CustomMenuElements("Dreamshield")]
+                        ).GetMenuScreen(menu.menuScreen)),
+                        Blueprints.NavigateToMenu("TeleportKit".Localize(), "", () => TeleportKitMenu(menu.menuScreen))
+                    ]
+                ).GetMenuScreen(menu.menuScreen)
+            ));
 
             menu.AddElement(new MenuButton(
                 "ResetModules".Localize(),
@@ -88,12 +114,47 @@ public sealed partial class SafeGodseekerQoL : ICustomMenuMod
 
     private static IEnumerable<Element> CustomMenuElements(string category)
     {
-        if (category != nameof(FastReload))
+        List<Element> elements = [];
+
+        if (category == nameof(FastReload))
         {
-            return Array.Empty<Element>();
+            elements.Add(FastReload.ReloadBindButton());
         }
 
-        return [FastReload.ReloadBindButton()];
+        if (category == "CollectorPhases")
+        {
+            elements.AddRange(CollectorPhases.MenuElements());
+        }
+
+        if (category == "Dreamshield")
+        {
+            elements.AddRange(DreamshieldStartAngle.MenuElements());
+        }
+
+        return elements;
+    }
+
+    private static MenuScreen TeleportKitMenu(MenuScreen parent)
+    {
+        _ = ModuleManager.TryGetModule(typeof(TeleportKit), out Module? module);
+
+        Element toggle = Blueprints.HorizontalBoolOption(
+            "Modules/TeleportKit".Localize(),
+            $"ToggleableLevel/{(module?.ToggleableLevel ?? ToggleableLevel.AnyTime)}".Localize(),
+            val =>
+            {
+                if (module != null)
+                {
+                    module.Enabled = val;
+                }
+            },
+            () => module?.Enabled ?? false
+        );
+
+        return new Menu(
+            "TeleportKit".Localize(),
+            [toggle]
+        ).GetMenuScreen(parent);
     }
 
 }

@@ -9,7 +9,7 @@ namespace SafeGodseekerQoL
     internal class ModInfo
     {
         public const string Name = "SafeGodseekerQoL";
-        public const string Version = "1.0.0.2";
+        public const string Version = "1.0.0.3";
 
     }
 }
