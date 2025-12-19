@@ -4,7 +4,11 @@ using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using MonoMod.Utils;
 
+<<<<<<< HEAD
 namespace GodhomeQoL.Modules.QoL;
+=======
+namespace SafeGodseekerQoL.Modules.QoL;
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
 
 public sealed class DoorDefaultBegin : Module {
 	private static readonly ILHook hook = new(
@@ -20,6 +24,7 @@ public sealed class DoorDefaultBegin : Module {
 
 	private protected override void Unload() => hook.Undo();
 
+<<<<<<< HEAD
 	
 	
 	
@@ -27,6 +32,15 @@ public sealed class DoorDefaultBegin : Module {
 	
 	
 	
+=======
+	// Remove:
+	//
+	// if (bossDoorChallengeUI.buttons.Length != 0) {
+	//     EventSystem.current.SetSelectedGameObject(bossDoorChallengeUI.buttons[0].gameObject);
+	// }
+	// InputHandler.Instance.StartUIInput();
+	//
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
 	private static void ChangeSelection(ILContext il) => new ILCursor(il)
 		.Goto(0)
 		.GotoNext(
@@ -35,6 +49,7 @@ public sealed class DoorDefaultBegin : Module {
 		)
 		.RemoveUntilEnd()
 
+<<<<<<< HEAD
 		.Emit(OpCodes.Ldloc_1) 
 		.Emit(OpCodes.Call, Info.OfMethod<DoorDefaultBegin>(nameof(SelectBegin)))
 
@@ -67,5 +82,18 @@ public sealed class DoorDefaultBegin : Module {
 		inputModule.MoveAction = actions.moveVector;
 		inputModule.forceModuleActive = true;
 		inputModule.ActivateModule();
+=======
+		.Emit(OpCodes.Ldloc_1) // self
+		.Emit(OpCodes.Call, Info.OfMethod<DoorDefaultBegin>(nameof(SelectBegin)))
+
+		.Emit(OpCodes.Ldc_I4_0); // Fix return
+
+	private static void SelectBegin(BossDoorChallengeUI self) {
+		EventSystem.current.SetSelectedGameObject(
+			self.gameObject.Child("Panel", "BeginButton")
+		);
+
+		InputHandler.Instance.StartUIInput();
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
 	}
 }

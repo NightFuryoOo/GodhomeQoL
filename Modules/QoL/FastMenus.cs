@@ -5,7 +5,11 @@ using MonoMod.Utils;
 using UnityEngine;
 using UnityEngine.UI;
 
+<<<<<<< HEAD
 namespace GodhomeQoL.Modules.QoL;
+=======
+namespace SafeGodseekerQoL.Modules.QoL;
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
 
 public sealed class FastMenus : Module
 {

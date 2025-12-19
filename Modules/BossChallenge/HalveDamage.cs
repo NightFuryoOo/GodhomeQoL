@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 namespace GodhomeQoL.Modules.BossChallenge;
+=======
+namespace SafeGodseekerQoL.Modules.BossChallenge;
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
 
 internal sealed class HalveDamage : Module {
 	internal static event Func<bool> ShouldFunctionHook = null!;

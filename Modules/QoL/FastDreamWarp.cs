@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 using Satchel;
 using Satchel.Futils;
@@ -10,6 +11,21 @@ public sealed class FastDreamWarp : Module {
 	private static readonly GameObjectRef knightRef = new(GameObjectRef.DONT_DESTROY_ON_LOAD, "Knight");
 	private static bool timeScaleOverrideInFlight;
 	private static float previousTimeScale;
+=======
+//using SafeGodseekerQoL.Modules.GodseekerMode;
+using Satchel;
+using Satchel.Futils;
+using Osmi.FsmActions;
+
+namespace SafeGodseekerQoL.Modules.QoL;
+
+public sealed class FastDreamWarp : Module {
+	private static readonly GameObjectRef knightRef = new(GameObjectRef.DONT_DESTROY_ON_LOAD, "Knight");
+
+	[GlobalSetting]
+	[BoolOption]
+	public static bool instantWarp = true;
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
 
 	public override bool DefaultEnabled => true;
 
@@ -51,12 +67,20 @@ public sealed class FastDreamWarp : Module {
 			shouldIntercept = () => {
 				HeroActions actions = InputHandler.Instance.inputActions;
 				return Loaded
+<<<<<<< HEAD
 					&& true
 					&& ShouldActivate()
 					&& actions.dreamNail.IsPressed
 					&& actions.up.IsPressed;
 			},
 			onIntercept = (_, _) => BeginTimeScaleNormalization()
+=======
+					&& instantWarp
+					&& ShouldActivate()
+					&& actions.dreamNail.IsPressed
+					&& actions.up.IsPressed;
+			}
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
 		});
 
 		fsm.Intercept(new TransitionInterceptor() {
@@ -64,8 +88,12 @@ public sealed class FastDreamWarp : Module {
 			eventName = FsmEvent.Finished.Name,
 			toStateDefault = "Warp Charge",
 			toStateCustom = "Can Warp?",
+<<<<<<< HEAD
 			shouldIntercept = () => Loaded && ShouldActivate(),
 			onIntercept = (_, _) => BeginTimeScaleNormalization()
+=======
+			shouldIntercept = () => Loaded && ShouldActivate()
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
 		});
 
 		fsm.GetAction("Warp End", 8).Enabled = false;
@@ -74,6 +102,7 @@ public sealed class FastDreamWarp : Module {
 			trueEvent = FsmEvent.Finished
 		});
 	}
+<<<<<<< HEAD
 
 	private static void BeginTimeScaleNormalization() {
 		if (timeScaleOverrideInFlight || Time.timeScale <= 1f) {
@@ -110,4 +139,6 @@ public sealed class FastDreamWarp : Module {
 			timeScaleOverrideInFlight = false;
 		}
 	}
+=======
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
 }

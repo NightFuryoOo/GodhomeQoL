@@ -1,9 +1,18 @@
+<<<<<<< HEAD
 
 namespace GodhomeQoL.Utils
 {
     internal static class Logger
     {
         private static readonly SimpleLogger logger = new(nameof(GodhomeQoL));
+=======
+﻿
+namespace SafeGodseekerQoL.Utils
+{
+    internal static class Logger
+    {
+        private static readonly SimpleLogger logger = new(nameof(SafeGodseekerQoL));
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void Log(string message) => logger.Log(message);

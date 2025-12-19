@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 namespace GodhomeQoL.Modules.QoL;
+=======
+namespace SafeGodseekerQoL.Modules.QoL;
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
 
 public sealed class TeleportKit : Module
 {
@@ -38,24 +42,33 @@ public sealed class TeleportKit : Module
         Teleport = new TeleportManager(this);
         GUI = new TeleportMenuGUI(this);
 
+<<<<<<< HEAD
         ModHooks.AfterSavegameLoadHook += OnAfterSavegameLoad;
 
+=======
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
         Log.Write("Teleport kit initialized");
     }
 
     private protected override void Unload()
     {
+<<<<<<< HEAD
         ModHooks.AfterSavegameLoadHook -= OnAfterSavegameLoad;
 
+=======
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
         GUI?.Dispose();
         Input?.Dispose();
         Teleport?.Dispose();
 
         Instance = null;
     }
+<<<<<<< HEAD
 
     private void OnAfterSavegameLoad(SaveGameData _)
     {
         Input?.ResetPauseFlag();
     }
+=======
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
 }

@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 namespace GodhomeQoL.Modules
+=======
+﻿namespace SafeGodseekerQoL.Modules
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
 {
     [MeansImplicitUse]
     [UsedImplicitly]
@@ -32,7 +36,11 @@ namespace GodhomeQoL.Modules
             Type = GetType();
             Name = Type.Name;
             Category = Type.FullName
+<<<<<<< HEAD
                 .StripStart($"{nameof(GodhomeQoL)}.{nameof(Modules)}.")
+=======
+                .StripStart($"{nameof(SafeGodseekerQoL)}.{nameof(Modules)}.")
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
                 .StripEnd($".{Name}")
                 ?? nameof(Misc);
             enabled = DefaultEnabled;

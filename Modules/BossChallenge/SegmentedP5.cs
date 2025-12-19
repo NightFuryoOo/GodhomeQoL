@@ -1,8 +1,16 @@
+<<<<<<< HEAD
 using Satchel;
 using Satchel.Futils;
 using UnityEngine.UI;
 
 namespace GodhomeQoL.Modules.BossChallenge
+=======
+﻿using Satchel;
+using Satchel.Futils;
+using UnityEngine.UI;
+
+namespace SafeGodseekerQoL.Modules.BossChallenge
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
 {
     public sealed class SegmentedP5 : Module
     {
@@ -173,10 +181,17 @@ namespace GodhomeQoL.Modules.BossChallenge
 
             if (door.gameObject != segP5)
             {
+<<<<<<< HEAD
                 
                 if (selectBtn != null)
                 {
                     
+=======
+                // Not Segmented P5
+                if (selectBtn != null)
+                {
+                    // Restore navigation
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
                     MenuButton oldSelectBtn = selectBtn.GetComponent<MenuButton>();
                     Navigation oldNav = oldSelectBtn.navigation;
 
@@ -202,7 +217,11 @@ namespace GodhomeQoL.Modules.BossChallenge
 
             if (selectBtn != null)
             {
+<<<<<<< HEAD
                 
+=======
+                // Created last time
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
                 return;
             }
 
@@ -324,6 +343,7 @@ namespace GodhomeQoL.Modules.BossChallenge
 
                     BossSequenceController.ApplyBindings();
 
+<<<<<<< HEAD
                     
                     
                     
@@ -338,6 +358,22 @@ namespace GodhomeQoL.Modules.BossChallenge
                     
                     
                     
+=======
+                    //if (ModuleManager.IsModuleLoaded<ActivateFury>())
+                    //{
+                    //    BossSceneController.SetupEventDelegate oldSetupEvent = BossSceneController.SetupEvent;
+                    //    BossSceneController.SetupEvent = self => {
+                    //        oldSetupEvent(self);
+
+                    //        ActivateFury.Activate();
+                    //    };
+                    //}
+
+                    //if (ModuleManager.IsModuleLoaded<AddLifeblood>())
+                    //{
+                    //    AddLifeblood.Add();
+                    //}
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
                 };
             }
 

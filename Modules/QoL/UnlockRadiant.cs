@@ -1,6 +1,12 @@
+<<<<<<< HEAD
 using GodhomeQoL.Modules.Misc;
 
 namespace GodhomeQoL.Modules.QoL;
+=======
+using SafeGodseekerQoL.Modules.Misc;
+
+namespace SafeGodseekerQoL.Modules.QoL;
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
 
 public sealed class UnlockRadiant : Module {
 	public override bool DefaultEnabled => true;

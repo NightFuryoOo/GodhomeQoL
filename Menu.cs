@@ -1,4 +1,5 @@
 using Satchel.BetterMenus;
+<<<<<<< HEAD
 using GodhomeQoL.Modules;
 using GodhomeQoL.Modules.CollectorPhases;
 using GodhomeQoL.Modules.QoL;
@@ -6,6 +7,19 @@ using GodhomeQoL.Modules.QoL;
 namespace GodhomeQoL;
 
 public sealed partial class GodhomeQoL : ICustomMenuMod
+=======
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+using MenuButton = Satchel.BetterMenus.MenuButton;
+using SafeGodseekerQoL.Modules;
+using SafeGodseekerQoL.Modules.CollectorPhases;
+using SafeGodseekerQoL.Modules.QoL;
+
+namespace SafeGodseekerQoL;
+
+public sealed partial class SafeGodseekerQoL : ICustomMenuMod
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
 {
     bool ICustomMenuMod.ToggleButtonInsideMenu => true;
 
@@ -15,10 +29,15 @@ public sealed partial class GodhomeQoL : ICustomMenuMod
     private static class ModMenu
     {
         private static bool dirty = true;
+<<<<<<< HEAD
         private static Menu? menu;
 
         internal static void MarkDirty() => dirty = true;
 
+=======
+        private static Menu? menu = null;
+        internal static void MarkDirty() => dirty = true;
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
         static ModMenu() => On.Language.Language.DoSwitch += (orig, self) =>
         {
             dirty = true;
@@ -32,7 +51,11 @@ public sealed partial class GodhomeQoL : ICustomMenuMod
                 return menu.GetMenuScreen(modListMenu);
             }
 
+<<<<<<< HEAD
             menu = new Menu("ModName".Localize(), [
+=======
+            menu = new("ModName".Localize(), [
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
                 toggleDelegates!.Value.CreateToggle(
                     "ModName".Localize(),
                     "ToggleButtonDesc".Localize()
@@ -42,6 +65,7 @@ public sealed partial class GodhomeQoL : ICustomMenuMod
             ModuleManager
                 .Modules
                 .Values
+<<<<<<< HEAD
                 .Filter(module =>
                     !module.Hidden
                     && module is not CollectorPhases
@@ -117,11 +141,44 @@ public sealed partial class GodhomeQoL : ICustomMenuMod
                         builder
                     );
                 })
+=======
+                .Filter(module => !module.Hidden && module is not CollectorPhases && module is not FastReload)
+                .GroupBy(module => module.Category)
+                .OrderBy(group => group.Key == nameof(Modules.Misc))
+                .ThenBy(group => group.Key)
+                .Map(group => Blueprints.NavigateToMenu(
+                    $"Categories/{group.Key}".Localize(),
+                    "",
+                    () => new Menu(
+                        $"Categories/{group.Key}".Localize(),
+                        [
+                            ..group
+                                .Filter(module => module is not FastSuperDash)
+                                .Map(module =>
+                                Blueprints.HorizontalBoolOption(
+                                    $"Modules/{module.Name}".Localize(),
+                                    module.Suppressed
+                                        ? string.Format(
+                                            "Suppression".Localize(),
+                                            module.suppressorMap.Values.Distinct().Join(", ")
+                                        )
+                                        : $"ToggleableLevel/{module.ToggleableLevel}".Localize(),
+                                    (val) => module.Enabled = val,
+                                    () => module.Enabled
+                                )
+                            ),
+                            ..Setting.Global.GetMenuElements(group.Key),
+                            ..Setting.Local.GetMenuElements(group.Key),
+                            ..CustomMenuElements(group.Key)
+                        ]).GetMenuScreen(menu!.menuScreen)
+                ))
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
                 .ForEach(menu.AddElement);
 
             menu.AddElement(Blueprints.NavigateToMenu(
                 "Tools".Localize(),
                 "",
+<<<<<<< HEAD
                 () =>
                 {
                     Menu toolsMenu = new("Tools".Localize(), []);
@@ -170,14 +227,48 @@ public sealed partial class GodhomeQoL : ICustomMenuMod
                 "ResetModules".Localize(),
                 "",
                 () => ResetMenu(menu!.menuScreen)
+=======
+                () => new Menu(
+                    "Tools".Localize(),
+                    [
+                        Blueprints.NavigateToMenu("Modules/FastSuperDash".Localize(), "", () => FastSuperDash.GetMenu(menu.menuScreen)),
+                        Blueprints.NavigateToMenu("CollectorPhases".Localize(), "", () => CollectorPhasesMenu.GetMenu(menu.menuScreen)),
+                        Blueprints.NavigateToMenu("FastReload".Localize(), "", () => new Menu(
+                            "FastReload".Localize(),
+                            [..CustomMenuElements(nameof(FastReload))]
+                        ).GetMenuScreen(menu.menuScreen)),
+                        Blueprints.NavigateToMenu("DreamshieldSettings".Localize(), "", () => new Menu(
+                            "DreamshieldSettings".Localize(),
+                            [..CustomMenuElements("Dreamshield")]
+                        ).GetMenuScreen(menu.menuScreen)),
+                        Blueprints.NavigateToMenu("TeleportKit".Localize(), "", () => TeleportKitMenu(menu.menuScreen))
+                    ]
+                ).GetMenuScreen(menu.menuScreen)
+            ));
+
+            menu.AddElement(new MenuButton(
+                "ResetModules".Localize(),
+                string.Empty,
+                btn => ModuleManager.Modules.Values.ForEach(
+                    module => module.Enabled = module.DefaultEnabled
+                ),
+                true
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
             ));
 
             dirty = false;
             return menu.GetMenuScreen(modListMenu);
         }
+<<<<<<< HEAD
     }
 
     private static IEnumerable<Element> CustomMenuElements(string category, Func<MenuScreen> parent)
+=======
+
+    }
+
+    private static IEnumerable<Element> CustomMenuElements(string category)
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
     {
         List<Element> elements = [];
 
@@ -196,6 +287,7 @@ public sealed partial class GodhomeQoL : ICustomMenuMod
             elements.AddRange(DreamshieldStartAngle.MenuElements());
         }
 
+<<<<<<< HEAD
         if (category == nameof(Modules.QoL))
         {
             elements.Add(BossAnimationSkipping(parent));
@@ -575,6 +667,11 @@ public sealed partial class GodhomeQoL : ICustomMenuMod
         string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => ToString();
     }
 
+=======
+        return elements;
+    }
+
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
     private static MenuScreen TeleportKitMenu(MenuScreen parent)
     {
         _ = ModuleManager.TryGetModule(typeof(TeleportKit), out Module? module);
@@ -598,6 +695,7 @@ public sealed partial class GodhomeQoL : ICustomMenuMod
         ).GetMenuScreen(parent);
     }
 
+<<<<<<< HEAD
     private static void ResetVisibleOptionsToOff()
     {
         
@@ -663,4 +761,6 @@ public sealed partial class GodhomeQoL : ICustomMenuMod
                 )
             ]
         ).GetMenuScreen(parent);
+=======
+>>>>>>> 4ce2448229730eb047aa9980d21cea2bcc48d265
 }
