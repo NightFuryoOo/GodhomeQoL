@@ -28,4 +28,6 @@ public sealed class GlobalSettings : SettingBase<GlobalSettingAttribute>
             }
         }
     }
+
+    public ShowHPOnDeathSettings ShowHPOnDeath { get; set; } = new();
 }

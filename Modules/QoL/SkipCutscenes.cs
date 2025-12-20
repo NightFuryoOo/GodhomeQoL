@@ -76,6 +76,13 @@ namespace GodhomeQoL.Modules.QoL
             "GG_Atrium",
             "GG_Atrium_Roof"
         };
+        private static readonly HashSet<string> PantheonLikeScenes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "gg dryya",
+            "gg hegemol",
+            "gg zemer",
+            "gg isma"
+        };
 
         private static bool suppressAutoSkipForTransition;
         private static bool timeScaleOverrideActive;
@@ -319,6 +326,22 @@ namespace GodhomeQoL.Modules.QoL
             && !string.IsNullOrEmpty(info.SceneName)
             && GodhomeHubScenes.Contains(info.SceneName);
 
+        private static bool IsPantheonLikeScene()
+        {
+            if (BossSequenceController.IsInSequence)
+            {
+                return true;
+            }
+
+            string sceneName = GameManager.instance?.GetSceneNameString() ?? string.Empty;
+            if (sceneName.Length == 0)
+            {
+                return false;
+            }
+
+            return PantheonLikeScenes.Contains(sceneName);
+        }
+
         private static IEnumerator SuppressTimeScaleDuringReturn(GameManager.SceneLoadInfo info)
         {
             if (timeScaleOverrideActive)
@@ -370,7 +393,7 @@ namespace GodhomeQoL.Modules.QoL
 
         private static void AnimatorBegin(On.AnimatorSequence.orig_Begin orig, AnimatorSequence self)
         {
-            if (AutoSkipCinematics && !BossSequenceController.IsInSequence && !suppressAutoSkipForTransition)
+            if (AutoSkipCinematics && !IsPantheonLikeScene() && !suppressAutoSkipForTransition)
                 self.Skip();
             else
                 orig(self);
@@ -378,7 +401,7 @@ namespace GodhomeQoL.Modules.QoL
 
         private static void FadeBegin(On.FadeSequence.orig_Begin orig, FadeSequence self)
         {
-            if (AutoSkipCinematics && !BossSequenceController.IsInSequence && !suppressAutoSkipForTransition)
+            if (AutoSkipCinematics && !IsPantheonLikeScene() && !suppressAutoSkipForTransition)
                 self.Skip();
             else
                 orig(self);
@@ -386,7 +409,7 @@ namespace GodhomeQoL.Modules.QoL
 
         private static void CinematicBegin(On.CinematicSequence.orig_Begin orig, CinematicSequence self)
         {
-            if (AutoSkipCinematics && !BossSequenceController.IsInSequence && !suppressAutoSkipForTransition)
+            if (AutoSkipCinematics && !IsPantheonLikeScene() && !suppressAutoSkipForTransition)
                 self.Skip();
             else
                 orig(self);

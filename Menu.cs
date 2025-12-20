@@ -5,7 +5,7 @@ using GodhomeQoL.Modules.QoL;
 
 namespace GodhomeQoL;
 
-public sealed partial class GodhomeQoL : ICustomMenuMod
+public sealed partial class GodhomeQoL
 {
     bool ICustomMenuMod.ToggleButtonInsideMenu => true;
 
@@ -157,6 +157,11 @@ public sealed partial class GodhomeQoL : ICustomMenuMod
                         "DreamshieldSettings".Localize(),
                         [..CustomMenuElements("Dreamshield", () => toolsScreen ?? menu!.menuScreen)]
                     ).GetMenuScreen(toolsScreen ?? menu!.menuScreen)));
+                    toolsMenu.AddElement(Blueprints.NavigateToMenu(
+                        "ShowHPOnDeath".Localize(),
+                        "",
+                        () => Modules.Tools.ShowHPOnDeath.GetMenu(toolsScreen ?? menu!.menuScreen)
+                    ));
                     toolsMenu.AddElement(Blueprints.NavigateToMenu("TeleportKit".Localize(), "", () => TeleportKitMenu(toolsScreen ?? menu!.menuScreen)));
                     toolsMenu.AddElement(Blueprints.NavigateToMenu("SpeedChanger".Localize(), "", () => Modules.Tools.SpeedChanger.GetMenu(toolsScreen ?? menu!.menuScreen)));
 

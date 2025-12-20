@@ -10,6 +10,12 @@ public sealed class ShortDeathAnimation : Module {
 
 	private static bool timeScaleOverrideInFlight;
 	private static float previousTimeScale;
+	private static readonly HashSet<string> PantheonLikeScenes = new(StringComparer.OrdinalIgnoreCase) {
+		"gg dryya",
+		"gg hegemol",
+		"gg zemer",
+		"gg isma"
+	};
 
 	public ShortDeathAnimation() {
 		On.HeroController.Start += ModifyHeroDeathFSM;
@@ -57,7 +63,7 @@ public sealed class ShortDeathAnimation : Module {
 	}
 
 	private static void ClearBossReturnFlags() {
-		if (!BossSequenceController.IsInSequence) {
+		if (!IsPantheonLikeScene()) {
 			return;
 		}
 
@@ -88,11 +94,24 @@ public sealed class ShortDeathAnimation : Module {
 		TryInsertTimeNormalization(fsm);
 
 		fsm.AddAction("Bursting",
-			new InvokePredicate(() => Loaded && BossSceneController.IsBossScene && !BossSequenceController.IsInSequence)
+			new InvokePredicate(() => Loaded && BossSceneController.IsBossScene && !IsPantheonLikeScene())
 			{
 				trueEvent = FsmEvent.Finished
 			}
 		);
+	}
+
+	private static bool IsPantheonLikeScene() {
+		if (BossSequenceController.IsInSequence) {
+			return true;
+		}
+
+		string sceneName = Ref.GM?.sceneName ?? GameManager.instance?.GetSceneNameString() ?? string.Empty;
+		if (sceneName.Length == 0) {
+			return false;
+		}
+
+		return PantheonLikeScenes.Contains(sceneName);
 	}
 
 	private static void TryInsertTimeNormalization(PlayMakerFSM fsm) {

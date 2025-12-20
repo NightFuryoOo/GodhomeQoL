@@ -14,7 +14,8 @@ public sealed class InfiniteChallenge : Module
     public static bool restartFightAndMusic = false;
 
     public static readonly HashSet<Func<GameManager.SceneLoadInfo, bool>> returnScenePredicates = [
-        (info) => info.SceneName is "GG_Workshop"
+        (info) => info.SceneName is "GG_Workshop",
+        (info) => info.SceneName is "White_Palace_09"
     ];
 
     private static BossSceneController.SetupEventDelegate? setupEvent;
@@ -122,8 +123,21 @@ public sealed class InfiniteChallenge : Module
     {
         yield return new WaitUntil(() => Ref.GM.gameState == GameState.PLAYING);
 
+        Ref.GC.hudCanvas?.LocateMyFSM("Slide Out")?.SendEvent("IN");
+        Ref.GC.hudCanvas?.gameObject?.SetActive(true);
+
+        if (UIManager.instance != null)
+        {
+            try
+            {
+                ReflectionHelper.SetField(UIManager.instance, "uiState", UIState.PLAYING);
+            }
+            catch
+            {
+            }
+        }
+
         Ref.HC.ClearMP();
         Ref.HC.ClearMPSendEvents();
-
     }
 }

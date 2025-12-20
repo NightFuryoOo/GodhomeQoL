@@ -5,7 +5,11 @@ namespace GodhomeQoL
     : IGlobalSettings<GlobalSettings>, ILocalSettings<LocalSettings>
     {
         public static GlobalSettings GlobalSettings { get; private set; } = new();
-        public void OnLoadGlobal(GlobalSettings s) => GlobalSettings = s;
+        public void OnLoadGlobal(GlobalSettings s)
+        {
+            GlobalSettings = s;
+            GlobalSettings.ShowHPOnDeath ??= new ShowHPOnDeathSettings();
+        }
         public GlobalSettings OnSaveGlobal() => GlobalSettings;
 
         public static LocalSettings LocalSettings { get; private set; } = new();
