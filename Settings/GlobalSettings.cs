@@ -30,4 +30,27 @@ public sealed class GlobalSettings : SettingBase<GlobalSettingAttribute>
     }
 
     public ShowHPOnDeathSettings ShowHPOnDeath { get; set; } = new();
+<<<<<<< HEAD
+=======
+
+    public FastDreamWarpSettings FastDreamWarp { get; set; } = new();
+
+    public List<string> QuickMenuOrder { get; set; } = new();
+
+    public bool QuickMenuFreeLayout { get; set; } = false;
+
+    public Dictionary<string, QuickMenuEntryPosition> QuickMenuPositions { get; set; } = new();
+
+    public Dictionary<string, string> QuickMenuCustomLabels { get; set; } = new();
+
+    public Dictionary<string, bool> QuickMenuVisibility { get; set; } = new();
+
+    public string QuickMenuHotkey { get; set; } = "F3";
+
+    public int QuickMenuOpacity { get; set; } = 100;
+
+    public string BindingsMenuHotkey { get; set; } = string.Empty;
+
+    public bool BindingsMenuEverywhere { get; set; } = false;
+>>>>>>> fcd9e8b (Update 1.0.0.7)
 }

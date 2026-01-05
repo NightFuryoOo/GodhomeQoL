@@ -16,6 +16,12 @@ public sealed class CollectorPhases : Module
     private const int DefaultBuzzerHp = 26;
     private const int DefaultRollerHp = 26;
     private const int DefaultSpitterHp = 26;
+<<<<<<< HEAD
+=======
+    private const string HoGCollectorScene = "GG_Collector_V";
+    private const string HoGWorkshopScene = "GG_Workshop";
+    private static bool hoGEntryAllowed;
+>>>>>>> fcd9e8b (Update 1.0.0.7)
 
     [LocalSetting]
     internal static int collectorPhase = 3; // 1: stay in phase 1, 2: stay in phase 2, 3: default
@@ -65,6 +71,12 @@ public sealed class CollectorPhases : Module
     [BoolOption]
     internal static bool spawnSpitter = true;
 
+<<<<<<< HEAD
+=======
+    [LocalSetting]
+    internal static bool HoGOnly = false;
+
+>>>>>>> fcd9e8b (Update 1.0.0.7)
     public override ToggleableLevel ToggleableLevel => ToggleableLevel.ChangeScene;
 
     private protected override void Load()
@@ -73,6 +85,10 @@ public sealed class CollectorPhases : Module
         On.HealthManager.Awake += OnHealthManagerAwake;
         On.HealthManager.Start += OnHealthManagerStart;
         On.HealthManager.Update += OnHealthManagerUpdate;
+<<<<<<< HEAD
+=======
+        USceneManager.activeSceneChanged += OnSceneChanged;
+>>>>>>> fcd9e8b (Update 1.0.0.7)
     }
 
     private protected override void Unload()
@@ -81,10 +97,45 @@ public sealed class CollectorPhases : Module
         On.HealthManager.Awake -= OnHealthManagerAwake;
         On.HealthManager.Start -= OnHealthManagerStart;
         On.HealthManager.Update -= OnHealthManagerUpdate;
+<<<<<<< HEAD
+=======
+        USceneManager.activeSceneChanged -= OnSceneChanged;
+    }
+
+    private static void OnSceneChanged(Scene previous, Scene next)
+    {
+        hoGEntryAllowed = string.Equals(next.name, HoGCollectorScene, StringComparison.Ordinal)
+            && string.Equals(previous.name, HoGWorkshopScene, StringComparison.Ordinal);
+    }
+
+    private static bool ShouldApplySettings(GameObject? go)
+    {
+        if (!HoGOnly)
+        {
+            return true;
+        }
+
+        if (go == null)
+        {
+            return false;
+        }
+
+        return hoGEntryAllowed
+            && string.Equals(go.scene.name, HoGCollectorScene, StringComparison.Ordinal);
+>>>>>>> fcd9e8b (Update 1.0.0.7)
     }
 
     private static void FsmChanges(On.PlayMakerFSM.orig_OnEnable orig, PlayMakerFSM self)
     {
+<<<<<<< HEAD
+=======
+        if (!ShouldApplySettings(self.gameObject))
+        {
+            orig(self);
+            return;
+        }
+
+>>>>>>> fcd9e8b (Update 1.0.0.7)
         if (self.gameObject.name == "Jar Collector" && self.FsmName == "Phase Control")
         {
             HandlePhaseControl(self);
@@ -191,6 +242,14 @@ public sealed class CollectorPhases : Module
     {
         orig(self);
 
+<<<<<<< HEAD
+=======
+        if (!ShouldApplySettings(self.gameObject))
+        {
+            return;
+        }
+
+>>>>>>> fcd9e8b (Update 1.0.0.7)
         if (IsCollector(self))
         {
             ApplyCollectorHealth(self.gameObject, self);
@@ -229,6 +288,14 @@ public sealed class CollectorPhases : Module
     {
         orig(self);
 
+<<<<<<< HEAD
+=======
+        if (!ShouldApplySettings(self.gameObject))
+        {
+            return;
+        }
+
+>>>>>>> fcd9e8b (Update 1.0.0.7)
         if (IsCollector(self))
         {
             ApplyCollectorHealth(self.gameObject, self);
@@ -264,6 +331,14 @@ public sealed class CollectorPhases : Module
     {
         orig(self);
 
+<<<<<<< HEAD
+=======
+        if (!ShouldApplySettings(self.gameObject))
+        {
+            return;
+        }
+
+>>>>>>> fcd9e8b (Update 1.0.0.7)
         if (!CollectorImmortal || !IsCollector(self))
         {
             return;
@@ -277,6 +352,14 @@ public sealed class CollectorPhases : Module
 
     private static void HandleControl(PlayMakerFSM fsm)
     {
+<<<<<<< HEAD
+=======
+        if (!ShouldApplySettings(fsm.gameObject))
+        {
+            return;
+        }
+
+>>>>>>> fcd9e8b (Update 1.0.0.7)
         ApplyCollectorHealth(fsm.gameObject);
         fsm.AddCustomAction("Init", () => ApplyCollectorHealth(fsm.gameObject));
         GateSpawnStates(fsm);
@@ -325,6 +408,14 @@ public sealed class CollectorPhases : Module
 
     private static void ApplyCollectorHealth(GameObject collector, HealthManager? hm = null)
     {
+<<<<<<< HEAD
+=======
+        if (!ShouldApplySettings(collector))
+        {
+            return;
+        }
+
+>>>>>>> fcd9e8b (Update 1.0.0.7)
         if (!UseMaxHP)
         {
             return;
@@ -385,6 +476,15 @@ public sealed class CollectorPhases : Module
                 true
             ),
             Blueprints.HorizontalBoolOption(
+<<<<<<< HEAD
+=======
+                "Settings/CollectorPhases/HoGOnly".Localize(),
+                "",
+                b => HoGOnly = b,
+                () => HoGOnly
+            ),
+            Blueprints.HorizontalBoolOption(
+>>>>>>> fcd9e8b (Update 1.0.0.7)
                 "Settings/CollectorPhases/CollectorImmortal".Localize(),
                 "",
                 b => CollectorImmortal = b,
@@ -534,6 +634,10 @@ public sealed class CollectorPhases : Module
             IgnoreInitialJarLimit = false;
             DisableSummonLimit = false;
             CustomSummonLimit = 20;
+<<<<<<< HEAD
+=======
+            HoGOnly = false;
+>>>>>>> fcd9e8b (Update 1.0.0.7)
     }
 
     private static void ApplySummonCounts(PlayMakerFSM fsm)

@@ -2,6 +2,10 @@
 using GodhomeQoL.Modules;
 using GodhomeQoL.Modules.CollectorPhases;
 using GodhomeQoL.Modules.QoL;
+<<<<<<< HEAD
+=======
+using GodhomeQoL.Modules.Tools;
+>>>>>>> fcd9e8b (Update 1.0.0.7)
 
 namespace GodhomeQoL;
 
@@ -39,6 +43,11 @@ public sealed partial class GodhomeQoL
                 )
             ]);
 
+<<<<<<< HEAD
+=======
+            menu.AddElement(QuickMenu.QuickMenuHotkeyButton());
+
+>>>>>>> fcd9e8b (Update 1.0.0.7)
             ModuleManager
                 .Modules
                 .Values
@@ -171,10 +180,18 @@ public sealed partial class GodhomeQoL
                 }
             ));
 
+<<<<<<< HEAD
             menu.AddElement(Blueprints.NavigateToMenu(
                 "ResetModules".Localize(),
                 "",
                 () => ResetMenu(menu!.menuScreen)
+=======
+            menu.AddElement(new MenuButton(
+                "QuickMenu/ResetFreeMenu".Localize(),
+                "",
+                _ => Modules.Tools.QuickMenu.ResetFreeMenuPositions(),
+                true
+>>>>>>> fcd9e8b (Update 1.0.0.7)
             ));
 
             dirty = false;

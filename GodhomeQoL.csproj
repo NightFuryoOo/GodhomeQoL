@@ -2,10 +2,24 @@
 	<PropertyGroup>
 		<!-- Change this to the path of your modded HK installation -->
 		<HollowKnightRefs>C:\Program Files (x86)\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\</HollowKnightRefs>
+<<<<<<< HEAD
+=======
+		<!-- Root folder of the HK install (computed from HollowKnightRefs) -->
+		<GameRootDir>$(HollowKnightRefs)..\..\</GameRootDir>
+		<!-- Mods folder used by Modding API 1.5+ -->
+		<GameModsDir>$(GameRootDir)Mods\</GameModsDir>
+		<!-- Mods folder inside Managed (requested by user for hot copy) -->
+		<ManagedModsDir>$(HollowKnightRefs)Mods\</ManagedModsDir>
+>>>>>>> fcd9e8b (Update 1.0.0.7)
 		<!-- Change this to the path where you want the ready-to-upload exports to be -->
 		<ExportDir>C:\Users\User\Documents\HKModsExport</ExportDir>
 		<!-- Uncomment this to generate a documentation file to be included with the mod -->
 		<!--<DocumentationFile>$(OutputPath)/$(AssemblyTitle).xml</DocumentationFile>-->
+<<<<<<< HEAD
+=======
+		<!-- Ensure Visual Studio always runs MSBuild so CopyMod executes -->
+		<DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
+>>>>>>> fcd9e8b (Update 1.0.0.7)
 	</PropertyGroup>
 	<PropertyGroup>
 		<RootNamespace>GodhomeQoL</RootNamespace>
@@ -16,8 +30,13 @@
 		<Product>GodhomeQoL</Product>
 		<Description>A Hollow Knight Mod</Description>
 		<Copyright>Copyright ©  2025</Copyright>
+<<<<<<< HEAD
 		<AssemblyVersion>1.0.0.0</AssemblyVersion>
 		<FileVersion>1.0.0.0</FileVersion>
+=======
+		<AssemblyVersion>1.0.0.7</AssemblyVersion>
+		<FileVersion>1.0.0.7</FileVersion>
+>>>>>>> fcd9e8b (Update 1.0.0.7)
 		<OutputPath>bin\$(Configuration)\</OutputPath>
 		<LangVersion>latest</LangVersion>
 	</PropertyGroup>
@@ -25,10 +44,20 @@
 		<RemoveDir Condition="Exists('$(ExportDir)/$(TargetName)/')" Directories="$(ExportDir)/$(TargetName)/" />
 		<MakeDir Directories="$(ExportDir)/$(TargetName)/" />
 		<MakeDir Directories="$(ExportDir)/$(TargetName)/zip/" />
+<<<<<<< HEAD
 		<MakeDir Condition="!Exists('$(HollowKnightRefs)/Mods/$(TargetName)/')" Directories="$(HollowKnightRefs)/Mods/$(TargetName)/" />
 
 		<Copy Condition="'$(DocumentationFile)' != ''" SourceFiles="$(TargetPath);$(TargetDir)/$(TargetName).pdb;$(TargetDir)/$(TargetName).xml" DestinationFolder="$(HollowKnightRefs)/Mods/$(TargetName)/" />
 		<Copy Condition="'$(DocumentationFile)' == ''" SourceFiles="$(TargetPath);$(TargetDir)/$(TargetName).pdb" DestinationFolder="$(HollowKnightRefs)/Mods/$(TargetName)/" />
+=======
+		<MakeDir Condition="!Exists('$(ManagedModsDir)$(TargetName)/')" Directories="$(ManagedModsDir)$(TargetName)/" />
+		<MakeDir Condition="!Exists('$(GameModsDir)/$(TargetName)/')" Directories="$(GameModsDir)/$(TargetName)/" />
+
+		<Copy Condition="'$(DocumentationFile)' != ''" SourceFiles="$(TargetPath);$(TargetDir)/$(TargetName).pdb;$(TargetDir)/$(TargetName).xml" DestinationFolder="$(ManagedModsDir)$(TargetName)/" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" />
+		<Copy Condition="'$(DocumentationFile)' == ''" SourceFiles="$(TargetPath);$(TargetDir)/$(TargetName).pdb" DestinationFolder="$(ManagedModsDir)$(TargetName)/" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" />
+		<Copy Condition="'$(DocumentationFile)' != ''" SourceFiles="$(TargetPath);$(TargetDir)/$(TargetName).pdb;$(TargetDir)/$(TargetName).xml" DestinationFolder="$(GameModsDir)/$(TargetName)/" />
+		<Copy Condition="'$(DocumentationFile)' == ''" SourceFiles="$(TargetPath);$(TargetDir)/$(TargetName).pdb" DestinationFolder="$(GameModsDir)/$(TargetName)/" />
+>>>>>>> fcd9e8b (Update 1.0.0.7)
 
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ExportDir)/$(TargetName)/" />
 
@@ -52,9 +81,16 @@
 		</GetFileHash>
 		<WriteLinesToFile File="$(ExportDir)/$(TargetName)/SHA.txt" Lines="$(OutputFileString);@(FilesWithHashes->'%(FileHash)');$(OutputZipString);@(ZipFilesWithHashes->'%(FileHash)')" Overwrite="true" Encoding="UTF-8" />
 	</Target>
+<<<<<<< HEAD
 	<ItemGroup>
 	  <None Remove="Resources\Lang\en.json" />
 	</ItemGroup>
+=======
+  <ItemGroup>
+	  <None Remove="Resources\Lang\en.json" />
+	  <None Remove="Resources\Pin_Knight.png" />
+  </ItemGroup>
+>>>>>>> fcd9e8b (Update 1.0.0.7)
 	<ItemGroup>
 		<Reference Include="Assembly-CSharp">
 			<HintPath>$(HollowKnightRefs)/Assembly-CSharp.dll</HintPath>
@@ -340,6 +376,17 @@
 		</Reference>
 	</ItemGroup>
 	<ItemGroup>
+<<<<<<< HEAD
+=======
+		<EmbeddedResource Include="ToggleableBindings\Assets\GG_UI_pieces_unk_off.png">
+			<LogicalName>ToggleableBindings.Assets.GG_UI_pieces_unk_off.png</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="ToggleableBindings\Assets\GG_UI_pieces_unk_on.png">
+			<LogicalName>ToggleableBindings.Assets.GG_UI_pieces_unk_on.png</LogicalName>
+		</EmbeddedResource>
+	</ItemGroup>
+	<ItemGroup>
+>>>>>>> fcd9e8b (Update 1.0.0.7)
 		<None Include=".gitignore" />
 		<None Include="ReadMe.md" />
 	</ItemGroup>
@@ -357,9 +404,17 @@
 		<PackageReference Include="HKReflect.Fody" Version="0.2.0" PrivateAssets="all" />
 	</ItemGroup>
 
+<<<<<<< HEAD
 	<ItemGroup>
 	  <EmbeddedResource Include="Resources\Lang\en.json" />
 	  <EmbeddedResource Include="Resources\Collector_Roar.wav" />
 	</ItemGroup>
+=======
+  <ItemGroup>
+	  <EmbeddedResource Include="Resources\Lang\en.json" />
+	  <EmbeddedResource Include="Resources\Collector_Roar.wav" />
+	  <EmbeddedResource Include="Resources\Pin_Knight.png" />
+  </ItemGroup>
+>>>>>>> fcd9e8b (Update 1.0.0.7)
 
 </Project>

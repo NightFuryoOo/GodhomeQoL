@@ -1,0 +1,210 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{BA38E2AC-428F-47AB-878E-546AD8957335}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>ToggleableBindings</RootNamespace>
+    <AssemblyName>ToggleableBindings</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DocumentationFile>
+    </DocumentationFile>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\Release\ToggleableBindings.xml</DocumentationFile>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>C:\Games\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="MMHOOK_Assembly-CSharp">
+      <HintPath>C:\Games\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\MMHOOK_Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Mono.Cecil">
+      <HintPath>C:\Games\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\Mono.Cecil.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="MonoMod.RuntimeDetour">
+      <HintPath>C:\Games\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\MonoMod.RuntimeDetour.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="MonoMod.Utils">
+      <HintPath>C:\Games\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\MonoMod.Utils.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Games\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\Newtonsoft.Json.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="PlayMaker">
+      <HintPath>C:\Games\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\PlayMaker.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+    <Reference Include="UnityEngine">
+      <HintPath>C:\Games\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\UnityEngine.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AnimationModule">
+      <HintPath>C:\Games\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\UnityEngine.AnimationModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AudioModule">
+      <HintPath>C:\Games\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>C:\Games\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <Private>False</Private>
+      <Aliases>global</Aliases>
+    </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>C:\Games\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\UnityEngine.ImageConversionModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>C:\Games\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>C:\Games\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\UnityEngine.UI.dll</HintPath>
+      <Private>False</Private>
+      <Aliases>global</Aliases>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>C:\Games\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\UnityEngine.UIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnosUtils">
+      <HintPath>..\..\UnosUtils\UnosUtils\bin\Release\UnosUtils.dll</HintPath>
+    </Reference>
+    <Reference Include="Vasi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Games\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\Mods\Vasi\Vasi.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Backported\Index.cs" />
+    <Compile Include="Backported\IsExternalInit.cs" />
+    <Compile Include="Backported\Range.cs" />
+    <Compile Include="Backported\RuntimeHelpers.cs" />
+    <Compile Include="Backported\SkipLocalsInitAttribute.cs" />
+    <Compile Include="Binding.cs" />
+    <Compile Include="BindingEventHandler.cs" />
+    <Compile Include="BindingManager.cs" />
+    <Compile Include="CustomPrefabs.cs" />
+    <Compile Include="Debugging\Assert.cs" />
+    <Compile Include="Debugging\Exceptions\AssertFailedException.cs" />
+    <Compile Include="Extensions\AsReadOnlyExtensions.cs" />
+    <Compile Include="Extensions\ComponentExtensions.cs" />
+    <Compile Include="FakePrefab.cs" />
+    <Compile Include="HudEvents.cs" />
+    <Compile Include="Input\ActionCombo.cs" />
+    <Compile Include="Input\Keybinds.cs" />
+    <Compile Include="JsonNet\ActionComboJsonConverter.cs" />
+    <Compile Include="UI\BindingApplyMsg.cs" />
+    <Compile Include="UI\EventPropagator.cs" />
+    <Compile Include="UI\SelectedTemporarily.cs" />
+    <Compile Include="UI\SimpleScroller.cs" />
+    <Compile Include="Utility\ArrayUtil.cs" />
+    <Compile Include="Utility\EmbeddedAssetLoader.cs" />
+    <Compile Include="Utility\EnumerableUtil.cs" />
+    <Compile Include="Utility\InstanceFlags.cs" />
+    <Compile Include="Utility\ObjectFactory.cs" />
+    <Compile Include="BaseGamePrefabs.cs" />
+    <Compile Include="UI\BindingsUI.cs" />
+    <Compile Include="UI\BindingsUIBindingButton.cs" />
+    <Compile Include="UI\BindingsUIController.cs" />
+    <Compile Include="Utility\CoroutineBuilder.cs" />
+    <Compile Include="Utility\CoroutineController.cs" />
+    <Compile Include="Exceptions\TypeArgumentAbstractException.cs" />
+    <Compile Include="Exceptions\TypeArgumentException.cs" />
+    <Compile Include="Extensions\DictionaryExtensions.cs" />
+    <Compile Include="Extensions\EnumerableExtensions.cs" />
+    <Compile Include="Extensions\GameObjectExtensions.cs" />
+    <Compile Include="Extensions\ReflectionExtensions.cs" />
+    <Compile Include="HKQuickSettings\QuickSettingAttribute.cs" />
+    <Compile Include="HKQuickSettings\QuickSettingData.cs" />
+    <Compile Include="HKQuickSettings\QuickSettingInfo.cs" />
+    <Compile Include="HKQuickSettings\QuickSettings.cs" />
+    <Compile Include="JsonNet\JsonSerializationBinder.cs" />
+    <Compile Include="JsonNet\JsonSerializationBinderException.cs" />
+    <Compile Include="TBConstants.cs" />
+    <Compile Include="Utility\ObjectUtil.cs" />
+    <Compile Include="Utility\ResultInfo.cs" />
+    <Compile Include="ToggleableBindings.cs" />
+    <Compile Include="ToggleableBindings.Hooks.cs" />
+    <Compile Include="Utility\StringUtil.cs" />
+    <Compile Include="Utility\TryResult.cs" />
+    <Compile Include="Utility\TryResult{T}.cs" />
+    <Compile Include="Utility\WaitUntilOrTimeout.cs" />
+    <Compile Include="VanillaBindings\CharmsBinding.cs" />
+    <Compile Include="VanillaBindings\NailBinding.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="VanillaBindings\ShellBinding.cs" />
+    <Compile Include="VanillaBindings\SoulBinding.cs" />
+    <Compile Include="VanillaBindings\VanillaBindingAttribute.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Unity.Analyzers">
+      <Version>1.10.0</Version>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Nullable">
+      <Version>1.3.0</Version>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\GG_UI_pieces_unk_off.png" />
+    <EmbeddedResource Include="Assets\GG_UI_pieces_unk_on.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\.editorconfig">
+      <Link>.editorconfig</Link>
+    </None>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Target Name="CopyMod" AfterTargets="PostBuildEvent">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="C:\Games\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\Mods" SkipUnchangedFiles="true" />
+  </Target>
+</Project>
