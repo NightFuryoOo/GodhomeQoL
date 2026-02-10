@@ -6,7 +6,7 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class ForceGreyPrinceEnterType : Module
 {
 	[GlobalSetting]
-	public static EnterType gpzEnterType = EnterType.Long;
+	public static EnterType gpzEnterType = EnterType.Off;
 
     private static readonly SceneEdit handle = new(
         new("GG_Grey_Prince_Zote", "Grey Prince"),
@@ -27,7 +27,7 @@ public sealed class ForceGreyPrinceEnterType : Module
         }
     );
 
-    public override bool DefaultEnabled => true;
+    public override bool DefaultEnabled => false;
 
     public override ToggleableLevel ToggleableLevel => ToggleableLevel.ChangeScene;
 

@@ -23,7 +23,7 @@ namespace GodhomeQoL.Modules.BossChallenge
         [LocalSetting]
         public static int selectedP5Segment = 0;
 
-        public override bool DefaultEnabled => true;
+        public override bool DefaultEnabled => false;
 
         public override ToggleableLevel ToggleableLevel => ToggleableLevel.ChangeScene;
 

@@ -42,17 +42,40 @@ public abstract class HalveDamageConditioned : Module {
 }
 
 public sealed class HalveDamageHoGAscendedOrAbove : HalveDamageConditioned {
+	private static int GetBossLevel()
+	{
+		int level = BossSceneController.Instance.Reflect().bossLevel;
+		if (P5Health.IsActive && P5Health.HasOriginalBossLevel)
+		{
+			level = Math.Max(level, P5Health.LastOriginalBossLevel);
+		}
+
+		return level;
+	}
+
 	private protected override bool Predicate() =>
-		!BossSequenceController.IsInSequence
+		!P5Health.IsActive
+		&& !BossSequenceController.IsInSequence
 		&& BossSceneController.IsBossScene
-		&& BossSceneController.Instance.Reflect().bossLevel > 0;
+		&& GetBossLevel() > 0;
 }
 
 public sealed class HalveDamageHoGAttuned : HalveDamageConditioned {
+	private static int GetBossLevel()
+	{
+		int level = BossSceneController.Instance.Reflect().bossLevel;
+		if (P5Health.IsActive && P5Health.HasOriginalBossLevel)
+		{
+			level = Math.Max(level, P5Health.LastOriginalBossLevel);
+		}
+
+		return level;
+	}
+
 	private protected override bool Predicate() =>
 		!BossSequenceController.IsInSequence
 		&& BossSceneController.IsBossScene
-		&& BossSceneController.Instance.Reflect().bossLevel == 0;
+		&& GetBossLevel() == 0;
 }
 
 public sealed class HalveDamageOtherPlace : HalveDamageConditioned {

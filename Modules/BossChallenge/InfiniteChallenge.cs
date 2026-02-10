@@ -74,6 +74,7 @@ public sealed class InfiniteChallenge : Module
 
                 if (ModuleManager.TryGetLoadedModule<CarefreeMelodyReset>(out _))
                 {
+                    CarefreeMelodyReset.MarkEnteredFromWorkshop(currentSceneName);
                     CarefreeMelodyReset.TryResetNow(ignoreBossScene: true);
                 }
 

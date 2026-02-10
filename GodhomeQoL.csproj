@@ -1,420 +1,500 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-	<PropertyGroup>
-		<!-- Change this to the path of your modded HK installation -->
-		<HollowKnightRefs>C:\Program Files (x86)\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\</HollowKnightRefs>
-<<<<<<< HEAD
-=======
-		<!-- Root folder of the HK install (computed from HollowKnightRefs) -->
-		<GameRootDir>$(HollowKnightRefs)..\..\</GameRootDir>
-		<!-- Mods folder used by Modding API 1.5+ -->
-		<GameModsDir>$(GameRootDir)Mods\</GameModsDir>
-		<!-- Mods folder inside Managed (requested by user for hot copy) -->
-		<ManagedModsDir>$(HollowKnightRefs)Mods\</ManagedModsDir>
->>>>>>> fcd9e8b (Update 1.0.0.7)
-		<!-- Change this to the path where you want the ready-to-upload exports to be -->
-		<ExportDir>C:\Users\User\Documents\HKModsExport</ExportDir>
-		<!-- Uncomment this to generate a documentation file to be included with the mod -->
-		<!--<DocumentationFile>$(OutputPath)/$(AssemblyTitle).xml</DocumentationFile>-->
-<<<<<<< HEAD
-=======
-		<!-- Ensure Visual Studio always runs MSBuild so CopyMod executes -->
-		<DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
->>>>>>> fcd9e8b (Update 1.0.0.7)
-	</PropertyGroup>
-	<PropertyGroup>
-		<RootNamespace>GodhomeQoL</RootNamespace>
-		<AssemblyName>GodhomeQoL</AssemblyName>
-		<Nullable>enable</Nullable>
-		<TargetFramework>net472</TargetFramework>
-		<AssemblyTitle>GodhomeQoL</AssemblyTitle>
-		<Product>GodhomeQoL</Product>
-		<Description>A Hollow Knight Mod</Description>
-		<Copyright>Copyright ©  2025</Copyright>
-<<<<<<< HEAD
-		<AssemblyVersion>1.0.0.0</AssemblyVersion>
-		<FileVersion>1.0.0.0</FileVersion>
-=======
-		<AssemblyVersion>1.0.0.7</AssemblyVersion>
-		<FileVersion>1.0.0.7</FileVersion>
->>>>>>> fcd9e8b (Update 1.0.0.7)
-		<OutputPath>bin\$(Configuration)\</OutputPath>
-		<LangVersion>latest</LangVersion>
-	</PropertyGroup>
-	<Target Name="CopyMod" AfterTargets="PostBuildEvent">
-		<RemoveDir Condition="Exists('$(ExportDir)/$(TargetName)/')" Directories="$(ExportDir)/$(TargetName)/" />
-		<MakeDir Directories="$(ExportDir)/$(TargetName)/" />
-		<MakeDir Directories="$(ExportDir)/$(TargetName)/zip/" />
-<<<<<<< HEAD
-		<MakeDir Condition="!Exists('$(HollowKnightRefs)/Mods/$(TargetName)/')" Directories="$(HollowKnightRefs)/Mods/$(TargetName)/" />
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Change this to the path of your modded HK installation -->
+    <HollowKnightRefs>C:\Program Files (x86)\Steam\steamapps\common\Hollow Knight\hollow_knight_Data\Managed\</HollowKnightRefs>
+    <!-- Root folder of the HK install (computed from HollowKnightRefs) -->
+    <GameRootDir>$(HollowKnightRefs)..\..\</GameRootDir>
+    <!-- Mods folder used by Modding API 1.5+ -->
+    <GameModsDir>$(GameRootDir)Mods\</GameModsDir>
+    <!-- Mods folder inside Managed (requested by user for hot copy) -->
+    <ManagedModsDir>$(HollowKnightRefs)Mods\</ManagedModsDir>
+    <ManagedModsTargetDir>$(ManagedModsDir)$(AssemblyName)\</ManagedModsTargetDir>
+    <!-- Change this to the path where you want the ready-to-upload exports to be -->
+    <ExportDir>C:\Users\User\Documents\HKModsExport</ExportDir>
+    <!-- Ensure Visual Studio always runs MSBuild so CopyMod executes -->
+    <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RootNamespace>GodhomeQoL</RootNamespace>
+    <AssemblyName>GodhomeQoL</AssemblyName>
+    <Nullable>enable</Nullable>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyTitle>GodhomeQoL</AssemblyTitle>
+    <Product>GodhomeQoL</Product>
+    <Description>A Hollow Knight Mod</Description>
+    <Copyright>Copyright c  2025</Copyright>
+    <AssemblyVersion>1.0.0.8</AssemblyVersion>
+    <FileVersion>1.0.0.8</FileVersion>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <Target Name="CopyMod" AfterTargets="Build">
+    <RemoveDir Condition="Exists('$(ExportDir)/$(TargetName)/')" Directories="$(ExportDir)/$(TargetName)/" />
+    <MakeDir Directories="$(ExportDir)/$(TargetName)/" />
+    <MakeDir Directories="$(ExportDir)/$(TargetName)/zip/" />
+    <MakeDir Condition="!Exists('$(ManagedModsTargetDir)')" Directories="$(ManagedModsTargetDir)" />
 
-		<Copy Condition="'$(DocumentationFile)' != ''" SourceFiles="$(TargetPath);$(TargetDir)/$(TargetName).pdb;$(TargetDir)/$(TargetName).xml" DestinationFolder="$(HollowKnightRefs)/Mods/$(TargetName)/" />
-		<Copy Condition="'$(DocumentationFile)' == ''" SourceFiles="$(TargetPath);$(TargetDir)/$(TargetName).pdb" DestinationFolder="$(HollowKnightRefs)/Mods/$(TargetName)/" />
-=======
-		<MakeDir Condition="!Exists('$(ManagedModsDir)$(TargetName)/')" Directories="$(ManagedModsDir)$(TargetName)/" />
-		<MakeDir Condition="!Exists('$(GameModsDir)/$(TargetName)/')" Directories="$(GameModsDir)/$(TargetName)/" />
+    <Message Importance="high" Text="CopyMod: $(TargetPath) -> $(ManagedModsTargetDir)" />
+    <Copy Condition="'$(DocumentationFile)' != ''" SourceFiles="$(TargetPath);$(TargetDir)/$(TargetName).pdb;$(TargetDir)/$(TargetName).xml" DestinationFolder="$(ManagedModsTargetDir)" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" Retries="5" RetryDelayMilliseconds="200" />
+    <Copy Condition="'$(DocumentationFile)' == ''" SourceFiles="$(TargetPath);$(TargetDir)/$(TargetName).pdb" DestinationFolder="$(ManagedModsTargetDir)" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" Retries="5" RetryDelayMilliseconds="200" />
+    <Touch Files="$(ManagedModsTargetDir)$(TargetName).dll" AlwaysCreate="false" />
 
-		<Copy Condition="'$(DocumentationFile)' != ''" SourceFiles="$(TargetPath);$(TargetDir)/$(TargetName).pdb;$(TargetDir)/$(TargetName).xml" DestinationFolder="$(ManagedModsDir)$(TargetName)/" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" />
-		<Copy Condition="'$(DocumentationFile)' == ''" SourceFiles="$(TargetPath);$(TargetDir)/$(TargetName).pdb" DestinationFolder="$(ManagedModsDir)$(TargetName)/" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" />
-		<Copy Condition="'$(DocumentationFile)' != ''" SourceFiles="$(TargetPath);$(TargetDir)/$(TargetName).pdb;$(TargetDir)/$(TargetName).xml" DestinationFolder="$(GameModsDir)/$(TargetName)/" />
-		<Copy Condition="'$(DocumentationFile)' == ''" SourceFiles="$(TargetPath);$(TargetDir)/$(TargetName).pdb" DestinationFolder="$(GameModsDir)/$(TargetName)/" />
->>>>>>> fcd9e8b (Update 1.0.0.7)
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ExportDir)/$(TargetName)/" />
 
-		<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ExportDir)/$(TargetName)/" />
+    <Copy Condition="'$(DocumentationFile)' != ''" SourceFiles="ReadMe.md;$(TargetPath);$(TargetDir)/$(TargetName).pdb;$(TargetDir)/$(TargetName).xml" DestinationFolder="$(ExportDir)/$(TargetName)/zip/" />
+    <Copy Condition="'$(DocumentationFile)' == ''" SourceFiles="ReadMe.md;$(TargetPath);$(TargetDir)/$(TargetName).pdb" DestinationFolder="$(ExportDir)/$(TargetName)/zip/" />
 
-		<Copy Condition="'$(DocumentationFile)' != ''" SourceFiles="ReadMe.md;$(TargetPath);$(TargetDir)/$(TargetName).pdb;$(TargetDir)/$(TargetName).xml" DestinationFolder="$(ExportDir)/$(TargetName)/zip/" />
-		<Copy Condition="'$(DocumentationFile)' == ''" SourceFiles="ReadMe.md;$(TargetPath);$(TargetDir)/$(TargetName).pdb" DestinationFolder="$(ExportDir)/$(TargetName)/zip/" />
+    <ZipDirectory SourceDirectory="$(ExportDir)/$(TargetName)/zip/" DestinationFile="$(ExportDir)/$(TargetName)/$(TargetName).zip" />
+    <RemoveDir Directories="$(ExportDir)/$(TargetName)/zip/" />
 
-		<ZipDirectory SourceDirectory="$(ExportDir)/$(TargetName)/zip/" DestinationFile="$(ExportDir)/$(TargetName)/$(TargetName).zip" />
-		<RemoveDir Directories="$(ExportDir)/$(TargetName)/zip/" />
-
-		<PropertyGroup>
-			<OutputFileString>SHA256 - $(AssemblyTitle).dll, Version $(AssemblyVersion):</OutputFileString>
-		</PropertyGroup>
-		<GetFileHash Files="$(ExportDir)/$(TargetName)/$(TargetName).dll" Algorithm="SHA256">
-			<Output TaskParameter="Items" ItemName="FilesWithHashes" />
-		</GetFileHash>
-		<PropertyGroup>
-			<OutputZipString>SHA256 - $(AssemblyTitle).zip:</OutputZipString>
-		</PropertyGroup>
-		<GetFileHash Files="$(ExportDir)/$(TargetName)/$(TargetName).zip" Algorithm="SHA256">
-			<Output TaskParameter="Items" ItemName="ZipFilesWithHashes" />
-		</GetFileHash>
-		<WriteLinesToFile File="$(ExportDir)/$(TargetName)/SHA.txt" Lines="$(OutputFileString);@(FilesWithHashes->'%(FileHash)');$(OutputZipString);@(ZipFilesWithHashes->'%(FileHash)')" Overwrite="true" Encoding="UTF-8" />
-	</Target>
-<<<<<<< HEAD
-	<ItemGroup>
-	  <None Remove="Resources\Lang\en.json" />
-	</ItemGroup>
-=======
+    <PropertyGroup>
+      <OutputFileString>SHA256 - $(AssemblyTitle).dll, Version $(AssemblyVersion):</OutputFileString>
+    </PropertyGroup>
+    <GetFileHash Files="$(ExportDir)/$(TargetName)/$(TargetName).dll" Algorithm="SHA256">
+      <Output TaskParameter="Items" ItemName="FilesWithHashes" />
+    </GetFileHash>
+    <PropertyGroup>
+      <OutputZipString>SHA256 - $(AssemblyTitle).zip:</OutputZipString>
+    </PropertyGroup>
+    <GetFileHash Files="$(ExportDir)/$(TargetName)/$(TargetName).zip" Algorithm="SHA256">
+      <Output TaskParameter="Items" ItemName="ZipFilesWithHashes" />
+    </GetFileHash>
+    <WriteLinesToFile File="$(ExportDir)/$(TargetName)/SHA.txt" Lines="$(OutputFileString);@(FilesWithHashes->'%(FileHash)');$(OutputZipString);@(ZipFilesWithHashes->'%(FileHash)')" Overwrite="true" Encoding="UTF-8" />
+  </Target>
   <ItemGroup>
-	  <None Remove="Resources\Lang\en.json" />
-	  <None Remove="Resources\Pin_Knight.png" />
+    <Compile Remove="ToggleableBindings\UI\BindingsUIController.cs" />
+    <None Remove="Resources\Lang\en.json" />
+    <None Remove="Resources\Howling Wraiths.png" />
+    <None Remove="Resources\Abyss Shriek.png" />
+    <None Remove="Resources\Great Slash.png" />
+    <None Remove="Resources\Cyclone Slash.png" />
+    <None Remove="Resources\Dash Slash.png" />
+    <None Remove="Resources\Mothwing Cloak.png" />
+    <None Remove="Resources\Shade Cloak.png" />
+    <None Remove="Resources\Mantis Claw.png" />
+    <None Remove="Resources\Monarch Wings.png" />
+    <None Remove="Resources\Crystal Heart.png" />
+    <None Remove="Resources\Isma's Tear.png" />
+    <None Remove="Resources\Dream Nail.png" />
+    <None Remove="Resources\Awoken Dream Nail.png" />
+    <None Remove="Resources\Dreamgate.png" />
+    <None Remove="Resources\Nail Binding.png" />
+    <None Remove="Resources\Shell Binding.png" />
+    <None Remove="Resources\Charms Binding.png" />
+    <None Remove="Resources\Soul Binding.png" />
+    <None Remove="Resources\Desolate Dive.png" />
+    <None Remove="Resources\Descending Dark.png" />
+    <None Remove="Resources\Pin_Knight.png" />
+    <None Remove="Resources\Shade Soul.png" />
+    <None Remove="Resources\Vengeful Spirit.png" />
+    <None Remove="Resources\HPMask.png" />
+    <None Remove="Resources\Soul Vessel.png" />
+    <None Remove="Resources\Nailless.png" />
+    <None Remove="Resources\Shade.png" />
+    <None Remove="Resources\OVERCHARMED.png" />
+    <None Remove="Resources\Edit.png" />
+    <None Remove="Resources\Del.png" />
+    <None Remove="Resources\Charms\Charms Prompt.png" />
+    <None Remove="Resources\Charms\Wayward Compass.png" />
+    <None Remove="Resources\Charms\Gathering Swarm.png" />
+    <None Remove="Resources\Charms\Stalwart Shell.png" />
+    <None Remove="Resources\Charms\Soul Catcher.png" />
+    <None Remove="Resources\Charms\Shaman Stone.png" />
+    <None Remove="Resources\Charms\Soul Eater.png" />
+    <None Remove="Resources\Charms\Dashmaster.png" />
+    <None Remove="Resources\Charms\Sprintmaster.png" />
+    <None Remove="Resources\Charms\Grubsong.png" />
+    <None Remove="Resources\Charms\Grubberflys Elegy.png" />
   </ItemGroup>
->>>>>>> fcd9e8b (Update 1.0.0.7)
-	<ItemGroup>
-		<Reference Include="Assembly-CSharp">
-			<HintPath>$(HollowKnightRefs)/Assembly-CSharp.dll</HintPath>
-		</Reference>
-		<Reference Include="Assembly-CSharp-firstpass">
-			<HintPath>$(HollowKnightRefs)/Assembly-CSharp-firstpass.dll</HintPath>
-		</Reference>
-		<Reference Include="GalaxyCSharp">
-			<HintPath>$(HollowKnightRefs)/GalaxyCSharp.dll</HintPath>
-		</Reference>
-		<Reference Include="MMHOOK_Assembly-CSharp">
-			<HintPath>$(HollowKnightRefs)/MMHOOK_Assembly-CSharp.dll</HintPath>
-		</Reference>
-		<Reference Include="MMHOOK_PlayMaker">
-			<HintPath>$(HollowKnightRefs)/MMHOOK_PlayMaker.dll</HintPath>
-		</Reference>
-		<Reference Include="Mono.Cecil">
-			<HintPath>$(HollowKnightRefs)/Mono.Cecil.dll</HintPath>
-		</Reference>
-		<Reference Include="Mono.Security">
-			<HintPath>$(HollowKnightRefs)/Mono.Security.dll</HintPath>
-		</Reference>
-		<Reference Include="MonoMod.RuntimeDetour">
-			<HintPath>$(HollowKnightRefs)/MonoMod.RuntimeDetour.dll</HintPath>
-		</Reference>
-		<Reference Include="MonoMod.Utils">
-			<HintPath>$(HollowKnightRefs)/MonoMod.Utils.dll</HintPath>
-		</Reference>
-		<Reference Include="SFCore">
-			<HintPath>$(HollowKnightRefs)/Mods/SFCore/SFCore.dll</HintPath>
-		</Reference>
-		<Reference Include="netstandard">
-			<HintPath>$(HollowKnightRefs)/netstandard.dll</HintPath>
-		</Reference>
-		<Reference Include="Newtonsoft.Json">
-			<HintPath>$(HollowKnightRefs)/Newtonsoft.Json.dll</HintPath>
-		</Reference>
-		<Reference Include="PlayMaker">
-			<HintPath>$(HollowKnightRefs)/PlayMaker.dll</HintPath>
-		</Reference>
-		<Reference Include="System.ComponentModel.Composition">
-			<HintPath>$(HollowKnightRefs)/System.ComponentModel.Composition.dll</HintPath>
-		</Reference>
-		<Reference Include="System.Configuration">
-			<HintPath>$(HollowKnightRefs)/System.Configuration.dll</HintPath>
-		</Reference>
-		<Reference Include="System.Diagnostics.StackTrace">
-			<HintPath>$(HollowKnightRefs)/System.Diagnostics.StackTrace.dll</HintPath>
-		</Reference>
-		<Reference Include="System.EnterpriseServices">
-			<HintPath>$(HollowKnightRefs)/System.EnterpriseServices.dll</HintPath>
-		</Reference>
-		<Reference Include="System.Globalization.Extensions">
-			<HintPath>$(HollowKnightRefs)/System.Globalization.Extensions.dll</HintPath>
-		</Reference>
-		<Reference Include="System.IO.Compression">
-			<HintPath>$(HollowKnightRefs)/System.IO.Compression.dll</HintPath>
-		</Reference>
-		<Reference Include="System.Net.Http">
-			<HintPath>$(HollowKnightRefs)/System.Net.Http.dll</HintPath>
-		</Reference>
-		<Reference Include="System.Runtime.Serialization.Xml">
-			<HintPath>$(HollowKnightRefs)/System.Runtime.Serialization.Xml.dll</HintPath>
-		</Reference>
-		<Reference Include="System.ServiceModel.Internals">
-			<HintPath>$(HollowKnightRefs)/System.ServiceModel.Internals.dll</HintPath>
-		</Reference>
-		<Reference Include="System.Transactions">
-			<HintPath>$(HollowKnightRefs)/System.Transactions.dll</HintPath>
-		</Reference>
-		<Reference Include="System.Xml.XPath.XDocument">
-			<HintPath>$(HollowKnightRefs)/System.Xml.XPath.XDocument.dll</HintPath>
-		</Reference>
-		<Reference Include="Unity.Timeline">
-			<HintPath>$(HollowKnightRefs)/Unity.Timeline.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.AccessibilityModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.AccessibilityModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.AIModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.AIModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.AndroidJNIModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.AndroidJNIModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.AnimationModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.AnimationModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.ARModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.ARModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.AssetBundleModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.AssetBundleModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.AudioModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.AudioModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.ClothModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.ClothModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.ClusterInputModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.ClusterInputModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.ClusterRendererModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.ClusterRendererModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.CoreModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.CoreModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.CrashReportingModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.CrashReportingModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.DirectorModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.DirectorModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.DSPGraphModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.DSPGraphModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.GameCenterModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.GameCenterModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.GIModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.GIModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.GridModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.GridModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.HotReloadModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.HotReloadModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.ImageConversionModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.ImageConversionModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.IMGUIModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.IMGUIModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.InputLegacyModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.InputLegacyModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.InputModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.InputModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.JSONSerializeModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.JSONSerializeModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.LocalizationModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.LocalizationModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.ParticleSystemModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.ParticleSystemModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.PerformanceReportingModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.PerformanceReportingModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.Physics2DModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.Physics2DModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.PhysicsModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.PhysicsModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.ProfilerModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.ProfilerModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.RuntimeInitializeOnLoadManagerInitializerModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.RuntimeInitializeOnLoadManagerInitializerModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.ScreenCaptureModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.ScreenCaptureModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.SharedInternalsModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.SharedInternalsModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.SpriteMaskModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.SpriteMaskModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.SpriteShapeModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.SpriteShapeModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.StreamingModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.StreamingModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.SubstanceModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.SubstanceModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.SubsystemsModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.SubsystemsModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.TerrainModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.TerrainModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.TerrainPhysicsModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.TerrainPhysicsModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.TextCoreModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.TextCoreModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.TextRenderingModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.TextRenderingModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.TilemapModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.TilemapModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.TLSModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.TLSModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.UI">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.UI.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.UIElementsModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.UIElementsModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.UIElementsNativeModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.UIElementsNativeModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.UIModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.UIModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.UmbraModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.UmbraModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.UNETModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.UNETModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.UnityAnalyticsModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.UnityAnalyticsModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.UnityConnectModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.UnityConnectModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.UnityCurlModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.UnityCurlModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.UnityTestProtocolModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.UnityTestProtocolModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.UnityWebRequestAssetBundleModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.UnityWebRequestAssetBundleModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.UnityWebRequestAudioModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.UnityWebRequestAudioModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.UnityWebRequestModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.UnityWebRequestModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.UnityWebRequestTextureModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.UnityWebRequestTextureModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.UnityWebRequestWWWModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.UnityWebRequestWWWModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.VehiclesModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.VehiclesModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.VFXModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.VFXModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.VideoModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.VideoModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.VirtualTexturingModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.VirtualTexturingModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.VRModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.VRModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.WindModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.WindModule.dll</HintPath>
-		</Reference>
-		<Reference Include="UnityEngine.XRModule">
-			<HintPath>$(HollowKnightRefs)/UnityEngine.XRModule.dll</HintPath>
-		</Reference>
-		<Reference Include="Satchel">
-			<HintPath>$(HollowKnightRefs)/Mods/Satchel/Satchel.dll</HintPath>
-		</Reference>
-		<Reference Include="Osmi">
-			<HintPath>$(HollowKnightRefs)/Mods/Osmi/Osmi.dll</HintPath>
-		</Reference>
-		<Reference Include="Vasi">
-			<HintPath>$(HollowKnightRefs)/Mods/Vasi/Vasi.dll</HintPath>
-		</Reference>
-	</ItemGroup>
-	<ItemGroup>
-<<<<<<< HEAD
-=======
-		<EmbeddedResource Include="ToggleableBindings\Assets\GG_UI_pieces_unk_off.png">
-			<LogicalName>ToggleableBindings.Assets.GG_UI_pieces_unk_off.png</LogicalName>
-		</EmbeddedResource>
-		<EmbeddedResource Include="ToggleableBindings\Assets\GG_UI_pieces_unk_on.png">
-			<LogicalName>ToggleableBindings.Assets.GG_UI_pieces_unk_on.png</LogicalName>
-		</EmbeddedResource>
-	</ItemGroup>
-	<ItemGroup>
->>>>>>> fcd9e8b (Update 1.0.0.7)
-		<None Include=".gitignore" />
-		<None Include="ReadMe.md" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<PackageReference Include="Microsoft.Unity.Analyzers" Version="1.22.0">
-			<PrivateAssets>all</PrivateAssets>
-			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-		</PackageReference>
-
-		<PackageReference Include="Nullable" Version="1.3.1" PrivateAssets="all" />
-
-		<PackageReference Include="Fody" Version="6.9.2" PrivateAssets="all" />
-		<PackageReference Include="InfoOf.Fody" Version="2.2.0" PrivateAssets="all" />
-		<PackageReference Include="HKReflect.Fody" Version="0.2.0" PrivateAssets="all" />
-	</ItemGroup>
-
-<<<<<<< HEAD
-	<ItemGroup>
-	  <EmbeddedResource Include="Resources\Lang\en.json" />
-	  <EmbeddedResource Include="Resources\Collector_Roar.wav" />
-	</ItemGroup>
-=======
   <ItemGroup>
-	  <EmbeddedResource Include="Resources\Lang\en.json" />
-	  <EmbeddedResource Include="Resources\Collector_Roar.wav" />
-	  <EmbeddedResource Include="Resources\Pin_Knight.png" />
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(HollowKnightRefs)/Assembly-CSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>$(HollowKnightRefs)/Assembly-CSharp-firstpass.dll</HintPath>
+    </Reference>
+    <Reference Include="GalaxyCSharp">
+      <HintPath>$(HollowKnightRefs)/GalaxyCSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="MMHOOK_Assembly-CSharp">
+      <HintPath>$(HollowKnightRefs)/MMHOOK_Assembly-CSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="MMHOOK_PlayMaker">
+      <HintPath>$(HollowKnightRefs)/MMHOOK_PlayMaker.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Cecil">
+      <HintPath>$(HollowKnightRefs)/Mono.Cecil.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Security">
+      <HintPath>$(HollowKnightRefs)/Mono.Security.dll</HintPath>
+    </Reference>
+    <Reference Include="MonoMod.RuntimeDetour">
+      <HintPath>$(HollowKnightRefs)/MonoMod.RuntimeDetour.dll</HintPath>
+    </Reference>
+    <Reference Include="MonoMod.Utils">
+      <HintPath>$(HollowKnightRefs)/MonoMod.Utils.dll</HintPath>
+    </Reference>
+    <Reference Include="SFCore">
+      <HintPath>$(HollowKnightRefs)/Mods/SFCore/SFCore.dll</HintPath>
+    </Reference>
+    <Reference Include="Vasi">
+      <HintPath>$(HollowKnightRefs)/Mods/Vasi/Vasi.dll</HintPath>
+    </Reference>
+    <Reference Include="netstandard">
+      <HintPath>$(HollowKnightRefs)/netstandard.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>$(HollowKnightRefs)/Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="PlayMaker">
+      <HintPath>$(HollowKnightRefs)/PlayMaker.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ComponentModel.Composition">
+      <HintPath>$(HollowKnightRefs)/System.ComponentModel.Composition.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Configuration">
+      <HintPath>$(HollowKnightRefs)/System.Configuration.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Diagnostics.StackTrace">
+      <HintPath>$(HollowKnightRefs)/System.Diagnostics.StackTrace.dll</HintPath>
+    </Reference>
+    <Reference Include="System.EnterpriseServices">
+      <HintPath>$(HollowKnightRefs)/System.EnterpriseServices.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Globalization.Extensions">
+      <HintPath>$(HollowKnightRefs)/System.Globalization.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.IO.Compression">
+      <HintPath>$(HollowKnightRefs)/System.IO.Compression.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Http">
+      <HintPath>$(HollowKnightRefs)/System.Net.Http.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.Serialization.Xml">
+      <HintPath>$(HollowKnightRefs)/System.Runtime.Serialization.Xml.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ServiceModel.Internals">
+      <HintPath>$(HollowKnightRefs)/System.ServiceModel.Internals.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Transactions">
+      <HintPath>$(HollowKnightRefs)/System.Transactions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml.XPath.XDocument">
+      <HintPath>$(HollowKnightRefs)/System.Xml.XPath.XDocument.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.Timeline">
+      <HintPath>$(HollowKnightRefs)/Unity.Timeline.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.AccessibilityModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.AccessibilityModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.AIModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.AIModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.AndroidJNIModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.AndroidJNIModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.AnimationModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.AnimationModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.ARModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.ARModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.AssetBundleModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.AssetBundleModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.AudioModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.AudioModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.ClothModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.ClothModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.ClusterInputModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.ClusterInputModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.ClusterRendererModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.ClusterRendererModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.CrashReportingModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.CrashReportingModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.DirectorModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.DirectorModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.DSPGraphModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.DSPGraphModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.GameCenterModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.GameCenterModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.GIModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.GIModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.GridModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.GridModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.HotReloadModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.HotReloadModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.ImageConversionModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.IMGUIModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.InputLegacyModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.InputModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.InputModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.JSONSerializeModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.JSONSerializeModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.LocalizationModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.LocalizationModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.ParticleSystemModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.ParticleSystemModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.PerformanceReportingModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.PerformanceReportingModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.Physics2DModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.Physics2DModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.PhysicsModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.ProfilerModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.ProfilerModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.RuntimeInitializeOnLoadManagerInitializerModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.RuntimeInitializeOnLoadManagerInitializerModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.ScreenCaptureModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.ScreenCaptureModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.SharedInternalsModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.SharedInternalsModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.SpriteMaskModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.SpriteMaskModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.SpriteShapeModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.SpriteShapeModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.StreamingModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.StreamingModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.SubstanceModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.SubstanceModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.SubsystemsModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.SubsystemsModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.TerrainModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.TerrainModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.TerrainPhysicsModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.TerrainPhysicsModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.TextCoreModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.TextCoreModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.TextRenderingModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.TilemapModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.TilemapModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.TLSModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.TLSModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UIElementsModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.UIElementsModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UIElementsNativeModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.UIElementsNativeModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.UIModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UmbraModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.UmbraModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UNETModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.UNETModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UnityAnalyticsModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.UnityAnalyticsModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UnityConnectModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.UnityConnectModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UnityCurlModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.UnityCurlModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UnityTestProtocolModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.UnityTestProtocolModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UnityWebRequestAssetBundleModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.UnityWebRequestAssetBundleModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UnityWebRequestAudioModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.UnityWebRequestAudioModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UnityWebRequestModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.UnityWebRequestModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UnityWebRequestTextureModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.UnityWebRequestTextureModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UnityWebRequestWWWModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.UnityWebRequestWWWModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.VehiclesModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.VehiclesModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.VFXModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.VFXModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.VideoModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.VideoModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.VirtualTexturingModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.VirtualTexturingModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.VRModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.VRModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.WindModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.WindModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.XRModule">
+      <HintPath>$(HollowKnightRefs)/UnityEngine.XRModule.dll</HintPath>
+    </Reference>
+    <Reference Include="Satchel">
+      <HintPath>$(HollowKnightRefs)/Mods/Satchel/Satchel.dll</HintPath>
+    </Reference>
+    <Reference Include="Osmi">
+      <HintPath>$(HollowKnightRefs)/Mods/Osmi/Osmi.dll</HintPath>
+    </Reference>
+    <Reference Include="Vasi">
+      <HintPath>$(HollowKnightRefs)/Mods/Vasi/Vasi.dll</HintPath>
+    </Reference>
   </ItemGroup>
->>>>>>> fcd9e8b (Update 1.0.0.7)
+  <ItemGroup>
+    <EmbeddedResource Include="ToggleableBindings\Assets\GG_UI_pieces_unk_off.png">
+      <LogicalName>ToggleableBindings.Assets.GG_UI_pieces_unk_off.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ToggleableBindings\Assets\GG_UI_pieces_unk_on.png">
+      <LogicalName>ToggleableBindings.Assets.GG_UI_pieces_unk_on.png</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".gitignore" />
+    <None Include="ReadMe.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Unity.Analyzers" Version="1.22.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+
+    <PackageReference Include="Nullable" Version="1.3.1" PrivateAssets="all" />
+
+    <PackageReference Include="Fody" Version="6.9.2" PrivateAssets="all" />
+    <PackageReference Include="InfoOf.Fody" Version="2.2.0" PrivateAssets="all" />
+    <PackageReference Include="HKReflect.Fody" Version="0.2.0" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Lang\en.json" />
+    <EmbeddedResource Include="Resources\Collector_Roar.wav" />
+    <EmbeddedResource Include="Resources\Howling Wraiths.png" Condition="Exists('Resources\Howling Wraiths.png')" />
+    <EmbeddedResource Include="Resources\Abyss Shriek.png" Condition="Exists('Resources\Abyss Shriek.png')" />
+    <EmbeddedResource Include="Resources\Great Slash.png" Condition="Exists('Resources\Great Slash.png')" />
+    <EmbeddedResource Include="Resources\Cyclone Slash.png" Condition="Exists('Resources\Cyclone Slash.png')" />
+    <EmbeddedResource Include="Resources\Dash Slash.png" Condition="Exists('Resources\Dash Slash.png')" />
+    <EmbeddedResource Include="Resources\Mothwing Cloak.png" Condition="Exists('Resources\Mothwing Cloak.png')" />
+    <EmbeddedResource Include="Resources\Shade Cloak.png" Condition="Exists('Resources\Shade Cloak.png')" />
+    <EmbeddedResource Include="Resources\Mantis Claw.png" Condition="Exists('Resources\Mantis Claw.png')" />
+    <EmbeddedResource Include="Resources\Monarch Wings.png" Condition="Exists('Resources\Monarch Wings.png')" />
+    <EmbeddedResource Include="Resources\Crystal Heart.png" Condition="Exists('Resources\Crystal Heart.png')" />
+    <EmbeddedResource Include="Resources\Isma's Tear.png" />
+    <EmbeddedResource Include="Resources\Dream Nail.png" Condition="Exists('Resources\Dream Nail.png')" />
+    <EmbeddedResource Include="Resources\Awoken Dream Nail.png" Condition="Exists('Resources\Awoken Dream Nail.png')" />
+    <EmbeddedResource Include="Resources\Dreamgate.png" Condition="Exists('Resources\Dreamgate.png')" />
+    <EmbeddedResource Include="Resources\Nail Binding.png" Condition="Exists('Resources\Nail Binding.png')" />
+    <EmbeddedResource Include="Resources\Shell Binding.png" Condition="Exists('Resources\Shell Binding.png')" />
+    <EmbeddedResource Include="Resources\Charms Binding.png" Condition="Exists('Resources\Charms Binding.png')" />
+    <EmbeddedResource Include="Resources\Soul Binding.png" Condition="Exists('Resources\Soul Binding.png')" />
+    <EmbeddedResource Include="Resources\Desolate Dive.png" />
+    <EmbeddedResource Include="Resources\Descending Dark.png" />
+    <EmbeddedResource Include="Resources\Pin_Knight.png" />
+    <EmbeddedResource Include="Resources\Shade Soul.png" />
+    <EmbeddedResource Include="Resources\Vengeful Spirit.png" />
+    <EmbeddedResource Include="Resources\HPMask.png" Condition="Exists('Resources\HPMask.png')" />
+    <EmbeddedResource Include="Resources\Soul Vessel.png" Condition="Exists('Resources\Soul Vessel.png')" />
+    <EmbeddedResource Include="Resources\Nailless.png" Condition="Exists('Resources\\Nailless.png')" />
+    <EmbeddedResource Include="Resources\Shade.png" Condition="Exists('Resources\\Shade.png')" />
+    <EmbeddedResource Include="Resources\OVERCHARMED.png" Condition="Exists('Resources\\OVERCHARMED.png')" />
+    <EmbeddedResource Include="Resources\Edit.png" Condition="Exists('Resources\Edit.png')" />
+    <EmbeddedResource Include="Resources\Del.png" Condition="Exists('Resources\\Del.png')" />
+    <EmbeddedResource Include="Resources\Charms Prompt.png" Condition="Exists('Resources\\Charms Prompt.png')" />
+    <EmbeddedResource Include="Resources\Wayward Compass.png" Condition="Exists('Resources\\Wayward Compass.png')" />
+    <EmbeddedResource Include="Resources\Charms\Gathering Swarm.png" Condition="Exists('Resources\\Charms\\Gathering Swarm.png')" />
+    <EmbeddedResource Include="Resources\Charms\Stalwart Shell.png" Condition="Exists('Resources\\Charms\\Stalwart Shell.png')" />
+    <EmbeddedResource Include="Resources\Charms\Soul Catcher.png" Condition="Exists('Resources\\Charms\\Soul Catcher.png')" />
+    <EmbeddedResource Include="Resources\Charms\Shaman Stone.png" Condition="Exists('Resources\\Charms\\Shaman Stone.png')" />
+    <EmbeddedResource Include="Resources\Charms\Soul Eater.png" Condition="Exists('Resources\\Charms\\Soul Eater.png')" />
+    <EmbeddedResource Include="Resources\Charms\Dashmaster.png" Condition="Exists('Resources\\Charms\\Dashmaster.png')" />
+    <EmbeddedResource Include="Resources\Charms\Sprintmaster.png" Condition="Exists('Resources\\Charms\\Sprintmaster.png')" />
+    <EmbeddedResource Include="Resources\Charms\Grubsong.png" Condition="Exists('Resources\\Charms\\Grubsong.png')" />
+    <EmbeddedResource Include="Resources\Charms\Grubberflys Elegy.png" Condition="Exists('Resources\\Charms\\Grubberflys Elegy.png')" />
+    <EmbeddedResource Include="Resources\Charms\Unbreakable Heart.png" Condition="Exists('Resources\\Charms\\Unbreakable Heart.png')" />
+    <EmbeddedResource Include="Resources\Charms\Unbreakable Greed.png" Condition="Exists('Resources\\Charms\\Unbreakable Greed.png')" />
+    <EmbeddedResource Include="Resources\Charms\Unbreakable Strength.png" Condition="Exists('Resources\\Charms\\Unbreakable Strength.png')" />
+    <EmbeddedResource Include="Resources\Charms\Spell Twister.png" Condition="Exists('Resources\\Charms\\Spell Twister.png')" />
+    <EmbeddedResource Include="Resources\Charms\Steady Body.png" Condition="Exists('Resources\\Charms\\Steady Body.png')" />
+    <EmbeddedResource Include="Resources\Charms\Heavy Blow.png" Condition="Exists('Resources\\Charms\\Heavy Blow.png')" />
+    <EmbeddedResource Include="Resources\Charms\Quick Slash.png" Condition="Exists('Resources\\Charms\\Quick Slash.png')" />
+    <EmbeddedResource Include="Resources\Charms\Longnail.png" Condition="Exists('Resources\\Charms\\Longnail.png')" />
+    <EmbeddedResource Include="Resources\Charms\Mark of Pride.png" Condition="Exists('Resources\\Charms\\Mark of Pride.png')" />
+    <EmbeddedResource Include="Resources\Charms\Kingsoul.png" Condition="Exists('Resources\\Charms\\Kingsoul.png')" />
+    <EmbeddedResource Include="Resources\Charms\Fury of the Fallen.png" Condition="Exists('Resources\\Charms\\Fury of the Fallen.png')" />
+    <EmbeddedResource Include="Resources\Charms\Thorns of Agony.png" Condition="Exists('Resources\\Charms\\Thorns of Agony.png')" />
+    <EmbeddedResource Include="Resources\Charms\Baldur Shell.png" Condition="Exists('Resources\\Charms\\Baldur Shell.png')" />
+    <EmbeddedResource Include="Resources\Charms\Flukenest.png" Condition="Exists('Resources\\Charms\\Flukenest.png')" />
+    <EmbeddedResource Include="Resources\Charms\Defenders Crest.png" Condition="Exists('Resources\\Charms\\Defenders Crest.png')" />
+    <EmbeddedResource Include="Resources\Charms\Glowing Womb.png" Condition="Exists('Resources\\Charms\\Glowing Womb.png')" />
+    <EmbeddedResource Include="Resources\Charms\Quick Focus.png" Condition="Exists('Resources\\Charms\\Quick Focus.png')" />
+    <EmbeddedResource Include="Resources\Charms\Deep Focus.png" Condition="Exists('Resources\\Charms\\Deep Focus.png')" />
+    <EmbeddedResource Include="Resources\Charms\Lifeblood Heart.png" Condition="Exists('Resources\\Charms\\Lifeblood Heart.png')" />
+    <EmbeddedResource Include="Resources\Charms\Lifeblood Core.png" Condition="Exists('Resources\\Charms\\Lifeblood Core.png')" />
+    <EmbeddedResource Include="Resources\Charms\Jonis Blessing.png" Condition="Exists('Resources\\Charms\\Jonis Blessing.png')" />
+    <EmbeddedResource Include="Resources\Charms\Hiveblood.png" Condition="Exists('Resources\\Charms\\Hiveblood.png')" />
+    <EmbeddedResource Include="Resources\Charms\Spore Shroom.png" Condition="Exists('Resources\\Charms\\Spore Shroom.png')" />
+    <EmbeddedResource Include="Resources\Charms\Sharp Shadow.png" Condition="Exists('Resources\\Charms\\Sharp Shadow.png')" />
+    <EmbeddedResource Include="Resources\Charms\Shape of Unn.png" Condition="Exists('Resources\\Charms\\Shape of Unn.png')" />
+    <EmbeddedResource Include="Resources\Charms\Nailmasters Glory.png" Condition="Exists('Resources\\Charms\\Nailmasters Glory.png')" />
+    <EmbeddedResource Include="Resources\Charms\Weaversong.png" Condition="Exists('Resources\\Charms\\Weaversong.png')" />
+    <EmbeddedResource Include="Resources\Charms\Dream Wielder.png" Condition="Exists('Resources\\Charms\\Dream Wielder.png')" />
+    <EmbeddedResource Include="Resources\Charms\Dreamshield.png" Condition="Exists('Resources\\Charms\\Dreamshield.png')" />
+    <EmbeddedResource Include="Resources\Charms\Carefree Melody.png" Condition="Exists('Resources\\Charms\\Carefree Melody.png')" />
+    <EmbeddedResource Include="Resources\Charms\Grimmchild.png" Condition="Exists('Resources\\Charms\\Grimmchild.png')" LogicalName="GodhomeQoL.Resources.Charms.Grimmchild.png" />
+    <EmbeddedResource Include="Resources\Charms\Void Heart.png" Condition="Exists('Resources\\Charms\\Void Heart.png')" />
+  </ItemGroup>
 
 </Project>

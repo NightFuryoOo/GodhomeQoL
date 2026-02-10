@@ -1,5 +1,4 @@
 ﻿using Vasi;
-using static UnityEngine.UI.GridLayoutGroup;
 using Random = UnityEngine.Random;
 
 namespace GodhomeQoL.Modules.QoL
@@ -29,9 +28,6 @@ namespace GodhomeQoL.Modules.QoL
         public static bool Collector = true;
 
         [GlobalSetting]
-        public static bool FirstTimeBosses = true;
-
-        [GlobalSetting]
         public static bool AutoSkipCinematics = true;
 
         [GlobalSetting]
@@ -57,17 +53,6 @@ namespace GodhomeQoL.Modules.QoL
             (() => GreyPrinceZote, GreyPrinceZoteSkip),
             (() => Collector, CollectorSkip),
             (() => HallOfGodsStatues, StatueWait)
-        };
-
-
-
-        private static readonly string[] PD_BOOLS =
-        {
-            nameof(PlayerData.unchainedHollowKnight),
-            nameof(PlayerData.encounteredMimicSpider),
-            nameof(PlayerData.infectedKnightEncountered),
-            nameof(PlayerData.mageLordEncountered),
-            nameof(PlayerData.mageLordEncountered_2),
         };
 
         private static readonly HashSet<string> GodhomeHubScenes = new(StringComparer.Ordinal)
@@ -98,7 +83,6 @@ namespace GodhomeQoL.Modules.QoL
             On.HutongGames.PlayMaker.Actions.EaseColor.OnEnter += FastEaseColor;
             On.GameManager.FadeSceneInWithDelay += NoFade;
             On.GGCheckIfBossScene.OnEnter += MageLordPhaseTransitionSkip;
-            ModHooks.NewGameHook += OnNewGame;
             UnityEngine.SceneManagement.SceneManager.activeSceneChanged += FsmSkips;
         }
 
@@ -113,18 +97,6 @@ namespace GodhomeQoL.Modules.QoL
             On.GameManager.FadeSceneInWithDelay -= NoFade;
             On.GGCheckIfBossScene.OnEnter -= MageLordPhaseTransitionSkip;
             UnityEngine.SceneManagement.SceneManager.activeSceneChanged -= FsmSkips;
-            ModHooks.NewGameHook -= OnNewGame;
-        }
-
-        private static void OnNewGame()
-        {
-            if (!FirstTimeBosses)
-                return;
-
-            foreach (string @bool in PD_BOOLS)
-            {
-                PlayerData.instance.SetBool(@bool, true);
-            }
         }
 
         private static IEnumerator NoFade(On.GameManager.orig_FadeSceneInWithDelay orig, GameManager self, float delay) =>

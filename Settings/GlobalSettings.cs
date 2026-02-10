@@ -30,10 +30,16 @@ public sealed class GlobalSettings : SettingBase<GlobalSettingAttribute>
     }
 
     public ShowHPOnDeathSettings ShowHPOnDeath { get; set; } = new();
-<<<<<<< HEAD
-=======
 
     public FastDreamWarpSettings FastDreamWarp { get; set; } = new();
+
+    public MaskDamageSettings MaskDamage { get; set; } = new();
+
+    public FreezeHitboxesSettings FreezeHitboxes { get; set; } = new();
+
+    public GearSwitcherSettings GearSwitcher { get; set; } = new();
+
+    public QuickMenuMasterSettings QuickMenuMasters { get; set; } = new();
 
     public List<string> QuickMenuOrder { get; set; } = new();
 
@@ -49,8 +55,5 @@ public sealed class GlobalSettings : SettingBase<GlobalSettingAttribute>
 
     public int QuickMenuOpacity { get; set; } = 100;
 
-    public string BindingsMenuHotkey { get; set; } = string.Empty;
-
-    public bool BindingsMenuEverywhere { get; set; } = false;
->>>>>>> fcd9e8b (Update 1.0.0.7)
+    public Dictionary<string, string> QuickMenuOverlayHotkeys { get; set; } = new();
 }

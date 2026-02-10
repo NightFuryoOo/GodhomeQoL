@@ -29,7 +29,15 @@ public sealed class InfiniteRadianceClimbing : Module {
     }
 
     private static void SetupScene(Scene prev, Scene next) {
-        if (prev.name != "GG_Workshop" || next.name != "GG_Radiance") {
+        if (next.name != "GG_Radiance") {
+            if (running) {
+                Quit();
+            }
+
+            return;
+        }
+
+        if (BossSequenceController.IsInSequence) {
             if (running) {
                 Quit();
             }
@@ -38,8 +46,7 @@ public sealed class InfiniteRadianceClimbing : Module {
         }
 
         if (running) {
-            Quit(true);
-            throw new InvalidOperationException("Running multiple times at the same time");
+            Quit(); // re-init without killing the player when re-entering the scene
         }
 
         running = true;

@@ -2,10 +2,7 @@
 using GodhomeQoL.Modules;
 using GodhomeQoL.Modules.CollectorPhases;
 using GodhomeQoL.Modules.QoL;
-<<<<<<< HEAD
-=======
 using GodhomeQoL.Modules.Tools;
->>>>>>> fcd9e8b (Update 1.0.0.7)
 
 namespace GodhomeQoL;
 
@@ -43,11 +40,7 @@ public sealed partial class GodhomeQoL
                 )
             ]);
 
-<<<<<<< HEAD
-=======
             menu.AddElement(QuickMenu.QuickMenuHotkeyButton());
-
->>>>>>> fcd9e8b (Update 1.0.0.7)
             ModuleManager
                 .Modules
                 .Values
@@ -56,6 +49,9 @@ public sealed partial class GodhomeQoL
                     && module is not CollectorPhases
                     && module is not FastReload
                     && module.Category != "Bugfix"
+                    && module.Category != nameof(Modules.QoL)
+                    && module.Category != nameof(Modules.BossChallenge)
+                    && module.Category != "Tools"
                 )
                 .GroupBy(module => module.Category)
                 .OrderBy(group => group.Key)
@@ -128,70 +124,11 @@ public sealed partial class GodhomeQoL
                 })
                 .ForEach(menu.AddElement);
 
-            menu.AddElement(Blueprints.NavigateToMenu(
-                "Tools".Localize(),
-                "",
-                () =>
-                {
-                    Menu toolsMenu = new("Tools".Localize(), []);
-                    MenuScreen? toolsScreen = null;
-
-                    toolsMenu.AddElement(Blueprints.NavigateToMenu("Modules/FastSuperDash".Localize(), "", () => FastSuperDash.GetMenu(toolsScreen ?? menu!.menuScreen)));
-                    toolsMenu.AddElement(Blueprints.NavigateToMenu("CollectorPhases".Localize(), "", () => CollectorPhasesMenu.GetMenu(toolsScreen ?? menu!.menuScreen)));
-                    toolsMenu.AddElement(Blueprints.NavigateToMenu("FastReload".Localize(), "", () =>
-                    {
-                        _ = ModuleManager.TryGetModule(typeof(FastReload), out Module? fastReloadModule);
-
-                        Element toggle = Blueprints.HorizontalBoolOption(
-                            "Modules/FastReload".Localize(),
-                            $"ToggleableLevel/{(fastReloadModule?.ToggleableLevel ?? ToggleableLevel.AnyTime)}".Localize(),
-                            val =>
-                            {
-                                if (fastReloadModule != null)
-                                {
-                                    fastReloadModule.Enabled = val;
-                                }
-                            },
-                            () => fastReloadModule?.Enabled ?? false
-                        );
-
-                        Menu fastReloadMenu = new("FastReload".Localize(), [
-                            toggle,
-                            ..CustomMenuElements(nameof(FastReload), () => toolsScreen ?? menu!.menuScreen)
-                        ]);
-
-                        return fastReloadMenu.GetMenuScreen(toolsScreen ?? menu!.menuScreen);
-                    }));
-                    toolsMenu.AddElement(Blueprints.NavigateToMenu("DreamshieldSettings".Localize(), "", () => new Menu(
-                        "DreamshieldSettings".Localize(),
-                        [..CustomMenuElements("Dreamshield", () => toolsScreen ?? menu!.menuScreen)]
-                    ).GetMenuScreen(toolsScreen ?? menu!.menuScreen)));
-                    toolsMenu.AddElement(Blueprints.NavigateToMenu(
-                        "ShowHPOnDeath".Localize(),
-                        "",
-                        () => Modules.Tools.ShowHPOnDeath.GetMenu(toolsScreen ?? menu!.menuScreen)
-                    ));
-                    toolsMenu.AddElement(Blueprints.NavigateToMenu("TeleportKit".Localize(), "", () => TeleportKitMenu(toolsScreen ?? menu!.menuScreen)));
-                    toolsMenu.AddElement(Blueprints.NavigateToMenu("SpeedChanger".Localize(), "", () => Modules.Tools.SpeedChanger.GetMenu(toolsScreen ?? menu!.menuScreen)));
-
-                    toolsScreen = toolsMenu.GetMenuScreen(menu!.menuScreen);
-
-                    return toolsScreen;
-                }
-            ));
-
-<<<<<<< HEAD
-            menu.AddElement(Blueprints.NavigateToMenu(
-                "ResetModules".Localize(),
-                "",
-                () => ResetMenu(menu!.menuScreen)
-=======
             menu.AddElement(new MenuButton(
                 "QuickMenu/ResetFreeMenu".Localize(),
                 "",
                 _ => Modules.Tools.QuickMenu.ResetFreeMenuPositions(),
                 true
->>>>>>> fcd9e8b (Update 1.0.0.7)
             ));
 
             dirty = false;
@@ -465,13 +402,6 @@ public sealed partial class GodhomeQoL
             b => Modules.QoL.SkipCutscenes.SoulMasterPhaseTransitionSkip = b,
             () => Modules.QoL.SkipCutscenes.SoulMasterPhaseTransitionSkip
         ));
-        elements.Add(Blueprints.HorizontalBoolOption(
-            "Settings/FirstTimeBosses".Localize(),
-            "",
-            b => Modules.QoL.SkipCutscenes.FirstTimeBosses = b,
-            () => Modules.QoL.SkipCutscenes.FirstTimeBosses
-        ));
-
         return Blueprints.NavigateToMenu(
             "Categories/BossAnimationSkipping".Localize(),
             "",
@@ -644,7 +574,6 @@ public sealed partial class GodhomeQoL
         Modules.QoL.SkipCutscenes.GreyPrinceZote = false;
         Modules.QoL.SkipCutscenes.Collector = false;
         Modules.QoL.SkipCutscenes.SoulMasterPhaseTransitionSkip = false;
-        Modules.QoL.SkipCutscenes.FirstTimeBosses = false;
 
         // FastSuperDash внутренние тумблеры (видимы в меню)
         Modules.QoL.FastSuperDash.instantSuperDash = false;

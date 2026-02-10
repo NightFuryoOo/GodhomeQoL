@@ -5,7 +5,6 @@ using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using GodhomeQoL.Utils;
 using ToggleableBindings.HKQuickSettings;
-using ToggleableBindings.UI;
 using UnityEngine;
 
 namespace ToggleableBindings
@@ -49,7 +48,6 @@ namespace ToggleableBindings
             Instance.AddHooks();
             Instance.Settings = new QuickSettings("ToggleableBindings");
             BindingManager.Initialize();
-            BindingsUIController.Initialize();
 
             Instance.LogDebug("Initialized.");
         }
@@ -71,7 +69,6 @@ namespace ToggleableBindings
 
             Instance?.Settings?.Unload();
             BindingManager.Unload();
-            BindingsUIController.Unload();
 
             Instance = null;
         }

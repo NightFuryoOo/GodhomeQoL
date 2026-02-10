@@ -1,5 +1,6 @@
 ﻿using Satchel.BetterMenus;
 using GodhomeQoL.Modules.QoL;
+using GodhomeQoL.Modules.Tools;
 
 namespace GodhomeQoL.Modules;
 
@@ -30,7 +31,7 @@ public sealed class FastReload : Module {
     private static int teleportIndex;
     private static BossSceneController.SetupEventDelegate? storedSetupEvent;
 
-    public override bool DefaultEnabled => true;
+    public override bool DefaultEnabled => false;
 
     public override ToggleableLevel ToggleableLevel => ToggleableLevel.AnyTime;
 
@@ -59,9 +60,14 @@ public sealed class FastReload : Module {
             return;
         }
 
+        if (QuickMenu.IsHotkeyInputBlocked()) {
+            return;
+        }
+
         if (ReloadKey != KeyCode.None
             && Input.GetKeyUp(ReloadKey)
             && BossSceneController.IsBossScene
+            && !BossSequenceController.IsInSequence
             && Ref.GM.sceneName.StartsWith("GG_", StringComparison.Ordinal)
             && !Ref.GM.IsInSceneTransition
             && Ref.HC.acceptingInput) {
@@ -83,11 +89,22 @@ public sealed class FastReload : Module {
             yield break;
         }
 
+        if (BossSequenceController.IsInSequence) {
+            yield break;
+        }
+
         string scene = Ref.GM.sceneName;
 
         if (string.IsNullOrEmpty(scene)
             || scene == WorkshopScene
             || !scene.StartsWith("GG_", StringComparison.Ordinal)) {
+            yield break;
+        }
+
+        // If the module is enabled mid-fight, Awake has already run and we may
+        // not have captured the setup event yet. Capture it lazily before reload.
+        if (!EnsureSetupEventCaptured()) {
+            LogError("FastReload: setup event is not available; aborting reload.");
             yield break;
         }
 
@@ -113,6 +130,24 @@ public sealed class FastReload : Module {
         });
 
         LogDebug($"FastReload: reloading {scene}");
+    }
+
+    private static bool EnsureSetupEventCaptured() {
+        if (storedSetupEvent != null) {
+            return true;
+        }
+
+        try {
+            if (BossSceneController.SetupEvent != null) {
+                storedSetupEvent = BossSceneController.SetupEvent;
+                LogDebug("FastReload: captured setup event lazily.");
+            }
+        }
+        catch (Exception e) {
+            LogError($"FastReload: failed to capture setup event: {e.Message}");
+        }
+
+        return storedSetupEvent != null;
     }
 
     private static void TeleportAroundWorkshop() {
@@ -157,6 +192,10 @@ public sealed class FastReload : Module {
 
     private sealed class RebindListener : MonoBehaviour {
         private void Update() {
+            if (QuickMenu.IsHotkeyInputBlocked()) {
+                return;
+            }
+
             HandleTeleportRebind();
             HandleReloadRebind();
         }

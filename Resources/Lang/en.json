@@ -1,4 +1,4 @@
-﻿{
+{
 	"ModName": "GodhomeQoL",
 	"ToggleButtonDesc": "Toggle all effects of this mod",
 	"ResetModules": "Reset all modules to default state",
@@ -13,28 +13,22 @@
 	"Categories/GodseekerMode": "Godseeker Mode",
 	"Categories/Misc": "Miscellaneous",
 	"Categories/QoL": "Quality of Life",
-<<<<<<< HEAD
 	"Categories/Restrictions": "Restrictions",
 	"Categories/FastReload": "Fast Reload",
 	"Categories/CollectorPhases": "Collector Phases",
-=======
 	"Settings/QoL/Reset": "Reset Defaults",
 	"Categories/Restrictions": "Restrictions",
 	"Categories/FastReload": "Fast Reload",
-	"Categories/CollectorPhases": "CollectorHeper",
->>>>>>> fcd9e8b (Update 1.0.0.7)
+	"Categories/CollectorPhases": "CollectorHelper",
 	"Modules/ActivateFury": "Activate Fury",
 	"Modules/AddLifeblood": "Add Lifeblood",
 	"Modules/AddSoul": "Add Soul",
 	"Modules/CameraKeepRumbling": "Camera Keep Rumbling",
 	"Modules/CarefreeMelodyReset": "Carefree Melody Reset",
 	"Modules/DreamshieldStartAngle": "Dreamshield Start Angle",
-<<<<<<< HEAD
 	"Modules/CollectorPhases": "Collector Phases",
-=======
-	"Modules/CollectorPhases": "CollectorHeper",
-	"CollectorPhases": "CollectorHeper",
->>>>>>> fcd9e8b (Update 1.0.0.7)
+	"Modules/CollectorPhases": "CollectorHelper",
+	"CollectorPhases": "CollectorHelper",
 	"Modules/CollectorRoarMute": "Collector Roar Mute",
 	"Modules/ColosseumOfFools": "Colosseum of Fools",
 	"Modules/CorrectRadianceHP": "Correct Radiance HP",
@@ -54,10 +48,7 @@
 	"Modules/GodTamerBeastRollCollider": "God Tamer Beast Roll Collider",
 	"Modules/GreyPrinceNailSlamCollider": "Grey Prince Nail Slam Collider",
 	"Modules/GreyPrinceToggle": "Grey Prince Toggle",
-<<<<<<< HEAD
-=======
 	"Modules/ZoteHelper": "ZoteHelper",
->>>>>>> fcd9e8b (Update 1.0.0.7)
 	"Modules/HalveDamageHoGAscendedOrAbove": "Halve Damage [HoG Ascended]",
 	"Modules/HalveDamageHoGAttuned": "Halve Damage [HoG Attuned]",
 	"Modules/HalveDamageOtherPlace": "Halve Damage (Other Place)",
@@ -65,6 +56,9 @@
 	"Modules/InfiniteChallenge": "Infinite Challenge",
 	"Modules/InfiniteGrimmPufferfish": "Infinite Grimm Pufferfish",
 	"Modules/InfiniteRadianceClimbing": "Infinite Radiance Climbing",
+	"Modules/AlwaysFurious": "AlwaysFurious",
+	"Modules/MaskDamage": "Mask Damage",
+	"Modules/RandomPantheons": "Random Pantheons",
 	"Modules/KeepCocoonLifeblood": "Keep Cocoon Lifeblood",
 	"Modules/MemorizeBindings": "Memorize Bindings",
 	"Modules/MorePantheonCaps": "More Pantheon Caps",
@@ -86,32 +80,39 @@
 	"Modules/UnlockRadiance": "Unlock Radiance",
 	"Modules/UnlockEternalOrdeal": "Unlock Eternal Ordeal",
 	"Modules/UnlockRadiant": "Unlock Radiant",
+	"Modules/InvincibleIndicator": "Invincible Indicator",
 	"Modules/UseOwnMusic": "Use Own Music (WIP)",
 	"Modules/SkipCutscenes": "Skip Cutscenes",
 	"Modules/TeleportKit": "Teleport Kit",
 	"ShowHPOnDeath": "ShowHPOnDeath",
 	"ShowHPOnDeath/GlobalSwitch": "Global Switch",
+	"ShowHPOnDeath/Enable": "Enable ShowHPOnDeath",
 	"ShowHPOnDeath/ShowPB": "Show PB",
 	"ShowHPOnDeath/AutoHide": "Auto-Hide",
 	"ShowHPOnDeath/HudToggleKey": "HUD Toggle Key",
 	"ShowHPOnDeath/HudFadeTime": "HUD Fade Time",
-<<<<<<< HEAD
+	"Settings/MaskDamage/Enable": "Enable Mask Damage",
+	"Settings/MaskDamage/Multiplier": "Mask Damage Multiplier",
+	"Settings/MaskDamage/ToggleUI": "Toggle UI Hotkey",
 	"TeleportKit": "Teleport Kit",
 	"Categories/MenuAnimationSkipping": "Menu Animation Skipping",
 	"Categories/BossAnimationSkipping": "Boss Animation Skipping",
-=======
 	"ShowHPOnDeath/Reset": "Reset Defaults",
 	"TeleportKit": "Teleport Kit",
 	"TeleportKit/MenuHotkey": "Menu Hotkey",
 	"TeleportKit/SaveHotkey": "Save Teleport Key",
 	"TeleportKit/TeleportHotkey": "Teleport Key",
+	"Settings/TeleportKit/Enable": "Enable Teleport Kit",
 	"TeleportKit/Reset": "Reset Defaults",
 	"Categories/MenuAnimationSkipping": "Menu Animation Skipping",
 	"Categories/BossAnimationSkipping": "Boss Animation Skipping",
+	"Settings/MenuAnimation/Enable": "Enable Menu Animation Skipping",
 	"Settings/MenuAnimation/Reset": "Reset Defaults",
+	"Settings/BossChallenge/Enable": "Enable Boss Challenge",
+	"Settings/QoL/Enable": "Enable Quality of Life",
 	"Settings/BossAnimation/Reset": "Reset Defaults",
+	"Settings/BossAnimation/Enable": "Enable Boss Animation Skipping",
 	"BossChallenge/Reset": "Reset Defaults",
->>>>>>> fcd9e8b (Update 1.0.0.7)
 	"BelongsToModule": "Module: ",
 	"Settings/dcrestEffectRemoval": "Defender's Crest Effect Removal",
 	"Settings/dcrestEffectRemoval/TrailOnly": "Trail Only",
@@ -122,10 +123,10 @@
 	"Settings/gpzEnterType/Short": "Short",
 	"Settings/instantSuperDash": "Instant Super Dash",
 	"Settings/fastSuperDashEverywhere": "Allow in All Scenes",
-<<<<<<< HEAD
-=======
+	"Settings/FastSuperDash/Enable": "Enable Fast Super Dash",
 	"Settings/FastSuperDash/Reset": "Reset Defaults",
->>>>>>> fcd9e8b (Update 1.0.0.7)
+	"Settings/AlwaysFurious/Enable": "Enable AlwaysFurious",
+	"Settings/AlwaysFurious/Reset": "Reset Defaults",
 	"Tools": "Tools",
 	"DreamshieldSettings": "Dreamshield Settings",
 	"Settings/instantWarp": "Instant Warp",
@@ -134,13 +135,7 @@
 	"Settings/reloadBossKey": "Reload Boss Key",
 	"Settings/returnToHoGKey": "Return to HoG Key",
 	"Settings/teleportHoGKey": "Teleport HoG Key",
-<<<<<<< HEAD
-=======
 	"Settings/FastDreamWarp/Hotkey": "Fast Dream Warp Hotkey",
-	"BindingsMenu": "Bindings Menu",
-	"Settings/BindingsMenu/Hotkey": "Bindings Menu Hotkey",
-	"Settings/BindingsMenu/AllowEverywhere": "Allow Bindings Menu Everywhere",
-	"Settings/BindingsMenu/Reset": "Reset Defaults",
 	"Settings/QuickMenu/Hotkey": "Overlay Hotkey",
 	"Settings/QuickMenu/HotkeyDesc": "Press to pick a key to open the mod overlay (Esc cancels, same key clears).",
 	"QuickMenu/FreeMenu": "Free Menu",
@@ -148,15 +143,12 @@
 	"QuickMenu/Settings": "Settings",
 	"QuickMenu/ResetFreeMenu": "Reset Free Menu",
 	"QuickMenu/Opacity": "F3 Menu Opacity",
->>>>>>> fcd9e8b (Update 1.0.0.7)
 	"Settings/FastReload/ReloadDesc": "Press to pick a key for instant boss reload (Esc cancels, same key clears).",
 	"Settings/FastReload/TeleportDesc": "Press to pick a key to teleport between HoG spots (Esc cancels, same key clears).",
 	"Settings/FastReload/SetKey": "Set Key...",
 	"Settings/FastReload/NotSet": "Not Set",
-<<<<<<< HEAD
-=======
+	"Settings/FastReload/Enable": "Enable Fast Reload",
 	"Settings/FastReload/Reset": "Reset Defaults",
->>>>>>> fcd9e8b (Update 1.0.0.7)
 	"Settings/restartFightOnSuccess": "Restart Fight On Success",
 	"Settings/restartFightAndMusic": "Restart Fight and Music",
 	"Settings/soulAmount": "Soul Amount",
@@ -174,17 +166,16 @@
 	"Settings/Collector": "Collector",
 	"Settings/DreamshieldStartAngle/rotationDelay": "Rotation delay (sec)",
 	"Settings/DreamshieldStartAngle/rotationSpeed": "Rotation speed multiplier",
-<<<<<<< HEAD
+	"Settings/DreamshieldStartAngle/Enable": "Enable Dreamshield Settings",
+	"Settings/CollectorHelper/Enable": "Enable CollectorHelper",
 	"Settings/CollectorPhases/CollectorPhase": "Collector Phase (1/2/3)",
 	"Settings/CollectorPhases/CollectorImmortal": "Collector Immortal",
 	"Settings/CollectorPhases/IgnoreInitialJarLimit": "Ignore Initial Jar Limits",
-=======
 	"Settings/DreamshieldStartAngle/Reset": "Reset Defaults",
 	"Settings/CollectorPhases/CollectorPhase": "Collector Phase (1/2/3)",
 	"Settings/CollectorPhases/CollectorImmortal": "Collector Immortal",
 	"Settings/CollectorPhases/IgnoreInitialJarLimit": "Ignore Initial Jar Limits",
 	"Settings/CollectorPhases/HoGOnly": "HoG Only",
->>>>>>> fcd9e8b (Update 1.0.0.7)
     "Settings/CollectorPhases/DisableSummonLimit": "Disable Summon Limit",
 	"Settings/CollectorPhases/UseCustomPhase2Threshold": "Use Custom Phase 2 HP",
 	"Settings/CollectorPhases/CustomPhase2Threshold": "Phase 2 HP Threshold",
@@ -199,10 +190,9 @@
 	"Settings/CollectorPhases/DisableSummonLimit": "Use Custom Summon Limit",
 	"Settings/CollectorPhases/CustomSummonLimit": "Custom Summon Limit",
 	"Settings/CollectorPhases/Reset": "Reset Defaults",
-<<<<<<< HEAD
-=======
-	"Settings/ZoteHelper/Enable": "Enable ZoteHelper",
-	"Settings/ZoteHelper/ZoteBossHP": "Zote Boss HP",
+  "Settings/ZoteHelper/Enable": "Enable ZoteHelper",
+  "Settings/ZoteHelper/HoGOnly": "HoG Only",
+  "Settings/ZoteHelper/ZoteBossHP": "Zote Boss HP",
 	"Settings/ZoteHelper/ZoteImmortal": "Zote Immortal",
 	"Settings/ZoteHelper/ZoteSpawnFlying": "Spawn Flying Zotelings",
 	"Settings/ZoteHelper/ZoteSpawnHopping": "Spawn Hopping Zotelings",
@@ -210,8 +200,6 @@
 	"Settings/ZoteHelper/ZoteHoppingHP": "Zote Hopping HP",
 	"Settings/ZoteHelper/ZoteSummonLimit": "Zote Summon Limit",
 	"Settings/ZoteHelper/Reset": "Reset Defaults",
->>>>>>> fcd9e8b (Update 1.0.0.7)
-	"Settings/FirstTimeBosses": "First Time Bosses",
 	"Settings/FirstCharm": "First Charm",
 	"Settings/AutoSkipCinematics": "Auto Skip Cinematics",
 	"Settings/AllowSkippingNonskippable": "Allow Skipping Nonskippable",
@@ -230,7 +218,7 @@
 	"SegmentedP5/Segment/7": "Pure Vessel - Absolute Radiance",
 	"SpeedChanger": "SpeedChanger",
 	"SpeedChanger/GlobalSwitch": "Global Switch",
-	"SpeedChanger/LockSwitch": "Lock Switch",
+	"SpeedChanger/Enable": "Enable SpeedChanger",
 	"SpeedChanger/RestrictRooms": "Restrict Toggle To Rooms",
 	"SpeedChanger/UnlimitedSpeed": "Unlimited Speed Entry",
 	"SpeedChanger/DisplayStyle": "Display Style",
@@ -242,10 +230,44 @@
 	"SpeedChanger/SpeedUpDesc": "Press to choose a key for speeding up (same key clears, Esc cancels).",
 	"SpeedChanger/SpeedDown": "Slow Game Down (-{0})",
 	"SpeedChanger/SpeedDownDesc": "Press to choose a key for slowing down (same key clears, Esc cancels).",
-<<<<<<< HEAD
-	"SpeedChanger/NotSet": "Not Set"
-=======
 	"SpeedChanger/NotSet": "Not Set",
-	"SpeedChanger/Reset": "Reset Defaults"
->>>>>>> fcd9e8b (Update 1.0.0.7)
+	"SpeedChanger/Reset": "Reset Defaults",
+	"Modules/GearSwitcher": "GearSwitcher",
+	"GearSwitcher/SelectedPreset": "Selected Preset",
+	"GearSwitcher/ApplyPreset": "Apply Preset",
+	"GearSwitcher/ApplyValue": "Apply",
+	"GearSwitcher/CaptureCharms": "Capture Charms",
+	"GearSwitcher/CaptureValue": "Capture",
+	"GearSwitcher/ClearCharms": "Clear Preset Charms",
+	"GearSwitcher/ClearValue": "Clear",
+	"GearSwitcher/Hotkey": "{0} Hotkey",
+	"GearSwitcher/MaxHealth": "Max Health",
+	"GearSwitcher/SoulVessels": "Soul Vessels",
+	"GearSwitcher/NailDamage": "Nail Damage",
+ 	"GearSwitcher/CharmSlots": "Charm Notches",
+	"GearSwitcher/MainSoulGain": "Main Vessel Soul Gain",
+	"GearSwitcher/ReserveSoulGain": "Reserve Vessel Soul Gain",
+ 	"GearSwitcher/CharmCosts": "Charm Costs",
+ 	"GearSwitcher/AllMoveAbilities": "All Movement",
+	"GearSwitcher/Move/AcidArmour": "Isma's Tear",
+	"GearSwitcher/Move/Dash": "Mothwing Cloak",
+	"GearSwitcher/Move/Walljump": "Mantis Claw",
+	"GearSwitcher/Move/SuperDash": "Crystal Heart",
+	"GearSwitcher/Move/ShadowDash": "Shade Cloak",
+	"GearSwitcher/Move/DoubleJump": "Monarch Wings",
+	"GearSwitcher/AllSpellsLevel": "All Spells Level",
+	"GearSwitcher/Spell/Fireball": "Fireball",
+	"GearSwitcher/Spell/Quake": "Quake",
+	"GearSwitcher/Spell/Scream": "Scream",
+	"GearSwitcher/AllNailArts": "All Nail Arts",
+	"GearSwitcher/NailArt/Cyclone": "Cyclone",
+	"GearSwitcher/NailArt/DashSlash": "Dash Slash",
+	"GearSwitcher/NailArt/UpwardSlash": "Great Slash",
+	"GearSwitcher/DreamNailLevel": "Dream Nail Level",
+	"GearSwitcher/AllBindings": "All Bindings",
+	"GearSwitcher/Binding/Charms": "Charm Binding",
+	"GearSwitcher/Binding/Nail": "Nail Binding",
+	"GearSwitcher/Binding/Shell": "Shell Binding",
+	"GearSwitcher/Binding/Soul": "Soul Binding",
+	"GearSwitcher/Reset": "Reset Defaults"
 }

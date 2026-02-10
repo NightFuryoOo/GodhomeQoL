@@ -11,7 +11,7 @@ public sealed class FastDreamWarp : Module {
 	private static bool timeScaleOverrideInFlight;
 	private static float previousTimeScale;
 
-	public override bool DefaultEnabled => true;
+	public override bool DefaultEnabled => false;
 
 	public FastDreamWarp() =>
 		On.PlayMakerFSM.Start += ModifyDreamNailFSM;

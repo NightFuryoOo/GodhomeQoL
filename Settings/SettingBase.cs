@@ -10,19 +10,13 @@ namespace GodhomeQoL.Settings
         internal Dictionary<string, Dictionary<string, SettingInfo<bool>>> boolFields = null!;
         internal Dictionary<string, Dictionary<string, SettingInfo<int>>> intFields = null!;
         internal Dictionary<string, Dictionary<string, SettingInfo<float>>> floatFields = null!;
-<<<<<<< HEAD
-=======
         internal Dictionary<string, Dictionary<string, SettingInfo<string>>> stringFields = null!;
->>>>>>> fcd9e8b (Update 1.0.0.7)
         internal Dictionary<string, Dictionary<string, SettingInfo<object>>> enumFields = null!;
 
         public Dictionary<string, bool>? booleans;
         public Dictionary<string, int>? integers;
         public Dictionary<string, float>? floats;
-<<<<<<< HEAD
-=======
         public Dictionary<string, string>? strings;
->>>>>>> fcd9e8b (Update 1.0.0.7)
         public Dictionary<string, object>? enums;
 
         [OnSerializing]
@@ -43,10 +37,7 @@ namespace GodhomeQoL.Settings
             booleans = Read(boolFields);
             integers = Read(intFields);
             floats = Read(floatFields);
-<<<<<<< HEAD
-=======
             strings = Read(stringFields);
->>>>>>> fcd9e8b (Update 1.0.0.7)
             enums = Read(enumFields);
         }
 
@@ -60,10 +51,7 @@ namespace GodhomeQoL.Settings
             Write(boolFields, booleans!);
             Write(intFields, integers!);
             Write(floatFields, floats!);
-<<<<<<< HEAD
-=======
             Write(stringFields, strings!);
->>>>>>> fcd9e8b (Update 1.0.0.7)
             enumFields.Values.Flatten().ForEach(pair => pair.Value.setter.Invoke(
                 Enum.ToObject(pair.Value.fi.FieldType, enums![pair.Key]!)
             ));
@@ -71,10 +59,7 @@ namespace GodhomeQoL.Settings
             booleans = null;
             integers = null;
             floats = null;
-<<<<<<< HEAD
-=======
             strings = null;
->>>>>>> fcd9e8b (Update 1.0.0.7)
             enums = null;
         }
 
@@ -91,10 +76,7 @@ namespace GodhomeQoL.Settings
             boolFields = ProcessFields<bool>(fields);
             intFields = ProcessFields<int>(fields);
             floatFields = ProcessFields<float>(fields);
-<<<<<<< HEAD
-=======
             stringFields = ProcessFields<string>(fields);
->>>>>>> fcd9e8b (Update 1.0.0.7)
             enumFields = ProcessFields<object, Enum>(fields);
 
             ReadFields();
