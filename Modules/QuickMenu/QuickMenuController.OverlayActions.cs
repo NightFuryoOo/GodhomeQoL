@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -242,6 +242,83 @@ public sealed partial class QuickMenu : Module
             SetRandomPantheonsVisible(false);
         }
 
+        private void OnTrueBossRushBackClicked()
+        {
+            bool reopenQuick = returnToQuickOnClose;
+            returnToQuickOnClose = false;
+
+            if (reopenQuick)
+            {
+                SetQuickVisible(true);
+            }
+
+            SetTrueBossRushVisible(false);
+        }
+
+        private void OnTrueBossRushResetDefaultsClicked()
+        {
+            trueBossRushMasterEnabled = false;
+            trueBossRushMasterHasSnapshot = false;
+            trueBossRushSavedP1 = false;
+            trueBossRushSavedP2 = false;
+            trueBossRushSavedP3 = false;
+            trueBossRushSavedP4 = false;
+            trueBossRushSavedP5 = false;
+
+            Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon1Enabled = false;
+            Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon2Enabled = false;
+            Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon3Enabled = false;
+            Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon4Enabled = false;
+            Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon5Enabled = false;
+            Modules.BossChallenge.TrueBossRush.RefreshPantheon(1);
+            Modules.BossChallenge.TrueBossRush.RefreshPantheon(2);
+            Modules.BossChallenge.TrueBossRush.RefreshPantheon(3);
+            Modules.BossChallenge.TrueBossRush.RefreshPantheon(4);
+            Modules.BossChallenge.TrueBossRush.RefreshPantheon(5);
+            SetTrueBossRushEnabled(false);
+            RefreshTrueBossRushUi();
+            SaveMasterSettings();
+        }
+
+        private void OnCheatsBackClicked()
+        {
+            bool reopenQuick = returnToQuickOnClose;
+            returnToQuickOnClose = false;
+
+            if (reopenQuick)
+            {
+                SetQuickVisible(true);
+            }
+
+            SetCheatsVisible(false);
+        }
+
+        private void OnCheatsKillAllClicked()
+        {
+            _ = Modules.Cheats.Cheats.KillAll();
+        }
+
+        private void OnCheatsResetDefaultsClicked()
+        {
+            cheatsMasterEnabled = false;
+            cheatsMasterHasSnapshot = false;
+            cheatsSavedInfiniteSoul = false;
+            cheatsSavedInfiniteHp = false;
+            cheatsSavedInvincibility = false;
+            cheatsSavedNoclip = false;
+            waitingForCheatsKillAllRebind = false;
+            cheatsKillAllPrevKey = string.Empty;
+
+            Modules.Cheats.Cheats.SetInfiniteSoulEnabled(false);
+            Modules.Cheats.Cheats.SetInfiniteHpEnabled(false);
+            Modules.Cheats.Cheats.SetInvincibilityEnabled(false);
+            Modules.Cheats.Cheats.SetNoclipEnabled(false);
+            Modules.Cheats.Cheats.SetKillAllHotkeyRaw(string.Empty);
+            SetCheatsEnabled(false);
+            RefreshCheatsUi();
+            SaveMasterSettings();
+        }
+
         private void OnBossChallengeResetDefaultsClicked()
         {
             bossChallengeMasterEnabled = false;
@@ -435,6 +512,8 @@ public sealed partial class QuickMenu : Module
             SetGearSwitcherPresetVisible(false);
             SetGearSwitcherCharmCostVisible(false);
             SetGearSwitcherVisible(false);
+            SetCheatsVisible(false);
+            SetTrueBossRushVisible(false);
 
             ApplyInitialDefaults();
             GearSwitcher.ResetDefaults();
@@ -473,6 +552,8 @@ public sealed partial class QuickMenu : Module
             RefreshTeleportKitUi();
             RefreshBossChallengeUi();
             RefreshRandomPantheonsUi();
+            RefreshTrueBossRushUi();
+            RefreshCheatsUi();
             RefreshAlwaysFuriousUi();
             RefreshGearSwitcherUi();
             RefreshQolUi();
@@ -545,3 +626,4 @@ public sealed partial class QuickMenu : Module
         }
     }
 }
+

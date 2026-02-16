@@ -316,11 +316,6 @@ public sealed class AlwaysFurious : Module
             return;
         }
 
-        if (savedHealth.HasValue || savedMaxHealth.HasValue || savedMaxHealthBase.HasValue)
-        {
-            return;
-        }
-
         if (!IsFuryEquipped())
         {
             return;
@@ -343,11 +338,42 @@ public sealed class AlwaysFurious : Module
             return;
         }
 
-        savedHealth = pd.health;
-        savedMaxHealth = pd.maxHealth;
-        savedMaxHealthBase = pd.maxHealthBase;
-        SetMaxHealth(1, 1);
-        SetNormalHealth(1);
+        bool hasSavedSnapshot = savedHealth.HasValue || savedMaxHealth.HasValue || savedMaxHealthBase.HasValue;
+        if (!hasSavedSnapshot)
+        {
+            savedHealth = pd.health;
+            savedMaxHealth = pd.maxHealth;
+            savedMaxHealthBase = pd.maxHealthBase;
+        }
+        else
+        {
+            // If another charm changed regular mask capacity while Fury is active,
+            // capture that new baseline so it can be restored later.
+            if (pd.maxHealth > 1)
+            {
+                savedMaxHealth = pd.maxHealth;
+            }
+
+            if (pd.maxHealthBase > 1)
+            {
+                savedMaxHealthBase = pd.maxHealthBase;
+            }
+
+            if (pd.health > 1)
+            {
+                savedHealth = pd.health;
+            }
+        }
+
+        if (pd.maxHealth != 1 || pd.maxHealthBase != 1)
+        {
+            SetMaxHealth(1, 1);
+        }
+
+        if (pd.health != 1)
+        {
+            SetNormalHealth(1);
+        }
     }
 
     private void TryRestoreForcedHealth()

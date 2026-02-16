@@ -25,6 +25,8 @@ public sealed partial class QuickMenu : Module
                 new("TeleportKit", "TeleportKit".Localize(), OnQuickTeleportKitClicked),
                 new("BossChallenge", "Categories/BossChallenge".Localize(), OnQuickBossChallengeClicked),
                 new("RandomPantheons", "Modules/RandomPantheons".Localize(), OnQuickRandomPantheonsClicked),
+                new("TrueBossRush", "Modules/TrueBossRush".Localize(), OnQuickTrueBossRushClicked),
+                new("Cheats", "Modules/Cheats".Localize(), OnQuickCheatsClicked),
                 new("AlwaysFurious", "Modules/AlwaysFurious".Localize(), OnQuickAlwaysFuriousClicked),
                 new("GearSwitcher", "Modules/GearSwitcher".Localize(), OnQuickGearSwitcherClicked),
                 new("ZoteHelper", "Modules/ZoteHelper".Localize(), OnQuickZoteHelperClicked),
@@ -141,6 +143,12 @@ public sealed partial class QuickMenu : Module
                     break;
                 case "RandomPantheons":
                     SetRandomPantheonsEnabled(false);
+                    break;
+                case "TrueBossRush":
+                    SetTrueBossRushMasterEnabled(false);
+                    break;
+                case "Cheats":
+                    SetCheatsMasterEnabled(false);
                     break;
                 case "QualityOfLife":
                     SetQolMasterEnabled(false);

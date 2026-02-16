@@ -144,6 +144,31 @@ public sealed partial class QuickMenu : Module
             AttachRowHighlight(row, highlight);
         }
 
+        private void CreateReadOnlyValueRow(
+            Transform parent,
+            string name,
+            string label,
+            float y,
+            Func<string> valueGetter,
+            out Text valueText)
+        {
+            GameObject row = CreateRow(parent, name, y, new Vector2(RowWidth, RowHeight));
+            Image image = row.AddComponent<Image>();
+            image.color = new Color(0f, 0f, 0f, 0f);
+
+            _ = CreateRowLabel(row.transform, label);
+
+            Text valueLabel = CreateText(row.transform, "Value", valueGetter(), 26, TextAnchor.MiddleRight);
+            RectTransform rect = valueLabel.rectTransform;
+            rect.anchorMin = new Vector2(1f, 0f);
+            rect.anchorMax = new Vector2(1f, 1f);
+            rect.pivot = new Vector2(1f, 0.5f);
+            rect.anchoredPosition = new Vector2(-20f, 0f);
+            rect.sizeDelta = new Vector2(280f, RowHeight);
+
+            valueText = valueLabel;
+        }
+
         private void CreateAdjustInputRow(
             Transform parent,
             string name,

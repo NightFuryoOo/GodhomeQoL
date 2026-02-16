@@ -85,18 +85,33 @@ public sealed class GearSwitcher : Module
     {
         orig(self);
         UpdatePantheonShellBindingState();
-        string lastPreset = GetLastPresetName();
-        if (!string.IsNullOrEmpty(lastPreset))
+        const string startupPreset = "FullGear";
+        CancelPendingPresetApply();
+        if (TryGetPreset(startupPreset, out GearPreset fullGearPreset))
         {
-            lastPreset = NormalizeBuiltinPresetName(lastPreset);
-            QueueApplyPreset(lastPreset);
-            if (TryGetPreset(lastPreset, out GearPreset preset))
+            // Force a clean baseline on save load to avoid stale shell binding after abrupt exits.
+            GodhomeQoL.GlobalSettings.GearSwitcher.LastPreset = startupPreset;
+            GodhomeQoL.SaveGlobalSettingsSafe();
+            QueueApplyPreset(startupPreset);
+            ApplyNailInputImmediate(fullGearPreset);
+        }
+        else
+        {
+            // Fallback: keep previous behavior only if FullGear is missing unexpectedly.
+            string lastPreset = GetLastPresetName();
+            if (!string.IsNullOrEmpty(lastPreset))
             {
-                ApplyNailInputImmediate(preset);
+                lastPreset = NormalizeBuiltinPresetName(lastPreset);
+                QueueApplyPreset(lastPreset);
+                if (TryGetPreset(lastPreset, out GearPreset preset))
+                {
+                    ApplyNailInputImmediate(preset);
+                }
             }
         }
         ScheduleOvercharmedReapply();
         ScheduleNailInputReapply();
+        ScheduleShellBindingResync();
     }
 
     private static void OnCharmUpdate(On.HeroController.orig_CharmUpdate orig, HeroController self)
@@ -212,7 +227,7 @@ public sealed class GearSwitcher : Module
         }
 
         bool shouldEnableShell = GetPresetShellBindingState(preset);
-        if (pantheonActive && pantheonShellBound)
+        if (IsPantheonSequenceActive() && pantheonShellBound)
         {
             RestoreBindingIfActive<ShellBinding>();
             return;
@@ -562,6 +577,11 @@ public sealed class GearSwitcher : Module
         }
 
         presetName = NormalizeBuiltinPresetName(presetName);
+        UpdatePantheonShellBindingState();
+        if (allowQueue)
+        {
+            CancelPendingPresetApply();
+        }
         if (!TryGetPreset(presetName, out GearPreset preset))
         {
             return;
@@ -617,6 +637,7 @@ public sealed class GearSwitcher : Module
         {
             IsApplyingPreset = false;
             AlwaysFurious.NotifyGearSwitcherApplied();
+            ScheduleShellBindingResync();
         }
     }
 
@@ -846,7 +867,9 @@ public sealed class GearSwitcher : Module
         try
         {
             BindingManager.RestoreBinding<NailBinding>();
-            BindingManager.RestoreBinding<ShellBinding>();
+            // Shell binding can remain stale after abrupt exits (ALT+F4 on Godseeker),
+            // so use the hard restore path that also clears BossSequence flags.
+            ForceRestoreShellBindingHard();
             BindingManager.RestoreBinding<CharmsBinding>();
             BindingManager.RestoreBinding<SoulBinding>();
             TryRefreshNailDamage();
@@ -875,6 +898,11 @@ public sealed class GearSwitcher : Module
         ApplyCharmCosts(preset);
     }
 
+    private static void CancelPendingPresetApply()
+    {
+        pendingApply = false;
+        pendingPresetName = string.Empty;
+    }
     private static void QueueApplyPreset(string presetName)
     {
         pendingPresetName = presetName;
@@ -972,6 +1000,103 @@ public sealed class GearSwitcher : Module
         }
 
         EnsureNailInputState();
+    }
+
+
+    private static void ScheduleShellBindingResync()
+    {
+        _ = GlobalCoroutineExecutor.Start(DelayedShellBindingResync());
+    }
+
+    private static IEnumerator DelayedShellBindingResync()
+    {
+        // Re-sync several times because serialized bindings can be re-applied shortly after load.
+        for (int i = 0; i < 2; i++)
+        {
+            yield return null;
+        }
+
+        SyncShellBindingWithLastPreset();
+
+        for (int i = 0; i < 20; i++)
+        {
+            yield return null;
+        }
+
+        SyncShellBindingWithLastPreset();
+
+        for (int i = 0; i < 40; i++)
+        {
+            yield return null;
+        }
+
+        SyncShellBindingWithLastPreset();
+    }
+
+    private static void SyncShellBindingWithLastPreset()
+    {
+        string lastPreset = NormalizeBuiltinPresetName(GetLastPresetName());
+        if (string.IsNullOrEmpty(lastPreset))
+        {
+            ForceRestoreShellBinding();
+            return;
+        }
+
+        if (!TryGetPreset(lastPreset, out GearPreset preset))
+        {
+            return;
+        }
+
+        bool shouldEnableShell = GetPresetShellBindingState(preset);
+        if (IsPantheonSequenceActive() && pantheonShellBound)
+        {
+            shouldEnableShell = false;
+        }
+
+        if (shouldEnableShell)
+        {
+            SetBinding<ShellBinding>(true);
+            return;
+        }
+
+        ForceRestoreShellBinding();
+    }
+
+    private static void ForceRestoreShellBinding()
+    {
+        ForceRestoreShellBindingHard();
+    }
+
+    private static IEnumerator EnsureShellBindingRestored()
+    {
+        for (int attempt = 0; attempt < 3; attempt++)
+        {
+            yield return null;
+
+            if (!IsShellBindingApplied())
+            {
+                yield break;
+            }
+
+            SetBinding<ShellBinding>(false);
+        }
+    }
+
+    private static bool IsShellBindingApplied()
+    {
+        try
+        {
+            if (BindingManager.TryGetBinding<ShellBinding>(out ShellBinding? binding) && binding != null)
+            {
+                return binding.IsApplied;
+            }
+        }
+        catch
+        {
+            // ignore binding read errors
+        }
+
+        return false;
     }
 
     private static void EnsureNailInputState()
@@ -1342,7 +1467,7 @@ public sealed class GearSwitcher : Module
             bool applyShell = GetPresetShellBindingState(preset);
             bool applySoul = preset.HasAllBindings || GetPresetBool(preset.Bindings, "SoulBinding");
 
-            if (pantheonActive && pantheonShellBound)
+            if (IsPantheonSequenceActive() && pantheonShellBound)
             {
                 applyShell = false;
             }
@@ -1354,7 +1479,7 @@ public sealed class GearSwitcher : Module
 
             SetBinding<CharmsBinding>(applyCharms);
             SetBinding<NailBinding>(applyNail);
-            SetBinding<ShellBinding>(applyShell);
+            SetShellBinding(applyShell);
             SetBinding<SoulBinding>(applySoul);
 
             if (applyCharms)
@@ -1875,7 +2000,78 @@ public sealed class GearSwitcher : Module
         PlayMakerFSM.BroadcastEvent("UPDATE BLUE HEALTH");
     }
 
-    private static void SetBinding<T>(bool value) where T : Binding, new()
+    private static void SetShellBinding(bool value)
+    {
+        if (value)
+        {
+            SetBinding<ShellBinding>(true);
+            return;
+        }
+
+        ForceRestoreShellBindingHard();
+    }
+
+    private static void ForceRestoreShellBindingHard()
+    {
+        SetBinding<ShellBinding>(false);
+
+        bool preservePantheonSelection = IsPantheonSequenceActive() && pantheonShellBound;
+        if (!preservePantheonSelection)
+        {
+            // Clear potential stale Godhome shell flags that can survive abrupt exits.
+            SetBossBindingFlag(false, "BoundShell", "boundHeart", "boundShell");
+            InvokeBossSequenceRestoreBindings();
+        }
+
+        TryRefreshHud();
+        _ = GlobalCoroutineExecutor.Start(EnsureShellBindingFullyRestored());
+    }
+
+    private static IEnumerator EnsureShellBindingFullyRestored()
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            yield return null;
+
+            bool preservePantheonSelection = IsPantheonSequenceActive() && pantheonShellBound;
+            if (!preservePantheonSelection)
+            {
+                SetBossBindingFlag(false, "BoundShell", "boundHeart", "boundShell");
+                InvokeBossSequenceRestoreBindings();
+            }
+
+            if (!IsShellBindingApplied())
+            {
+                TryRefreshHud();
+                yield break;
+            }
+
+            SetBinding<ShellBinding>(false);
+        }
+
+        TryRefreshHud();
+    }
+
+    private static bool IsGodhomeHubScene()
+    {
+        Scene active = USceneManager.GetActiveScene();
+        string name = active.name ?? string.Empty;
+        return string.Equals(name, "GG_Workshop", StringComparison.Ordinal)
+            || string.Equals(name, "GG_Atrium", StringComparison.Ordinal)
+            || string.Equals(name, "GG_Atrium_Roof", StringComparison.Ordinal);
+    }
+
+    private static bool IsPantheonSequenceActive()
+    {
+        try
+        {
+            return BossSequenceController.IsInSequence;
+        }
+        catch
+        {
+            return false;
+        }
+    }    private static void SetBinding<T>(bool value) where T : Binding, new()
     {
         try
         {

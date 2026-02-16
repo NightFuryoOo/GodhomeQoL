@@ -68,6 +68,8 @@ public sealed partial class QuickMenu : Module
             SetModuleEnabled<Modules.BossChallenge.InfiniteChallenge>(false);
             SetModuleEnabled<Modules.BossChallenge.AlwaysFurious>(false);
             SetModuleEnabled<Modules.BossChallenge.RandomPantheons>(false);
+            SetModuleEnabled<Modules.BossChallenge.TrueBossRush>(false);
+            SetModuleEnabled<Modules.Cheats.Cheats>(false);
             SetModuleEnabled<Modules.BossChallenge.InfiniteGrimmPufferfish>(false);
             SetModuleEnabled<Modules.BossChallenge.InfiniteRadianceClimbing>(false);
             Modules.QoL.CarefreeMelodyReset.SetMode(Modules.QoL.CarefreeMelodyReset.ModeOff);
@@ -126,6 +128,16 @@ public sealed partial class QuickMenu : Module
             Modules.BossChallenge.RandomPantheons.Pantheon3Enabled = false;
             Modules.BossChallenge.RandomPantheons.Pantheon4Enabled = false;
             Modules.BossChallenge.RandomPantheons.Pantheon5Enabled = false;
+            Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon1Enabled = false;
+            Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon2Enabled = false;
+            Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon3Enabled = false;
+            Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon4Enabled = false;
+            Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon5Enabled = false;
+            Modules.Cheats.Cheats.InfiniteSoulEnabled = false;
+            Modules.Cheats.Cheats.InfiniteHpEnabled = false;
+            Modules.Cheats.Cheats.InvincibilityEnabled = false;
+            Modules.Cheats.Cheats.NoclipEnabled = false;
+            Modules.Cheats.Cheats.KillAllHotkeyRaw = string.Empty;
 
             GodhomeQoL.GlobalSettings.QuickMenuMasters.BossChallengeEnabled = false;
             GodhomeQoL.GlobalSettings.QuickMenuMasters.BossChallengeHasSnapshot = false;
@@ -142,6 +154,19 @@ public sealed partial class QuickMenu : Module
             GodhomeQoL.GlobalSettings.QuickMenuMasters.RandomPantheonsSavedP3 = false;
             GodhomeQoL.GlobalSettings.QuickMenuMasters.RandomPantheonsSavedP4 = false;
             GodhomeQoL.GlobalSettings.QuickMenuMasters.RandomPantheonsSavedP5 = false;
+            GodhomeQoL.GlobalSettings.QuickMenuMasters.TrueBossRushEnabled = false;
+            GodhomeQoL.GlobalSettings.QuickMenuMasters.TrueBossRushHasSnapshot = false;
+            GodhomeQoL.GlobalSettings.QuickMenuMasters.TrueBossRushSavedP1 = false;
+            GodhomeQoL.GlobalSettings.QuickMenuMasters.TrueBossRushSavedP2 = false;
+            GodhomeQoL.GlobalSettings.QuickMenuMasters.TrueBossRushSavedP3 = false;
+            GodhomeQoL.GlobalSettings.QuickMenuMasters.TrueBossRushSavedP4 = false;
+            GodhomeQoL.GlobalSettings.QuickMenuMasters.TrueBossRushSavedP5 = false;
+            GodhomeQoL.GlobalSettings.QuickMenuMasters.CheatsEnabled = false;
+            GodhomeQoL.GlobalSettings.QuickMenuMasters.CheatsHasSnapshot = false;
+            GodhomeQoL.GlobalSettings.QuickMenuMasters.CheatsSavedInfiniteSoul = false;
+            GodhomeQoL.GlobalSettings.QuickMenuMasters.CheatsSavedInfiniteHp = false;
+            GodhomeQoL.GlobalSettings.QuickMenuMasters.CheatsSavedInvincibility = false;
+            GodhomeQoL.GlobalSettings.QuickMenuMasters.CheatsSavedNoclip = false;
         }
 
         private static void ResetCollectorPhasesDefaults()
@@ -593,6 +618,21 @@ public sealed partial class QuickMenu : Module
             settings.RandomPantheonsSavedP4 = randomPantheonsSavedP4;
             settings.RandomPantheonsSavedP5 = randomPantheonsSavedP5;
 
+            settings.TrueBossRushEnabled = trueBossRushMasterEnabled;
+            settings.TrueBossRushHasSnapshot = trueBossRushMasterHasSnapshot;
+            settings.TrueBossRushSavedP1 = trueBossRushSavedP1;
+            settings.TrueBossRushSavedP2 = trueBossRushSavedP2;
+            settings.TrueBossRushSavedP3 = trueBossRushSavedP3;
+            settings.TrueBossRushSavedP4 = trueBossRushSavedP4;
+            settings.TrueBossRushSavedP5 = trueBossRushSavedP5;
+
+            settings.CheatsEnabled = cheatsMasterEnabled;
+            settings.CheatsHasSnapshot = cheatsMasterHasSnapshot;
+            settings.CheatsSavedInfiniteSoul = cheatsSavedInfiniteSoul;
+            settings.CheatsSavedInfiniteHp = cheatsSavedInfiniteHp;
+            settings.CheatsSavedInvincibility = cheatsSavedInvincibility;
+            settings.CheatsSavedNoclip = cheatsSavedNoclip;
+
             GodhomeQoL.SaveGlobalSettingsSafe();
         }
 
@@ -732,6 +772,242 @@ public sealed partial class QuickMenu : Module
         {
             Modules.BossChallenge.RandomPantheons.Pantheon5Enabled = value;
             Modules.BossChallenge.RandomPantheons.RefreshPantheon(5);
+            SaveMasterSettings();
+        }
+
+        private bool GetTrueBossRushEnabled()
+        {
+            Module? module = GetTrueBossRushModule();
+            return module?.Enabled ?? false;
+        }
+
+        private void SetTrueBossRushEnabled(bool value)
+        {
+            Module? module = GetTrueBossRushModule();
+            if (module != null)
+            {
+                module.Enabled = value;
+            }
+
+            UpdateQuickMenuEntryStateColors();
+        }
+
+        private bool GetTrueBossRushMasterEnabled() => trueBossRushMasterEnabled;
+
+        private void SetTrueBossRushMasterEnabled(bool value)
+        {
+            if (trueBossRushMasterEnabled == value)
+            {
+                return;
+            }
+
+            trueBossRushMasterEnabled = value;
+            if (!value)
+            {
+                CaptureTrueBossRushSnapshot();
+                SetTrueBossRushAll(false);
+                SetTrueBossRushEnabled(false);
+            }
+            else
+            {
+                if (!GetTrueBossRushEnabled())
+                {
+                    SetTrueBossRushEnabled(true);
+                }
+
+                RestoreTrueBossRushSnapshot();
+            }
+
+            RefreshTrueBossRushUi();
+            UpdateQuickMenuEntryStateColors();
+            SaveMasterSettings();
+        }
+
+        private void CaptureTrueBossRushSnapshot()
+        {
+            trueBossRushMasterHasSnapshot = true;
+            trueBossRushSavedP1 = GetTrueBossRushP1Enabled();
+            trueBossRushSavedP2 = GetTrueBossRushP2Enabled();
+            trueBossRushSavedP3 = GetTrueBossRushP3Enabled();
+            trueBossRushSavedP4 = GetTrueBossRushP4Enabled();
+            trueBossRushSavedP5 = GetTrueBossRushP5Enabled();
+        }
+
+        private void RestoreTrueBossRushSnapshot()
+        {
+            if (!trueBossRushMasterHasSnapshot)
+            {
+                return;
+            }
+
+            SetTrueBossRushP1Enabled(trueBossRushSavedP1);
+            SetTrueBossRushP2Enabled(trueBossRushSavedP2);
+            SetTrueBossRushP3Enabled(trueBossRushSavedP3);
+            SetTrueBossRushP4Enabled(trueBossRushSavedP4);
+            SetTrueBossRushP5Enabled(trueBossRushSavedP5);
+        }
+
+        private void SetTrueBossRushAll(bool value)
+        {
+            SetTrueBossRushP1Enabled(value);
+            SetTrueBossRushP2Enabled(value);
+            SetTrueBossRushP3Enabled(value);
+            SetTrueBossRushP4Enabled(value);
+            SetTrueBossRushP5Enabled(value);
+        }
+
+        private bool GetTrueBossRushP1Enabled() => Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon1Enabled;
+
+        private void SetTrueBossRushP1Enabled(bool value)
+        {
+            Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon1Enabled = value;
+            Modules.BossChallenge.TrueBossRush.RefreshPantheon(1);
+            SaveMasterSettings();
+        }
+
+        private bool GetTrueBossRushP2Enabled() => Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon2Enabled;
+
+        private void SetTrueBossRushP2Enabled(bool value)
+        {
+            Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon2Enabled = value;
+            Modules.BossChallenge.TrueBossRush.RefreshPantheon(2);
+            SaveMasterSettings();
+        }
+
+        private bool GetTrueBossRushP3Enabled() => Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon3Enabled;
+
+        private void SetTrueBossRushP3Enabled(bool value)
+        {
+            Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon3Enabled = value;
+            Modules.BossChallenge.TrueBossRush.RefreshPantheon(3);
+            SaveMasterSettings();
+        }
+
+        private bool GetTrueBossRushP4Enabled() => Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon4Enabled;
+
+        private void SetTrueBossRushP4Enabled(bool value)
+        {
+            Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon4Enabled = value;
+            Modules.BossChallenge.TrueBossRush.RefreshPantheon(4);
+            SaveMasterSettings();
+        }
+
+        private bool GetTrueBossRushP5Enabled() => Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon5Enabled;
+
+        private void SetTrueBossRushP5Enabled(bool value)
+        {
+            Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon5Enabled = value;
+            Modules.BossChallenge.TrueBossRush.RefreshPantheon(5);
+            SaveMasterSettings();
+        }
+
+        private bool GetCheatsEnabled()
+        {
+            Module? module = GetCheatsModule();
+            return module?.Enabled ?? false;
+        }
+
+        private void SetCheatsEnabled(bool value)
+        {
+            Module? module = GetCheatsModule();
+            if (module != null)
+            {
+                module.Enabled = value;
+            }
+
+            UpdateQuickMenuEntryStateColors();
+        }
+
+        private bool GetCheatsMasterEnabled() => cheatsMasterEnabled;
+
+        private void SetCheatsMasterEnabled(bool value)
+        {
+            if (cheatsMasterEnabled == value)
+            {
+                return;
+            }
+
+            cheatsMasterEnabled = value;
+            if (!value)
+            {
+                CaptureCheatsSnapshot();
+                SetCheatsAll(false);
+                SetCheatsEnabled(false);
+            }
+            else
+            {
+                if (!GetCheatsEnabled())
+                {
+                    SetCheatsEnabled(true);
+                }
+
+                RestoreCheatsSnapshot();
+            }
+
+            RefreshCheatsUi();
+            UpdateQuickMenuEntryStateColors();
+            SaveMasterSettings();
+        }
+
+        private void CaptureCheatsSnapshot()
+        {
+            cheatsMasterHasSnapshot = true;
+            cheatsSavedInfiniteSoul = GetCheatsInfiniteSoulEnabled();
+            cheatsSavedInfiniteHp = GetCheatsInfiniteHpEnabled();
+            cheatsSavedInvincibility = GetCheatsInvincibilityEnabled();
+            cheatsSavedNoclip = GetCheatsNoclipEnabled();
+        }
+
+        private void RestoreCheatsSnapshot()
+        {
+            if (!cheatsMasterHasSnapshot)
+            {
+                return;
+            }
+
+            SetCheatsInfiniteSoulEnabled(cheatsSavedInfiniteSoul);
+            SetCheatsInfiniteHpEnabled(cheatsSavedInfiniteHp);
+            SetCheatsInvincibilityEnabled(cheatsSavedInvincibility);
+            SetCheatsNoclipEnabled(cheatsSavedNoclip);
+        }
+
+        private void SetCheatsAll(bool value)
+        {
+            SetCheatsInfiniteSoulEnabled(value);
+            SetCheatsInfiniteHpEnabled(value);
+            SetCheatsInvincibilityEnabled(value);
+            SetCheatsNoclipEnabled(value);
+        }
+
+        private bool GetCheatsInfiniteSoulEnabled() => Modules.Cheats.Cheats.GetInfiniteSoulEnabled();
+
+        private void SetCheatsInfiniteSoulEnabled(bool value)
+        {
+            Modules.Cheats.Cheats.SetInfiniteSoulEnabled(value);
+            SaveMasterSettings();
+        }
+
+        private bool GetCheatsInfiniteHpEnabled() => Modules.Cheats.Cheats.GetInfiniteHpEnabled();
+
+        private void SetCheatsInfiniteHpEnabled(bool value)
+        {
+            Modules.Cheats.Cheats.SetInfiniteHpEnabled(value);
+            SaveMasterSettings();
+        }
+
+        private bool GetCheatsInvincibilityEnabled() => Modules.Cheats.Cheats.GetInvincibilityEnabled();
+
+        private void SetCheatsInvincibilityEnabled(bool value)
+        {
+            Modules.Cheats.Cheats.SetInvincibilityEnabled(value);
+            SaveMasterSettings();
+        }
+
+        private bool GetCheatsNoclipEnabled() => Modules.Cheats.Cheats.GetNoclipEnabled();
+
+        private void SetCheatsNoclipEnabled(bool value)
+        {
+            Modules.Cheats.Cheats.SetNoclipEnabled(value);
             SaveMasterSettings();
         }
 

@@ -36,6 +36,11 @@ public sealed partial class QuickMenu : Module
                 HandleFreezeHitboxesRebind();
             }
 
+            if (cheatsVisible)
+            {
+                HandleCheatsKillAllRebind();
+            }
+
             if (speedChangerVisible)
             {
                 HandleSpeedChangerRebind();
@@ -71,9 +76,15 @@ public sealed partial class QuickMenu : Module
                 HandleGearSwitcherPresetRename();
             }
 
+            if (gearSwitcherVisible)
+            {
+                UpdateGearSwitcherBaseNailDamage();
+            }
+
             if (!wasRebinding && !IsAnyRebinding() && !IsHotkeyInputBlocked() && !suppressHotkeysThisFrame)
             {
                 HandleFastDreamWarpHotkey();
+                HandleCheatsKillAllHotkey();
                 HandleOverlayHotkeys();
             }
 
@@ -83,7 +94,7 @@ public sealed partial class QuickMenu : Module
                 ToggleMenu();
             }
 
-            if (quickVisible || quickSettingsVisible || overlayVisible || collectorVisible || fastReloadVisible || dreamshieldVisible || showHpOnDeathVisible || maskDamageVisible || freezeHitboxesVisible || speedChangerVisible || teleportKitVisible || bossChallengeVisible || randomPantheonsVisible || alwaysFuriousVisible || gearSwitcherVisible || gearSwitcherCharmCostVisible || gearSwitcherPresetVisible || qolVisible || menuAnimationVisible || bossAnimationVisible || zoteHelperVisible)
+            if (quickVisible || quickSettingsVisible || overlayVisible || collectorVisible || fastReloadVisible || dreamshieldVisible || showHpOnDeathVisible || maskDamageVisible || freezeHitboxesVisible || speedChangerVisible || teleportKitVisible || bossChallengeVisible || randomPantheonsVisible || trueBossRushVisible || cheatsVisible || alwaysFuriousVisible || gearSwitcherVisible || gearSwitcherCharmCostVisible || gearSwitcherPresetVisible || qolVisible || menuAnimationVisible || bossAnimationVisible || zoteHelperVisible)
             {
                 MaintainUiInteraction();
             }
@@ -93,7 +104,7 @@ public sealed partial class QuickMenu : Module
 
         private void LateUpdate()
         {
-            if (quickVisible || quickSettingsVisible || overlayVisible || collectorVisible || fastReloadVisible || dreamshieldVisible || showHpOnDeathVisible || maskDamageVisible || speedChangerVisible || teleportKitVisible || bossChallengeVisible || randomPantheonsVisible || alwaysFuriousVisible || gearSwitcherVisible || gearSwitcherCharmCostVisible || gearSwitcherPresetVisible || qolVisible || menuAnimationVisible || bossAnimationVisible || zoteHelperVisible)
+            if (quickVisible || quickSettingsVisible || overlayVisible || collectorVisible || fastReloadVisible || dreamshieldVisible || showHpOnDeathVisible || maskDamageVisible || speedChangerVisible || teleportKitVisible || bossChallengeVisible || randomPantheonsVisible || trueBossRushVisible || cheatsVisible || alwaysFuriousVisible || gearSwitcherVisible || gearSwitcherCharmCostVisible || gearSwitcherPresetVisible || qolVisible || menuAnimationVisible || bossAnimationVisible || zoteHelperVisible)
             {
                 MaintainUiInteraction();
             }
@@ -120,6 +131,8 @@ public sealed partial class QuickMenu : Module
                 || teleportKitVisible
                 || bossChallengeVisible
                 || randomPantheonsVisible
+                || trueBossRushVisible
+                || cheatsVisible
                 || alwaysFuriousVisible
                 || gearSwitcherVisible
                 || gearSwitcherCharmCostVisible

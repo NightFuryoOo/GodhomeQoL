@@ -10,6 +10,7 @@ public sealed class CarefreeMelodyReset : Module {
     [GlobalSetting] public static int ResetMode = ModeOff;
 
     private const string HoGWorkshopScene = "GG_Workshop";
+    private const string PantheonArenaScene = "GG_Boss_Door_Entrance";
     private static readonly HashSet<string> NonBossGodhomeScenes = new()
     {
         "GG_Workshop",
@@ -21,6 +22,8 @@ public sealed class CarefreeMelodyReset : Module {
     private static bool enteredBossFromWorkshop;
     private static string? trackedBossScene;
     private static string? lastHubScene;
+    private static bool pantheonRunActive;
+    private static bool pantheonResetApplied;
 
     private protected override void Load()
     {
@@ -29,17 +32,49 @@ public sealed class CarefreeMelodyReset : Module {
             ResetMode = ModeHoG;
         }
 
+        pantheonRunActive = false;
+        pantheonResetApplied = false;
+
         OsmiHooks.SceneChangeHook += ResetCount;
+        On.BossSequenceController.SetupNewSequence += OnSetupNewSequence;
     }
 
-    private protected override void Unload() =>
+    private protected override void Unload()
+    {
         OsmiHooks.SceneChangeHook -= ResetCount;
+        On.BossSequenceController.SetupNewSequence -= OnSetupNewSequence;
+        pantheonRunActive = false;
+        pantheonResetApplied = false;
+    }
 
     private static void ResetCount(Scene prev, Scene next)
     {
         string prevName = prev.name;
         string nextName = next.name;
         bool nextIsBoss = IsBossSceneName(nextName);
+        bool nextIsPantheonArena = IsPantheonArenaSceneName(nextName);
+        bool inPantheonSequence = IsInPantheonSequence();
+
+        if (nextIsPantheonArena)
+        {
+            // New pantheon attempt starts here; allow one reset at the start.
+            pantheonRunActive = true;
+            pantheonResetApplied = false;
+        }
+        else if (inPantheonSequence)
+        {
+            if (!pantheonRunActive)
+            {
+                pantheonRunActive = true;
+                pantheonResetApplied = false;
+            }
+        }
+        else if (pantheonRunActive && IsHubSceneName(nextName))
+        {
+            // Pantheon run ended when returning to Godhome hubs.
+            pantheonRunActive = false;
+            pantheonResetApplied = false;
+        }
 
         if (IsHubSceneName(nextName))
         {
@@ -64,6 +99,24 @@ public sealed class CarefreeMelodyReset : Module {
         TryResetNow();
     }
 
+    private static void OnSetupNewSequence(
+        On.BossSequenceController.orig_SetupNewSequence orig,
+        BossSequence sequence,
+        BossSequenceController.ChallengeBindings bindings,
+        string playerData)
+    {
+        orig(sequence, bindings, playerData);
+
+        if (GetMode() != ModeHoGAndPantheons)
+        {
+            return;
+        }
+
+        // Pantheons can enter via different doors/scenes (not always GG_Boss_Door_Entrance, e.g. P5).
+        pantheonRunActive = true;
+        pantheonResetApplied = false;
+    }
+
     internal static void TryResetNow(bool ignoreBossScene = false) {
         if (Ref.HC == null) {
             return;
@@ -79,14 +132,22 @@ public sealed class CarefreeMelodyReset : Module {
             return;
         }
 
+        bool inPantheonSequence = IsInPantheonSequence();
+        bool inPantheonRun = pantheonRunActive || inPantheonSequence;
+
         bool allow = mode switch
         {
             ModeHoG => enteredBossFromWorkshop,
-            ModeHoGAndPantheons => enteredBossFromWorkshop || BossSequenceController.IsInSequence,
+            ModeHoGAndPantheons => enteredBossFromWorkshop || inPantheonRun,
             _ => false
         };
 
         if (!allow)
+        {
+            return;
+        }
+
+        if (mode == ModeHoGAndPantheons && inPantheonRun && pantheonResetApplied)
         {
             return;
         }
@@ -97,6 +158,11 @@ public sealed class CarefreeMelodyReset : Module {
         }
 
         HeroControllerR.hitsSinceShielded = 7;
+        if (mode == ModeHoGAndPantheons && inPantheonRun)
+        {
+            pantheonResetApplied = true;
+        }
+
         LogDebug("Carefree Melody hit count reset to max");
     }
 
@@ -143,5 +209,22 @@ public sealed class CarefreeMelodyReset : Module {
     private static bool IsHubSceneName(string sceneName)
     {
         return NonBossGodhomeScenes.Contains(sceneName);
+    }
+
+    private static bool IsPantheonArenaSceneName(string sceneName)
+    {
+        return string.Equals(sceneName, PantheonArenaScene, StringComparison.Ordinal);
+    }
+
+    private static bool IsInPantheonSequence()
+    {
+        try
+        {
+            return BossSequenceController.IsInSequence;
+        }
+        catch
+        {
+            return false;
+        }
     }
 }

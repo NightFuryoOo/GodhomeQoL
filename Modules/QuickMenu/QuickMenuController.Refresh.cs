@@ -201,6 +201,30 @@ public sealed partial class QuickMenu : Module
             UpdateRandomPantheonsInteractivity();
         }
 
+        private void RefreshTrueBossRushUi()
+        {
+            UpdateToggleValue(trueBossRushToggleValue, GetTrueBossRushMasterEnabled());
+            UpdateToggleIcon(trueBossRushToggleIcon, GetTrueBossRushMasterEnabled());
+            UpdateToggleValue(trueBossRushP1Value, GetTrueBossRushP1Enabled());
+            UpdateToggleValue(trueBossRushP2Value, GetTrueBossRushP2Enabled());
+            UpdateToggleValue(trueBossRushP3Value, GetTrueBossRushP3Enabled());
+            UpdateToggleValue(trueBossRushP4Value, GetTrueBossRushP4Enabled());
+            UpdateToggleValue(trueBossRushP5Value, GetTrueBossRushP5Enabled());
+            UpdateTrueBossRushInteractivity();
+        }
+
+        private void RefreshCheatsUi()
+        {
+            UpdateToggleValue(cheatsEnableValue, GetCheatsMasterEnabled());
+            UpdateToggleIcon(cheatsEnableIcon, GetCheatsMasterEnabled());
+            UpdateToggleValue(cheatsInfiniteSoulValue, GetCheatsInfiniteSoulEnabled());
+            UpdateToggleValue(cheatsInfiniteHpValue, GetCheatsInfiniteHpEnabled());
+            UpdateToggleValue(cheatsInvincibilityValue, GetCheatsInvincibilityEnabled());
+            UpdateToggleValue(cheatsNoclipValue, GetCheatsNoclipEnabled());
+            UpdateKeybindValue(cheatsKillAllHotkeyValue, GetCheatsKillAllHotkeyLabel());
+            UpdateCheatsInteractivity();
+        }
+
         private void RefreshAlwaysFuriousUi()
         {
             UpdateToggleValue(alwaysFuriousToggleValue, GetAlwaysFuriousEnabled());

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,12 +23,14 @@ public sealed partial class QuickMenu : Module
             SetSpeedChangerVisible(false);
             SetTeleportKitVisible(false);
             SetBossChallengeVisible(false);
+            SetTrueBossRushVisible(false);
             SetAlwaysFuriousVisible(false);
             SetGearSwitcherVisible(false);
             SetQolVisible(false);
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetCheatsVisible(false);
             SetOverlayVisible(true);
             SetQuickVisible(false);
         }
@@ -45,12 +47,14 @@ public sealed partial class QuickMenu : Module
             SetSpeedChangerVisible(false);
             SetTeleportKitVisible(false);
             SetBossChallengeVisible(false);
+            SetTrueBossRushVisible(false);
             SetAlwaysFuriousVisible(false);
             SetGearSwitcherVisible(false);
             SetQolVisible(false);
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetCheatsVisible(false);
             SetCollectorVisible(true);
             SetQuickVisible(false);
         }
@@ -67,12 +71,14 @@ public sealed partial class QuickMenu : Module
             SetSpeedChangerVisible(false);
             SetTeleportKitVisible(false);
             SetBossChallengeVisible(false);
+            SetTrueBossRushVisible(false);
             SetAlwaysFuriousVisible(false);
             SetGearSwitcherVisible(false);
             SetQolVisible(false);
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetCheatsVisible(false);
             SetFastReloadVisible(true);
             SetQuickVisible(false);
         }
@@ -89,12 +95,14 @@ public sealed partial class QuickMenu : Module
             SetSpeedChangerVisible(false);
             SetTeleportKitVisible(false);
             SetBossChallengeVisible(false);
+            SetTrueBossRushVisible(false);
             SetAlwaysFuriousVisible(false);
             SetGearSwitcherVisible(false);
             SetQolVisible(false);
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetCheatsVisible(false);
             SetDreamshieldVisible(true);
             SetQuickVisible(false);
         }
@@ -111,12 +119,14 @@ public sealed partial class QuickMenu : Module
             SetSpeedChangerVisible(false);
             SetTeleportKitVisible(false);
             SetBossChallengeVisible(false);
+            SetTrueBossRushVisible(false);
             SetAlwaysFuriousVisible(false);
             SetGearSwitcherVisible(false);
             SetQolVisible(false);
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetCheatsVisible(false);
             SetShowHpOnDeathVisible(true);
             SetQuickVisible(false);
         }
@@ -134,12 +144,14 @@ public sealed partial class QuickMenu : Module
             SetSpeedChangerVisible(false);
             SetTeleportKitVisible(false);
             SetBossChallengeVisible(false);
+            SetTrueBossRushVisible(false);
             SetAlwaysFuriousVisible(false);
             SetGearSwitcherVisible(false);
             SetQolVisible(false);
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetCheatsVisible(false);
             SetMaskDamageVisible(true);
             SetQuickVisible(false);
         }
@@ -157,12 +169,14 @@ public sealed partial class QuickMenu : Module
             SetSpeedChangerVisible(false);
             SetTeleportKitVisible(false);
             SetBossChallengeVisible(false);
+            SetTrueBossRushVisible(false);
             SetAlwaysFuriousVisible(false);
             SetGearSwitcherVisible(false);
             SetQolVisible(false);
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetCheatsVisible(false);
             SetFreezeHitboxesVisible(true);
             SetQuickVisible(false);
         }
@@ -179,12 +193,14 @@ public sealed partial class QuickMenu : Module
             SetFreezeHitboxesVisible(false);
             SetTeleportKitVisible(false);
             SetBossChallengeVisible(false);
+            SetTrueBossRushVisible(false);
             SetAlwaysFuriousVisible(false);
             SetGearSwitcherVisible(false);
             SetQolVisible(false);
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetCheatsVisible(false);
             SetSpeedChangerVisible(true);
             SetQuickVisible(false);
         }
@@ -201,12 +217,14 @@ public sealed partial class QuickMenu : Module
             SetFreezeHitboxesVisible(false);
             SetSpeedChangerVisible(false);
             SetBossChallengeVisible(false);
+            SetTrueBossRushVisible(false);
             SetAlwaysFuriousVisible(false);
             SetGearSwitcherVisible(false);
             SetQolVisible(false);
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetCheatsVisible(false);
             SetTeleportKitVisible(true);
             SetQuickVisible(false);
         }
@@ -229,6 +247,7 @@ public sealed partial class QuickMenu : Module
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetCheatsVisible(false);
             SetRandomPantheonsVisible(false);
             SetBossChallengeVisible(true);
             SetQuickVisible(false);
@@ -247,13 +266,66 @@ public sealed partial class QuickMenu : Module
             SetSpeedChangerVisible(false);
             SetTeleportKitVisible(false);
             SetBossChallengeVisible(false);
+            SetTrueBossRushVisible(false);
             SetAlwaysFuriousVisible(false);
             SetGearSwitcherVisible(false);
             SetQolVisible(false);
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetCheatsVisible(false);
             SetRandomPantheonsVisible(true);
+            SetQuickVisible(false);
+        }
+
+        private void OnQuickTrueBossRushClicked()
+        {
+            returnToQuickOnClose = true;
+            SetOverlayVisible(false);
+            SetCollectorVisible(false);
+            SetFastReloadVisible(false);
+            SetDreamshieldVisible(false);
+            SetShowHpOnDeathVisible(false);
+            SetMaskDamageVisible(false);
+            SetFreezeHitboxesVisible(false);
+            SetSpeedChangerVisible(false);
+            SetTeleportKitVisible(false);
+            SetBossChallengeVisible(false);
+            SetTrueBossRushVisible(false);
+            SetAlwaysFuriousVisible(false);
+            SetGearSwitcherVisible(false);
+            SetQolVisible(false);
+            SetMenuAnimationVisible(false);
+            SetBossAnimationVisible(false);
+            SetZoteHelperVisible(false);
+            SetCheatsVisible(false);
+            SetRandomPantheonsVisible(false);
+            SetTrueBossRushVisible(true);
+            SetQuickVisible(false);
+        }
+
+        private void OnQuickCheatsClicked()
+        {
+            returnToQuickOnClose = true;
+            SetOverlayVisible(false);
+            SetCollectorVisible(false);
+            SetFastReloadVisible(false);
+            SetDreamshieldVisible(false);
+            SetShowHpOnDeathVisible(false);
+            SetMaskDamageVisible(false);
+            SetFreezeHitboxesVisible(false);
+            SetSpeedChangerVisible(false);
+            SetTeleportKitVisible(false);
+            SetBossChallengeVisible(false);
+            SetTrueBossRushVisible(false);
+            SetRandomPantheonsVisible(false);
+            SetAlwaysFuriousVisible(false);
+            SetGearSwitcherVisible(false);
+            SetQolVisible(false);
+            SetMenuAnimationVisible(false);
+            SetBossAnimationVisible(false);
+            SetZoteHelperVisible(false);
+            SetCheatsVisible(true);
             SetQuickVisible(false);
         }
 
@@ -270,6 +342,7 @@ public sealed partial class QuickMenu : Module
             SetSpeedChangerVisible(false);
             SetTeleportKitVisible(false);
             SetBossChallengeVisible(false);
+            SetTrueBossRushVisible(false);
             SetRandomPantheonsVisible(false);
             SetGearSwitcherVisible(false);
             SetAlwaysFuriousVisible(true);
@@ -277,6 +350,7 @@ public sealed partial class QuickMenu : Module
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetCheatsVisible(false);
             SetQuickVisible(false);
         }
 
@@ -293,6 +367,7 @@ public sealed partial class QuickMenu : Module
             SetSpeedChangerVisible(false);
             SetTeleportKitVisible(false);
             SetBossChallengeVisible(false);
+            SetTrueBossRushVisible(false);
             SetAlwaysFuriousVisible(false);
             SetGearSwitcherCharmCostVisible(false);
             SetGearSwitcherPresetVisible(false);
@@ -300,6 +375,7 @@ public sealed partial class QuickMenu : Module
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetCheatsVisible(false);
             SetGearSwitcherVisible(true);
             SetQuickVisible(false);
         }
@@ -317,11 +393,13 @@ public sealed partial class QuickMenu : Module
             SetSpeedChangerVisible(false);
             SetTeleportKitVisible(false);
             SetBossChallengeVisible(false);
+            SetTrueBossRushVisible(false);
             SetAlwaysFuriousVisible(false);
             SetGearSwitcherVisible(false);
             SetQolVisible(false);
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
+            SetCheatsVisible(false);
             SetZoteHelperVisible(true);
             SetQuickVisible(false);
         }
@@ -340,11 +418,13 @@ public sealed partial class QuickMenu : Module
             SetSpeedChangerVisible(false);
             SetTeleportKitVisible(false);
             SetBossChallengeVisible(false);
+            SetTrueBossRushVisible(false);
             SetAlwaysFuriousVisible(false);
             SetGearSwitcherVisible(false);
             SetQolVisible(false);
             SetMenuAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetCheatsVisible(false);
             SetBossAnimationVisible(true);
             SetQuickVisible(false);
         }
@@ -363,11 +443,13 @@ public sealed partial class QuickMenu : Module
             SetSpeedChangerVisible(false);
             SetTeleportKitVisible(false);
             SetBossChallengeVisible(false);
+            SetTrueBossRushVisible(false);
             SetAlwaysFuriousVisible(false);
             SetGearSwitcherVisible(false);
             SetQolVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetCheatsVisible(false);
             SetMenuAnimationVisible(true);
             SetQuickVisible(false);
         }
@@ -385,14 +467,18 @@ public sealed partial class QuickMenu : Module
             SetSpeedChangerVisible(false);
             SetTeleportKitVisible(false);
             SetBossChallengeVisible(false);
+            SetTrueBossRushVisible(false);
             SetAlwaysFuriousVisible(false);
             SetGearSwitcherVisible(false);
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetCheatsVisible(false);
             returnToQolOnClose = false;
             SetQolVisible(true);
             SetQuickVisible(false);
         }
     }
 }
+
+

@@ -10,6 +10,7 @@ public sealed class InvincibleIndicator : Module
     private const float InvincibleThresholdSeconds = 10f;
     private const string IndicatorText = "Invincible ON";
     private const int IndicatorSortOrder = 10060;
+    private const int IndicatorFontSize = 34;
 
     private float invincibleTimer;
     private bool indicatorVisible;
@@ -152,21 +153,21 @@ public sealed class InvincibleIndicator : Module
             text = QolCanvasUtil.CreateTextPanel(
                 canvas,
                 string.Empty,
-                26,
+                IndicatorFontSize,
                 TextAnchor.LowerLeft,
                 new QolCanvasUtil.RectData(
                     new Vector2(400f, 60f),
-                    new Vector2(260f, 920f),
+                    new Vector2(260f, 914f),
                     new Vector2(0f, 0f),
                     new Vector2(0f, 0f),
                     new Vector2(0f, 0f)),
                 QolCanvasUtil.GetFont("Perpetua")
             ).GetComponent<Text>();
 
-            text.color = new Color(1f, 0.2f, 0.2f, 0.95f);
+            text.color = new Color(1f, 1f, 1f, 0.95f);
             Outline outline = text.gameObject.AddComponent<Outline>();
-            outline.effectColor = Color.white;
-            outline.effectDistance = new Vector2(1f, -1f);
+            outline.effectColor = Color.black;
+            outline.effectDistance = new Vector2(2f, -2f);
             outline.useGraphicAlpha = true;
             text.gameObject.SetActive(false);
         }

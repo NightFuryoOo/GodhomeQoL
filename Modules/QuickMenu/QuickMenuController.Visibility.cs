@@ -8,7 +8,7 @@ public sealed partial class QuickMenu : Module
     {
         private void ToggleMenu()
         {
-            if (quickVisible || quickSettingsVisible || overlayVisible || collectorVisible || fastReloadVisible || dreamshieldVisible || showHpOnDeathVisible || maskDamageVisible || speedChangerVisible || teleportKitVisible || bossChallengeVisible || randomPantheonsVisible || alwaysFuriousVisible || gearSwitcherVisible || gearSwitcherCharmCostVisible || gearSwitcherPresetVisible || qolVisible || menuAnimationVisible || bossAnimationVisible || zoteHelperVisible)
+            if (quickVisible || quickSettingsVisible || overlayVisible || collectorVisible || fastReloadVisible || dreamshieldVisible || showHpOnDeathVisible || maskDamageVisible || speedChangerVisible || teleportKitVisible || bossChallengeVisible || randomPantheonsVisible || trueBossRushVisible || cheatsVisible || alwaysFuriousVisible || gearSwitcherVisible || gearSwitcherCharmCostVisible || gearSwitcherPresetVisible || qolVisible || menuAnimationVisible || bossAnimationVisible || zoteHelperVisible)
             {
                 returnToQuickOnClose = false;
                 returnToQolOnClose = false;
@@ -24,6 +24,8 @@ public sealed partial class QuickMenu : Module
                 SetTeleportKitVisible(false);
                 SetBossChallengeVisible(false);
                 SetRandomPantheonsVisible(false);
+                SetTrueBossRushVisible(false);
+                SetCheatsVisible(false);
                 SetAlwaysFuriousVisible(false);
                 SetGearSwitcherVisible(false);
                 SetGearSwitcherCharmCostVisible(false);
@@ -317,6 +319,42 @@ public sealed partial class QuickMenu : Module
             UpdateUiState();
         }
 
+        private void SetTrueBossRushVisible(bool value)
+        {
+            trueBossRushVisible = value;
+            if (trueBossRushRoot != null)
+            {
+                trueBossRushRoot.SetActive(value);
+            }
+
+            if (value)
+            {
+                RefreshTrueBossRushUi();
+            }
+
+            UpdateUiState();
+        }
+
+        private void SetCheatsVisible(bool value)
+        {
+            cheatsVisible = value;
+            if (cheatsRoot != null)
+            {
+                cheatsRoot.SetActive(value);
+            }
+
+            if (value)
+            {
+                RefreshCheatsUi();
+            }
+            else
+            {
+                CancelCheatsKillAllRebind();
+            }
+
+            UpdateUiState();
+        }
+
         private void SetAlwaysFuriousVisible(bool value)
         {
             alwaysFuriousVisible = value;
@@ -466,7 +504,7 @@ public sealed partial class QuickMenu : Module
 
         private void UpdateUiState()
         {
-            bool anyVisible = quickVisible || quickSettingsVisible || overlayVisible || collectorVisible || fastReloadVisible || dreamshieldVisible || showHpOnDeathVisible || maskDamageVisible || freezeHitboxesVisible || speedChangerVisible || teleportKitVisible || bossChallengeVisible || randomPantheonsVisible || alwaysFuriousVisible || gearSwitcherVisible || gearSwitcherCharmCostVisible || gearSwitcherPresetVisible || qolVisible || menuAnimationVisible || bossAnimationVisible || zoteHelperVisible;
+            bool anyVisible = quickVisible || quickSettingsVisible || overlayVisible || collectorVisible || fastReloadVisible || dreamshieldVisible || showHpOnDeathVisible || maskDamageVisible || freezeHitboxesVisible || speedChangerVisible || teleportKitVisible || bossChallengeVisible || randomPantheonsVisible || trueBossRushVisible || cheatsVisible || alwaysFuriousVisible || gearSwitcherVisible || gearSwitcherCharmCostVisible || gearSwitcherPresetVisible || qolVisible || menuAnimationVisible || bossAnimationVisible || zoteHelperVisible;
 
             if (anyVisible && !uiActive)
             {

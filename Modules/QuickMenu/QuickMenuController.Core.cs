@@ -21,6 +21,8 @@ public sealed partial class QuickMenu : Module
             SetTeleportKitVisible(false);
             SetBossChallengeVisible(false);
             SetRandomPantheonsVisible(false);
+            SetTrueBossRushVisible(false);
+            SetCheatsVisible(false);
             SetAlwaysFuriousVisible(false);
             SetGearSwitcherVisible(false);
             SetGearSwitcherCharmCostVisible(false);
@@ -99,6 +101,21 @@ public sealed partial class QuickMenu : Module
             randomPantheonsSavedP4 = settings.RandomPantheonsSavedP4;
             randomPantheonsSavedP5 = settings.RandomPantheonsSavedP5;
 
+            trueBossRushMasterEnabled = settings.TrueBossRushEnabled;
+            trueBossRushMasterHasSnapshot = settings.TrueBossRushHasSnapshot;
+            trueBossRushSavedP1 = settings.TrueBossRushSavedP1;
+            trueBossRushSavedP2 = settings.TrueBossRushSavedP2;
+            trueBossRushSavedP3 = settings.TrueBossRushSavedP3;
+            trueBossRushSavedP4 = settings.TrueBossRushSavedP4;
+            trueBossRushSavedP5 = settings.TrueBossRushSavedP5;
+
+            cheatsMasterEnabled = settings.CheatsEnabled;
+            cheatsMasterHasSnapshot = settings.CheatsHasSnapshot;
+            cheatsSavedInfiniteSoul = settings.CheatsSavedInfiniteSoul;
+            cheatsSavedInfiniteHp = settings.CheatsSavedInfiniteHp;
+            cheatsSavedInvincibility = settings.CheatsSavedInvincibility;
+            cheatsSavedNoclip = settings.CheatsSavedNoclip;
+
             if (!bossChallengeMasterEnabled)
             {
                 SetBossChallengeAll(false);
@@ -126,6 +143,34 @@ public sealed partial class QuickMenu : Module
             else if (randomPantheonsMasterHasSnapshot)
             {
                 RestoreRandomPantheonsSnapshot();
+            }
+
+            if (!trueBossRushMasterEnabled)
+            {
+                SetTrueBossRushAll(false);
+                SetTrueBossRushEnabled(false);
+            }
+            else
+            {
+                SetTrueBossRushEnabled(true);
+                if (trueBossRushMasterHasSnapshot)
+                {
+                    RestoreTrueBossRushSnapshot();
+                }
+            }
+
+            if (!cheatsMasterEnabled)
+            {
+                SetCheatsAll(false);
+                SetCheatsEnabled(false);
+            }
+            else
+            {
+                SetCheatsEnabled(true);
+                if (cheatsMasterHasSnapshot)
+                {
+                    RestoreCheatsSnapshot();
+                }
             }
         }
 
@@ -156,6 +201,8 @@ public sealed partial class QuickMenu : Module
             DestroyRoot(ref teleportKitRoot);
             DestroyRoot(ref bossChallengeRoot);
             DestroyRoot(ref randomPantheonsRoot);
+            DestroyRoot(ref trueBossRushRoot);
+            DestroyRoot(ref cheatsRoot);
             DestroyRoot(ref alwaysFuriousRoot);
             DestroyRoot(ref gearSwitcherRoot);
             DestroyRoot(ref gearSwitcherCharmCostRoot);

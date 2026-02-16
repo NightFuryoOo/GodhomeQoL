@@ -435,6 +435,16 @@ public sealed partial class QuickMenu : Module
             SetContentInteractivity(randomPantheonsContent, randomPantheonsMasterEnabled, "RandomPantheonsToggleRow");
         }
 
+        private void UpdateTrueBossRushInteractivity()
+        {
+            SetContentInteractivity(trueBossRushContent, trueBossRushMasterEnabled, "TrueBossRushToggleRow");
+        }
+
+        private void UpdateCheatsInteractivity()
+        {
+            SetContentInteractivity(cheatsContent, cheatsMasterEnabled, "CheatsEnableRow");
+        }
+
         private void UpdateFastSuperDashInteractivity()
         {
             SetContentInteractivity(fastSuperDashContent, GetModuleEnabled(), "ModuleToggleRow");

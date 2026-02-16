@@ -135,6 +135,26 @@ public sealed partial class QuickMenu : Module
             return randomPantheonsModule;
         }
 
+        private Module? GetTrueBossRushModule()
+        {
+            if (trueBossRushModule == null)
+            {
+                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.TrueBossRush), out trueBossRushModule);
+            }
+
+            return trueBossRushModule;
+        }
+
+        private Module? GetCheatsModule()
+        {
+            if (cheatsModule == null)
+            {
+                ModuleManager.TryGetModule(typeof(Modules.Cheats.Cheats), out cheatsModule);
+            }
+
+            return cheatsModule;
+        }
+
         private Module? GetAlwaysFuriousModule()
         {
             if (alwaysFuriousModule == null)

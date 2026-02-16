@@ -613,6 +613,8 @@ public sealed partial class QuickMenu : Module
             UpdateQuickMenuEntryColor("CollectorPhases", GetCollectorPhasesEnabled());
             UpdateQuickMenuEntryColor("BossChallenge", GetBossChallengeMasterEnabled());
             UpdateQuickMenuEntryColor("RandomPantheons", GetRandomPantheonsMasterEnabled());
+            UpdateQuickMenuEntryColor("TrueBossRush", GetTrueBossRushMasterEnabled());
+            UpdateQuickMenuEntryColor("Cheats", GetCheatsMasterEnabled());
             UpdateQuickMenuEntryColor("QualityOfLife", GetQolMasterEnabled());
             UpdateQuickMenuEntryColor("BossAnimationSkipping", GetBossAnimationMasterEnabled());
             UpdateQuickMenuEntryColor("MenuAnimationSkipping", GetMenuAnimationMasterEnabled());

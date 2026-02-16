@@ -58,4 +58,19 @@ public sealed class QuickMenuMasterSettings
     public bool RandomPantheonsSavedP3 { get; set; }
     public bool RandomPantheonsSavedP4 { get; set; }
     public bool RandomPantheonsSavedP5 { get; set; }
+
+    public bool TrueBossRushEnabled { get; set; } = false;
+    public bool TrueBossRushHasSnapshot { get; set; }
+    public bool TrueBossRushSavedP1 { get; set; }
+    public bool TrueBossRushSavedP2 { get; set; }
+    public bool TrueBossRushSavedP3 { get; set; }
+    public bool TrueBossRushSavedP4 { get; set; }
+    public bool TrueBossRushSavedP5 { get; set; }
+
+    public bool CheatsEnabled { get; set; } = false;
+    public bool CheatsHasSnapshot { get; set; }
+    public bool CheatsSavedInfiniteSoul { get; set; }
+    public bool CheatsSavedInfiniteHp { get; set; }
+    public bool CheatsSavedInvincibility { get; set; }
+    public bool CheatsSavedNoclip { get; set; }
 }

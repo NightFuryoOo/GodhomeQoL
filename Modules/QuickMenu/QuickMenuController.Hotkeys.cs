@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,6 +22,7 @@ public sealed partial class QuickMenu : Module
                 || IsShowHpOnDeathRebinding()
                 || IsMaskDamageRebinding()
                 || IsFreezeHitboxesRebinding()
+                || IsCheatsKillAllRebinding()
                 || IsSpeedChangerRebinding()
                 || IsTeleportKitRebinding()
                 || IsFastDreamWarpRebinding()
@@ -572,6 +573,92 @@ public sealed partial class QuickMenu : Module
             UpdateKeybindValue(freezeHitboxesUnfreezeKeyValue, GetFreezeHitboxesKeyLabel());
         }
 
+        private bool IsCheatsKillAllRebinding()
+        {
+            return waitingForCheatsKillAllRebind;
+        }
+
+        private string GetCheatsKillAllHotkeyLabel()
+        {
+            return FormatMaskDamageKeyLabel(Modules.Cheats.Cheats.GetKillAllHotkeyRaw());
+        }
+
+        private void StartCheatsKillAllRebind()
+        {
+            waitingForCheatsKillAllRebind = true;
+            cheatsKillAllPrevKey = Modules.Cheats.Cheats.GetKillAllHotkeyRaw();
+            UpdateKeybindValue(cheatsKillAllHotkeyValue, "Settings/FastReload/SetKey".Localize());
+        }
+
+        private void CancelCheatsKillAllRebind()
+        {
+            if (!waitingForCheatsKillAllRebind)
+            {
+                return;
+            }
+
+            waitingForCheatsKillAllRebind = false;
+            UpdateKeybindValue(cheatsKillAllHotkeyValue, GetCheatsKillAllHotkeyLabel());
+        }
+
+        private void HandleCheatsKillAllRebind()
+        {
+            if (!waitingForCheatsKillAllRebind)
+            {
+                return;
+            }
+
+            foreach (KeyCode key in Enum.GetValues(typeof(KeyCode)))
+            {
+                if (!Input.GetKeyDown(key) || key == KeyCode.None)
+                {
+                    continue;
+                }
+
+                if (key >= KeyCode.Mouse0 && key <= KeyCode.Mouse6)
+                {
+                    continue;
+                }
+
+                ApplyCheatsKillAllRebind(key);
+                return;
+            }
+        }
+
+        private void ApplyCheatsKillAllRebind(KeyCode key)
+        {
+            if (key == KeyCode.Escape)
+            {
+                waitingForCheatsKillAllRebind = false;
+                UpdateKeybindValue(cheatsKillAllHotkeyValue, GetCheatsKillAllHotkeyLabel());
+                return;
+            }
+
+            string keyName = key.ToString();
+            bool clear = !string.IsNullOrEmpty(cheatsKillAllPrevKey)
+                && string.Equals(cheatsKillAllPrevKey, keyName, StringComparison.OrdinalIgnoreCase);
+
+            Modules.Cheats.Cheats.SetKillAllHotkeyRaw(clear ? string.Empty : keyName);
+            waitingForCheatsKillAllRebind = false;
+            UpdateKeybindValue(cheatsKillAllHotkeyValue, GetCheatsKillAllHotkeyLabel());
+        }
+
+        private void HandleCheatsKillAllHotkey()
+        {
+            if (!GetCheatsMasterEnabled() || !GetCheatsEnabled())
+            {
+                return;
+            }
+
+            KeyCode key = Modules.Cheats.Cheats.GetKillAllHotkey();
+            if (key == KeyCode.None || !Input.GetKeyDown(key))
+            {
+                return;
+            }
+
+            _ = Modules.Cheats.Cheats.KillAll();
+        }
+
         private static string FormatKeyOrMouseBinding(InputHandler.KeyOrMouseBinding binding)
         {
             if (TryGetBindingKey(binding, out Key key)
@@ -1109,6 +1196,8 @@ public sealed partial class QuickMenu : Module
                 "TeleportKit" => GetTeleportKitEnabled(),
                 "BossChallenge" => GetBossChallengeMasterEnabled(),
                 "RandomPantheons" => GetRandomPantheonsMasterEnabled(),
+                "TrueBossRush" => GetTrueBossRushMasterEnabled() && GetTrueBossRushEnabled(),
+                "Cheats" => GetCheatsMasterEnabled(),
                 "AlwaysFurious" => GetAlwaysFuriousEnabled(),
                 "GearSwitcher" => GetGearSwitcherEnabled(),
                 "ZoteHelper" => GetZoteHelperEnabled(),
@@ -1134,6 +1223,8 @@ public sealed partial class QuickMenu : Module
                 "TeleportKit" => teleportKitVisible,
                 "BossChallenge" => bossChallengeVisible,
                 "RandomPantheons" => randomPantheonsVisible,
+                "TrueBossRush" => trueBossRushVisible,
+                "Cheats" => cheatsVisible,
                 "AlwaysFurious" => alwaysFuriousVisible,
                 "GearSwitcher" => gearSwitcherVisible || gearSwitcherCharmCostVisible || gearSwitcherPresetVisible,
                 "ZoteHelper" => zoteHelperVisible,
@@ -1199,6 +1290,12 @@ public sealed partial class QuickMenu : Module
                 case "RandomPantheons":
                     SetRandomPantheonsVisible(true);
                     break;
+                case "TrueBossRush":
+                    SetTrueBossRushVisible(true);
+                    break;
+                case "Cheats":
+                    SetCheatsVisible(true);
+                    break;
                 case "AlwaysFurious":
                     SetAlwaysFuriousVisible(true);
                     break;
@@ -1233,6 +1330,8 @@ public sealed partial class QuickMenu : Module
             SetTeleportKitVisible(false);
             SetBossChallengeVisible(false);
             SetRandomPantheonsVisible(false);
+            SetTrueBossRushVisible(false);
+            SetCheatsVisible(false);
             SetAlwaysFuriousVisible(false);
             SetGearSwitcherVisible(false);
             SetGearSwitcherCharmCostVisible(false);
@@ -1382,3 +1481,4 @@ public sealed partial class QuickMenu : Module
         }
     }
 }
+

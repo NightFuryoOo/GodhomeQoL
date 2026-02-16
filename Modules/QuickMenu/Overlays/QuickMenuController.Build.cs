@@ -24,6 +24,8 @@ public sealed partial class QuickMenu : Module
             BuildTeleportKitOverlayUi();
             BuildBossChallengeOverlayUi();
             BuildRandomPantheonsOverlayUi();
+            BuildTrueBossRushOverlayUi();
+            BuildCheatsOverlayUi();
             BuildAlwaysFuriousOverlayUi();
             BuildGearSwitcherOverlayUi();
             BuildGearSwitcherCharmCostOverlayUi();
@@ -1881,6 +1883,293 @@ public sealed partial class QuickMenu : Module
             CreateButtonRow(panel.transform, "RandomPantheonsBackRow", "Back", backY, OnRandomPantheonsBackClicked);
         }
 
+        private void BuildTrueBossRushOverlayUi()
+        {
+            trueBossRushRoot = new GameObject("TrueBossRushOverlayCanvas");
+            trueBossRushRoot.transform.SetParent(transform, false);
+
+            Canvas canvas = trueBossRushRoot.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = TrueBossRushCanvasSortOrder;
+
+            CanvasScaler scaler = trueBossRushRoot.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
+
+            trueBossRushRoot.AddComponent<GraphicRaycaster>();
+
+            CanvasGroup group = trueBossRushRoot.AddComponent<CanvasGroup>();
+            group.interactable = true;
+            group.blocksRaycasts = true;
+
+            GameObject dim = new GameObject("Dim");
+            dim.transform.SetParent(trueBossRushRoot.transform, false);
+            RectTransform dimRect = dim.AddComponent<RectTransform>();
+            dimRect.anchorMin = Vector2.zero;
+            dimRect.anchorMax = Vector2.one;
+            dimRect.offsetMin = Vector2.zero;
+            dimRect.offsetMax = Vector2.zero;
+
+            Image dimImage = dim.AddComponent<Image>();
+            dimImage.color = OverlayDimColor;
+
+            GameObject panel = new GameObject("TrueBossRushPanel");
+            panel.transform.SetParent(dim.transform, false);
+            RectTransform panelRect = panel.AddComponent<RectTransform>();
+            panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+            panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+            panelRect.pivot = new Vector2(0.5f, 0.5f);
+            panelRect.anchoredPosition = Vector2.zero;
+            panelRect.sizeDelta = new Vector2(PanelWidth, PanelHeight);
+
+            Image panelImage = panel.AddComponent<Image>();
+            panelImage.color = OverlayPanelColor;
+
+            Text title = CreateText(panel.transform, "Title", "Modules/TrueBossRush".Localize(), 52, TextAnchor.MiddleCenter);
+            RectTransform titleRect = title.rectTransform;
+            titleRect.anchorMin = new Vector2(0.5f, 0.5f);
+            titleRect.anchorMax = new Vector2(0.5f, 0.5f);
+            titleRect.pivot = new Vector2(0.5f, 0.5f);
+            titleRect.anchoredPosition = new Vector2(0f, 210f);
+            titleRect.sizeDelta = new Vector2(RowWidth, 60f);
+
+            float panelHeight = PanelHeight;
+            float resetY = GetFixedResetY(panelHeight);
+            float backY = GetFixedBackY(panelHeight);
+            float topOffset = GetScrollTopOffset(panelHeight, titleRect);
+            float bottomOffset = GetScrollBottomOffset(panelHeight, resetY);
+            float viewHeight = Mathf.Max(0f, panelHeight - topOffset - bottomOffset);
+            RectTransform content = CreateScrollContent(panel.transform, PanelWidth, panelHeight, topOffset, bottomOffset);
+            trueBossRushContent = content;
+
+            float rowY = GetRowStartY(panelHeight, GearSwitcherRowStartY, topOffset) + GearSwitcherTopPadding;
+            float lastY = rowY;
+            CreateToggleRowWithIcon(
+                content,
+                "TrueBossRushToggleRow",
+                "Settings/TrueBossRush/Enable".Localize(),
+                rowY,
+                GetTrueBossRushMasterEnabled,
+                SetTrueBossRushMasterEnabled,
+                out trueBossRushToggleValue,
+                out trueBossRushToggleIcon
+            );
+
+            lastY = rowY;
+            rowY += BossChallengeRowSpacing;
+            CreateToggleRow(
+                content,
+                "TrueBossRushP1Row",
+                "Pantheon 1",
+                rowY,
+                GetTrueBossRushP1Enabled,
+                SetTrueBossRushP1Enabled,
+                out trueBossRushP1Value
+            );
+
+            lastY = rowY;
+            rowY += BossChallengeRowSpacing;
+            CreateToggleRow(
+                content,
+                "TrueBossRushP2Row",
+                "Pantheon 2",
+                rowY,
+                GetTrueBossRushP2Enabled,
+                SetTrueBossRushP2Enabled,
+                out trueBossRushP2Value
+            );
+
+            lastY = rowY;
+            rowY += BossChallengeRowSpacing;
+            CreateToggleRow(
+                content,
+                "TrueBossRushP3Row",
+                "Pantheon 3",
+                rowY,
+                GetTrueBossRushP3Enabled,
+                SetTrueBossRushP3Enabled,
+                out trueBossRushP3Value
+            );
+
+            lastY = rowY;
+            rowY += BossChallengeRowSpacing;
+            CreateToggleRow(
+                content,
+                "TrueBossRushP4Row",
+                "Pantheon 4",
+                rowY,
+                GetTrueBossRushP4Enabled,
+                SetTrueBossRushP4Enabled,
+                out trueBossRushP4Value
+            );
+
+            lastY = rowY;
+            rowY += BossChallengeRowSpacing;
+            CreateToggleRow(
+                content,
+                "TrueBossRushP5Row",
+                "Pantheon 5",
+                rowY,
+                GetTrueBossRushP5Enabled,
+                SetTrueBossRushP5Enabled,
+                out trueBossRushP5Value
+            );
+
+            SetScrollContentHeight(content, viewHeight, lastY, RowHeight);
+            CreateButtonRow(panel.transform, "TrueBossRushResetRow", "Settings/TrueBossRush/Reset".Localize(), resetY, OnTrueBossRushResetDefaultsClicked);
+            CreateButtonRow(panel.transform, "TrueBossRushBackRow", "Back", backY, OnTrueBossRushBackClicked);
+        }
+
+        private void BuildCheatsOverlayUi()
+        {
+            cheatsRoot = new GameObject("CheatsOverlayCanvas");
+            cheatsRoot.transform.SetParent(transform, false);
+
+            Canvas canvas = cheatsRoot.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = CheatsCanvasSortOrder;
+
+            CanvasScaler scaler = cheatsRoot.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
+
+            cheatsRoot.AddComponent<GraphicRaycaster>();
+
+            CanvasGroup group = cheatsRoot.AddComponent<CanvasGroup>();
+            group.interactable = true;
+            group.blocksRaycasts = true;
+
+            GameObject dim = new GameObject("Dim");
+            dim.transform.SetParent(cheatsRoot.transform, false);
+            RectTransform dimRect = dim.AddComponent<RectTransform>();
+            dimRect.anchorMin = Vector2.zero;
+            dimRect.anchorMax = Vector2.one;
+            dimRect.offsetMin = Vector2.zero;
+            dimRect.offsetMax = Vector2.zero;
+
+            Image dimImage = dim.AddComponent<Image>();
+            dimImage.color = OverlayDimColor;
+
+            GameObject panel = new GameObject("CheatsPanel");
+            panel.transform.SetParent(dim.transform, false);
+            RectTransform panelRect = panel.AddComponent<RectTransform>();
+            panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+            panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+            panelRect.pivot = new Vector2(0.5f, 0.5f);
+            panelRect.anchoredPosition = Vector2.zero;
+            panelRect.sizeDelta = new Vector2(PanelWidth, PanelHeight);
+
+            Image panelImage = panel.AddComponent<Image>();
+            panelImage.color = OverlayPanelColor;
+
+            Text title = CreateText(panel.transform, "Title", "Modules/Cheats".Localize(), 52, TextAnchor.MiddleCenter);
+            RectTransform titleRect = title.rectTransform;
+            titleRect.anchorMin = new Vector2(0.5f, 0.5f);
+            titleRect.anchorMax = new Vector2(0.5f, 0.5f);
+            titleRect.pivot = new Vector2(0.5f, 0.5f);
+            titleRect.anchoredPosition = new Vector2(0f, 210f);
+            titleRect.sizeDelta = new Vector2(RowWidth, 60f);
+
+            float panelHeight = PanelHeight;
+            float resetY = GetFixedResetY(panelHeight);
+            float backY = GetFixedBackY(panelHeight);
+            float topOffset = GetScrollTopOffset(panelHeight, titleRect);
+            float bottomOffset = GetScrollBottomOffset(panelHeight, resetY);
+            float viewHeight = Mathf.Max(0f, panelHeight - topOffset - bottomOffset);
+            RectTransform content = CreateScrollContent(panel.transform, PanelWidth, panelHeight, topOffset, bottomOffset);
+            cheatsContent = content;
+
+            float rowY = GetRowStartY(panelHeight, GearSwitcherRowStartY, topOffset) + GearSwitcherTopPadding;
+            float lastY = rowY;
+            CreateToggleRowWithIcon(
+                content,
+                "CheatsEnableRow",
+                "Settings/Cheats/Enable".Localize(),
+                rowY,
+                GetCheatsMasterEnabled,
+                SetCheatsMasterEnabled,
+                out cheatsEnableValue,
+                out cheatsEnableIcon
+            );
+
+            lastY = rowY;
+            rowY += BossChallengeRowSpacing;
+            CreateToggleRow(
+                content,
+                "CheatsInfiniteSoulRow",
+                "Settings/Cheats/InfiniteSoul".Localize(),
+                rowY,
+                GetCheatsInfiniteSoulEnabled,
+                SetCheatsInfiniteSoulEnabled,
+                out cheatsInfiniteSoulValue
+            );
+
+            lastY = rowY;
+            rowY += BossChallengeRowSpacing;
+            CreateToggleRow(
+                content,
+                "CheatsInfiniteHpRow",
+                "Settings/Cheats/InfiniteHp".Localize(),
+                rowY,
+                GetCheatsInfiniteHpEnabled,
+                SetCheatsInfiniteHpEnabled,
+                out cheatsInfiniteHpValue
+            );
+
+            lastY = rowY;
+            rowY += BossChallengeRowSpacing;
+            CreateToggleRow(
+                content,
+                "CheatsInvincibilityRow",
+                "Settings/Cheats/Invincibility".Localize(),
+                rowY,
+                GetCheatsInvincibilityEnabled,
+                SetCheatsInvincibilityEnabled,
+                out cheatsInvincibilityValue
+            );
+
+            lastY = rowY;
+            rowY += BossChallengeRowSpacing;
+            CreateToggleRow(
+                content,
+                "CheatsNoclipRow",
+                "Settings/Cheats/Noclip".Localize(),
+                rowY,
+                GetCheatsNoclipEnabled,
+                SetCheatsNoclipEnabled,
+                out cheatsNoclipValue
+            );
+
+            lastY = rowY;
+            rowY += BossChallengeRowSpacing;
+            CreateButtonRow(
+                content,
+                "CheatsKillAllRow",
+                "Settings/Cheats/KillAll".Localize(),
+                rowY,
+                OnCheatsKillAllClicked
+            );
+
+            lastY = rowY;
+            rowY += BossChallengeRowSpacing;
+            CreateKeybindRow(
+                content,
+                "CheatsKillAllHotkeyRow",
+                "Settings/Cheats/KillAllHotkey".Localize(),
+                rowY,
+                GetCheatsKillAllHotkeyLabel,
+                StartCheatsKillAllRebind,
+                out cheatsKillAllHotkeyValue
+            );
+
+            lastY = rowY;
+            SetScrollContentHeight(content, viewHeight, lastY, RowHeight);
+            CreateButtonRow(panel.transform, "CheatsResetRow", "Settings/Cheats/Reset".Localize(), resetY, OnCheatsResetDefaultsClicked);
+            CreateButtonRow(panel.transform, "CheatsBackRow", "Back", backY, OnCheatsBackClicked);
+        }
+
         private void BuildAlwaysFuriousOverlayUi()
         {
             alwaysFuriousRoot = new GameObject("AlwaysFuriousOverlayCanvas");
@@ -2117,6 +2406,17 @@ public sealed partial class QuickMenu : Module
                 99999,
                 4,
                 out gearSwitcherNailDamageField
+            );
+
+            lastY = rowY;
+            rowY += GearSwitcherRowSpacing;
+            CreateReadOnlyValueRow(
+                content,
+                "GearSwitcherBaseNailDamageRow",
+                "GearSwitcher/BaseNailDamage".Localize(),
+                rowY,
+                GetGearSwitcherBaseNailDamageDisplay,
+                out gearSwitcherBaseNailDamageValue
             );
 
             lastY = rowY;

@@ -1464,6 +1464,7 @@ public sealed partial class QuickMenu : Module
 		{
 			GearPreset selectedPreset = GetSelectedPreset();
 			UpdateIntInputValue(gearSwitcherNailDamageField, selectedPreset.NailDamage);
+			UpdateGearSwitcherBaseNailDamage();
 			UpdateIntInputValue(gearSwitcherCharmSlotsField, selectedPreset.CharmSlots);
 			UpdateIntInputValue(gearSwitcherMainSoulGainField, selectedPreset.MainSoulGain);
 			UpdateIntInputValue(gearSwitcherReserveSoulGainField, selectedPreset.ReserveSoulGain);
@@ -1482,6 +1483,50 @@ public sealed partial class QuickMenu : Module
 			UpdateGearSwitcherCharmPromptIcon();
 			RefreshGearSwitcherCharmCostUi();
 			UpdateGearSwitcherSelectedPresetColor(gearSwitcherSelectedPreset);
+		}
+
+		private void UpdateGearSwitcherBaseNailDamage()
+		{
+			if (gearSwitcherBaseNailDamageValue != null)
+			{
+				gearSwitcherBaseNailDamageValue.text = GetGearSwitcherBaseNailDamageDisplay();
+			}
+		}
+
+		private static string GetGearSwitcherBaseNailDamageDisplay()
+		{
+			PlayerData? data = PlayerData.instance;
+			int flatDamage = data?.nailDamage ?? 0;
+
+			PlayMakerFSM? slashFsm = GetKnightSlashFsm();
+			if (slashFsm == null)
+			{
+				return flatDamage.ToString();
+			}
+
+			int damageDealt = flatDamage;
+			float multiplier = 1f;
+
+			FsmInt? damageVar = slashFsm.FsmVariables.GetFsmInt("damageDealt");
+			if (damageVar != null)
+			{
+				damageDealt = damageVar.Value;
+			}
+
+			FsmFloat? multiplierVar = slashFsm.FsmVariables.GetFsmFloat("Multiplier");
+			if (multiplierVar != null)
+			{
+				multiplier = multiplierVar.Value;
+			}
+
+			return $"{damageDealt} (Flat {flatDamage}, x{multiplier:0.##})";
+		}
+
+		private static PlayMakerFSM? GetKnightSlashFsm()
+		{
+			HeroController? hero = HeroController.instance;
+			Transform? slash = hero?.transform.Find("Attacks/Slash");
+			return slash != null ? slash.GetComponent<PlayMakerFSM>() : null;
 		}
 
 		private void UpdateGearSwitcherFireballIcon()
@@ -2276,9 +2321,21 @@ public sealed partial class QuickMenu : Module
 			{
 				return 0;
 			}
+			// Keep UI selection synced with persisted GearSwitcher preset
+			// (important on save load when startup logic forces FullGear).
+			string persisted = GodhomeQoL.GlobalSettings.GearSwitcher?.LastPreset ?? string.Empty;
+			if (!string.IsNullOrWhiteSpace(persisted))
+			{
+				string? persistedMatch = options.FirstOrDefault((string option) => string.Equals(option, persisted, StringComparison.OrdinalIgnoreCase));
+				if (!string.IsNullOrWhiteSpace(persistedMatch)
+					&& !string.Equals(gearSwitcherSelectedPreset, persistedMatch, StringComparison.OrdinalIgnoreCase))
+				{
+					gearSwitcherSelectedPreset = persistedMatch;
+				}
+			}
 			if (string.IsNullOrWhiteSpace(gearSwitcherSelectedPreset) || !options.Contains<string>(gearSwitcherSelectedPreset))
 			{
-				string value = GodhomeQoL.GlobalSettings.GearSwitcher?.LastPreset ?? string.Empty;
+				string value = persisted;
 				if (!string.IsNullOrWhiteSpace(value) && options.Contains<string>(value))
 				{
 					gearSwitcherSelectedPreset = value;

@@ -278,7 +278,7 @@ public sealed class ZoteHelper : Module
                     ZotelingType forcedType = zoteSpawnFlying ? ZotelingType.Flying : ZotelingType.Hopping;
                     SetZotelingTypeMarker(fsm.gameObject, forcedType);
                     fsm.SendEvent(zoteSpawnFlying ? "BUZZER" : "HOPPER");
-                    ApplyZotelingHealth(fsm.gameObject);
+                    ApplyZotelingHealthOnce(fsm.gameObject);
                 }
             }, 0);
         }
@@ -300,7 +300,7 @@ public sealed class ZoteHelper : Module
         AttachZotelingTypeHooks(fsm);
         if (TryGetZotelingTypeMarker(fsm.gameObject, out _))
         {
-            ApplyZotelingHealth(fsm.gameObject);
+            ApplyZotelingHealthOnce(fsm.gameObject);
         }
     }
 
@@ -444,7 +444,7 @@ public sealed class ZoteHelper : Module
                     }
 
                     SetZotelingTypeMarker(fsm.gameObject, ZotelingType.Flying);
-                    ApplyZotelingHealth(fsm.gameObject);
+                    ApplyZotelingHealthOnce(fsm.gameObject);
                 }, 0);
             }
             else if (stateName.IndexOf("hopper", StringComparison.OrdinalIgnoreCase) >= 0
@@ -459,10 +459,27 @@ public sealed class ZoteHelper : Module
                     }
 
                     SetZotelingTypeMarker(fsm.gameObject, ZotelingType.Hopping);
-                    ApplyZotelingHealth(fsm.gameObject);
+                    ApplyZotelingHealthOnce(fsm.gameObject);
                 }, 0);
             }
         }
+    }
+
+    private static void ApplyZotelingHealthOnce(GameObject zoteling)
+    {
+        if (zoteling == null)
+        {
+            return;
+        }
+
+        ZotelingTypeMarker marker = zoteling.GetComponent<ZotelingTypeMarker>() ?? zoteling.AddComponent<ZotelingTypeMarker>();
+        if (marker.HealthInitialized)
+        {
+            return;
+        }
+
+        ApplyZotelingHealth(zoteling);
+        marker.HealthInitialized = true;
     }
 
     private static void SetZotelingTypeMarker(GameObject zoteling, ZotelingType type)
@@ -494,6 +511,7 @@ public sealed class ZoteHelper : Module
     {
         public ZotelingType Type;
         public bool TypeSet;
+        public bool HealthInitialized;
     }
 
     private static void OnHealthManagerUpdate(On.HealthManager.orig_Update orig, HealthManager self)
@@ -528,6 +546,13 @@ public sealed class ZoteHelper : Module
         if (!activeZotelings.Contains(zoteling))
         {
             activeZotelings.Add(zoteling);
+        }
+
+        ZotelingTypeMarker? marker = zoteling.GetComponent<ZotelingTypeMarker>();
+        if (marker != null)
+        {
+            marker.TypeSet = false;
+            marker.HealthInitialized = false;
         }
 
         if (zoteling.GetComponent<ZotelingTracker>() == null)
