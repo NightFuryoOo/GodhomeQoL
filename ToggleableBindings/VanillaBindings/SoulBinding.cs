@@ -18,7 +18,9 @@ namespace ToggleableBindings.VanillaBindings
         private const string UnbindVesselOrbEvent = "UNBIND VESSEL ORB";
         private const string MPLoseEvent = "MP LOSE";
         private const string MPReserveDownEvent = "MP RESERVE DOWN";
+        private const int HudEventWaitFrames = 600;
         private readonly List<IDetour> _detours;
+        private bool _pendingHudBindDispatch;
 
         private Sprite? _defaultSprite;
         private Sprite? _selectedSprite;
@@ -39,6 +41,7 @@ namespace ToggleableBindings.VanillaBindings
 
         protected override void OnApplied()
         {
+            _pendingHudBindDispatch = false;
             HudEvents.In += HudEvents_In;
             On.GGCheckBoundSoul.OnEnter += GGCheckBoundSoul_OnEnter;
             IL.BossSequenceController.RestoreBindings += BossSequenceController_RestoreBindings;
@@ -61,12 +64,16 @@ namespace ToggleableBindings.VanillaBindings
             yield return new WaitWhile(() => !gm.soulOrb_fsm || !gm.soulVessel_fsm);
             gm.soulOrb_fsm.SendEvent(MPLoseEvent);
             gm.soulVessel_fsm.SendEvent(MPReserveDownEvent);
-
-            EventRegister.SendEvent(BindVesselOrbEvent);
+            yield return WaitForHudEventReady(BindVesselOrbEvent, HudEventWaitFrames);
+            if (IsHudEventReady(BindVesselOrbEvent))
+            {
+                EventRegister.SendEvent(BindVesselOrbEvent);
+            }
         }
 
         protected override void OnRestored()
         {
+            _pendingHudBindDispatch = false;
             HudEvents.In -= HudEvents_In;
             On.GGCheckBoundSoul.OnEnter -= GGCheckBoundSoul_OnEnter;
             IL.BossSequenceController.RestoreBindings -= BossSequenceController_RestoreBindings;
@@ -85,12 +92,66 @@ namespace ToggleableBindings.VanillaBindings
             yield return new WaitWhile(() => !gm.soulOrb_fsm);
 
             gm.soulOrb_fsm.SendEvent(MPLoseEvent);
-            EventRegister.SendEvent(UnbindVesselOrbEvent);
+            yield return WaitForHudEventReady(UnbindVesselOrbEvent, HudEventWaitFrames);
+            if (IsHudEventReady(UnbindVesselOrbEvent))
+            {
+                EventRegister.SendEvent(UnbindVesselOrbEvent);
+            }
         }
 
         private void HudEvents_In()
         {
-            EventRegister.SendEvent(BindVesselOrbEvent);
+            if (IsHudEventReady(BindVesselOrbEvent))
+            {
+                EventRegister.SendEvent(BindVesselOrbEvent);
+                return;
+            }
+
+            if (_pendingHudBindDispatch)
+            {
+                return;
+            }
+
+            _pendingHudBindDispatch = true;
+            CoroutineController.Start(SendBindWhenHudEventReady());
+        }
+
+        private IEnumerator SendBindWhenHudEventReady()
+        {
+            yield return WaitForHudEventReady(BindVesselOrbEvent, HudEventWaitFrames);
+            _pendingHudBindDispatch = false;
+            if (IsApplied && IsHudEventReady(BindVesselOrbEvent))
+            {
+                EventRegister.SendEvent(BindVesselOrbEvent);
+            }
+        }
+
+        private static IEnumerator WaitForHudEventReady(string eventName, int maxFrames)
+        {
+            int frames = Math.Max(1, maxFrames);
+            for (int i = 0; i < frames; i++)
+            {
+                if (IsHudEventReady(eventName))
+                {
+                    yield break;
+                }
+
+                yield return null;
+            }
+        }
+
+        private static bool IsHudEventReady(string eventName)
+        {
+            try
+            {
+                return !string.IsNullOrEmpty(eventName)
+                    && EventRegister.eventRegister != null
+                    && EventRegister.eventRegister.ContainsKey(eventName);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private void BossSequenceController_RestoreBindings(ILContext il)

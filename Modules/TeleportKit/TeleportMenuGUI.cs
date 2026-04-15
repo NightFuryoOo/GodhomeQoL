@@ -151,23 +151,22 @@ internal sealed class TeleportMenuGUI : IDisposable
             _ => string.Empty
         };
 
+    private (int startIndex, int endIndexExclusive) GetPageRange()
+    {
+        return mod.Input.CurrentPage switch
+        {
+            1 => (0, 18),   // IDs 1-18
+            2 => (18, 37),  // IDs 19-37
+            3 => (37, 44),  // IDs 38-44
+            4 => (44, 46),  // IDs 45-46
+            _ => (0, 0)
+        };
+    }
+
     private void DrawMenuContent(float startY)
     {
         int yPos = (int)startY + 40;
-        int startIndex = (mod.Input.CurrentPage - 1) * 18;
-
-        if (mod.Input.CurrentPage == 3)
-        {
-            startIndex = 36;
-        }
-        if (mod.Input.CurrentPage == 4)
-        {
-            startIndex = 43;
-        }
-
-        int endIndex = mod.Input.CurrentPage == 3 ? 43 :
-                      mod.Input.CurrentPage == 4 ? 56 :
-                      startIndex + 18;
+        (int startIndex, int endIndex) = GetPageRange();
 
         for (int i = startIndex; i < endIndex && i < mod.Data.Bosses.Length; i++)
         {

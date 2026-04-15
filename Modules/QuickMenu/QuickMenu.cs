@@ -9,6 +9,7 @@ public sealed partial class QuickMenu : Module
 {
     public override bool DefaultEnabled => true;
     public override bool Hidden => true;
+    public override bool AlwaysEnabled => true;
 
     private GameObject? root;
     private static QuickMenuController? controller;
@@ -41,6 +42,36 @@ public sealed partial class QuickMenu : Module
         controller?.RefreshQuickMenuEntryColors();
     }
 
+    internal static void RefreshPantheonCompatibilityUi()
+    {
+        controller?.RefreshPantheonCompatibilityUiFromExternal();
+    }
+
+    internal static void InvalidateQolSnapshotFromExternal()
+    {
+        QuickMenuMasterSettings settings = GodhomeQoL.GlobalSettings.QuickMenuMasters ??= new QuickMenuMasterSettings();
+        settings.QolHasSnapshot = false;
+        settings.QolSavedHallOfGods = false;
+        controller?.InvalidateQolSnapshotFromExternal();
+        GodhomeQoL.SaveGlobalSettingsSafe();
+    }
+
+    internal static void InvalidateMenuAnimationSnapshotFromExternal()
+    {
+        QuickMenuMasterSettings settings = GodhomeQoL.GlobalSettings.QuickMenuMasters ??= new QuickMenuMasterSettings();
+        settings.MenuAnimHasSnapshot = false;
+        controller?.InvalidateMenuAnimationSnapshotFromExternal();
+        GodhomeQoL.SaveGlobalSettingsSafe();
+    }
+
+    internal static void InvalidateBossAnimationSnapshotFromExternal()
+    {
+        QuickMenuMasterSettings settings = GodhomeQoL.GlobalSettings.QuickMenuMasters ??= new QuickMenuMasterSettings();
+        settings.BossAnimHasSnapshot = false;
+        controller?.InvalidateBossAnimationSnapshotFromExternal();
+        GodhomeQoL.SaveGlobalSettingsSafe();
+    }
+
     internal static void ApplyInitialDefaults()
     {
         QuickMenuController.ApplyInitialDefaults();
@@ -51,6 +82,11 @@ public sealed partial class QuickMenu : Module
         return controller != null && controller.IsHotkeyInputBlocked();
     }
 
+    internal static bool IsAnyUiVisible()
+    {
+        return controller != null && controller.IsAnyUiVisible();
+    }
+
     internal static bool IsSpeedChangerOverlayVisible()
     {
         return controller != null && controller.IsSpeedChangerVisible();
@@ -59,6 +95,22 @@ public sealed partial class QuickMenu : Module
     internal static void SetSpeedChangerOverlayVisible(bool value)
     {
         controller?.SetSpeedChangerVisibleFromExternal(value);
+    }
+
+    internal static void ShowStatusMessageFromExternal(string message)
+    {
+        controller?.ShowStatusMessageFromExternal(message);
+    }
+
+    internal static bool TryGetHotkeyConflictOwnersExceptSelf(KeyCode key, string selfOwner, out string ownersText)
+    {
+        if (controller != null)
+        {
+            return controller.TryGetHotkeyConflictOwnersExceptSelfExternal(key, selfOwner, out ownersText);
+        }
+
+        ownersText = string.Empty;
+        return false;
     }
 
     private static void SetController(QuickMenuController? value)

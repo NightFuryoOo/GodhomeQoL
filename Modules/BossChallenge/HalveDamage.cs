@@ -4,10 +4,16 @@ internal sealed class HalveDamage : Module {
 	internal static event Func<bool> ShouldFunctionHook = null!;
 
 	public override bool Hidden => true;
+	public override bool AlwaysEnabled => true;
 
 	private protected override void Load() {
 		ModHooks.TakeHealthHook += MakeDamageHalved;
 		On.HeroController.StartRecoil += FixTakeHitEffect;
+	}
+
+	private protected override void Unload() {
+		ModHooks.TakeHealthHook -= MakeDamageHalved;
+		On.HeroController.StartRecoil -= FixTakeHitEffect;
 	}
 
 	private static bool ShouldActivate() {
@@ -39,43 +45,6 @@ public abstract class HalveDamageConditioned : Module {
 		HalveDamage.ShouldFunctionHook -= Predicate;
 
 	private protected abstract bool Predicate();
-}
-
-public sealed class HalveDamageHoGAscendedOrAbove : HalveDamageConditioned {
-	private static int GetBossLevel()
-	{
-		int level = BossSceneController.Instance.Reflect().bossLevel;
-		if (P5Health.IsActive && P5Health.HasOriginalBossLevel)
-		{
-			level = Math.Max(level, P5Health.LastOriginalBossLevel);
-		}
-
-		return level;
-	}
-
-	private protected override bool Predicate() =>
-		!P5Health.IsActive
-		&& !BossSequenceController.IsInSequence
-		&& BossSceneController.IsBossScene
-		&& GetBossLevel() > 0;
-}
-
-public sealed class HalveDamageHoGAttuned : HalveDamageConditioned {
-	private static int GetBossLevel()
-	{
-		int level = BossSceneController.Instance.Reflect().bossLevel;
-		if (P5Health.IsActive && P5Health.HasOriginalBossLevel)
-		{
-			level = Math.Max(level, P5Health.LastOriginalBossLevel);
-		}
-
-		return level;
-	}
-
-	private protected override bool Predicate() =>
-		!BossSequenceController.IsInSequence
-		&& BossSceneController.IsBossScene
-		&& GetBossLevel() == 0;
 }
 
 public sealed class HalveDamageOtherPlace : HalveDamageConditioned {

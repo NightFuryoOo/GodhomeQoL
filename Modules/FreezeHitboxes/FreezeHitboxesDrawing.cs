@@ -125,7 +125,7 @@ internal static class FreezeHitboxesDrawing
         if (lineTex == null)
         {
             lineTex = new Texture2D(1, 1, TextureFormat.ARGB32, false);
-            lineTex.SetPixel(0, 1, Color.white);
+            lineTex.SetPixel(0, 0, Color.white);
             lineTex.Apply();
         }
 

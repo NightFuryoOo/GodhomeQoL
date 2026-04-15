@@ -59,6 +59,11 @@ public sealed class CollectorRoarMute : Module
         hookPlayClipAtPoint?.Dispose();
         hookPlayClipAtPoint = null;
 
+        if (customClip != null)
+        {
+            UObject.Destroy(customClip);
+        }
+
         customClip = null;
     }
 
@@ -167,7 +172,8 @@ public sealed class CollectorRoarMute : Module
                 return;
             }
 
-            customClip = LoadWav(File.OpenRead(path));
+            using Stream fileStream = File.OpenRead(path);
+            customClip = LoadWav(fileStream);
             if (customClip != null)
             {
                 LogDebug($"CollectorRoarMute: loaded custom clip '{customClip.name}' from {path}");

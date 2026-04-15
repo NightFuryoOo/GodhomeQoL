@@ -1,3 +1,4 @@
+using GodhomeQoL.Modules.Tools;
 using UnityEngine.UI;
 using QolCanvasUtil = GodhomeQoL.Modules.Tools.CanvasUtil;
 
@@ -73,17 +74,23 @@ public sealed class InvincibleIndicator : Module
 
     private static bool ShouldCheckHero()
     {
-        if (Ref.GM == null || Ref.GM.gameState != GameState.PLAYING)
+        GameManager? manager = GameManager.instance;
+        if (manager == null || manager.gameState != GameState.PLAYING)
         {
             return false;
         }
 
-        return Ref.HC != null;
+        return HeroController.instance != null;
     }
 
     private static bool IsHeroInvincible()
     {
-        HeroController? hero = Ref.HC;
+        if (InvincibilityClaims.HasActiveClaims)
+        {
+            return true;
+        }
+
+        HeroController? hero = HeroController.instance;
         if (hero != null)
         {
             try
@@ -115,7 +122,7 @@ public sealed class InvincibleIndicator : Module
 
     private static bool IsHeroBoxActive()
     {
-        HeroController? hero = Ref.HC;
+        HeroController? hero = HeroController.instance;
         if (hero == null)
         {
             return true;

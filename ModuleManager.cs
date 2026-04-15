@@ -1,91 +1,149 @@
 ﻿using Modding.Utils;
 using Osmi.Utils.Tap;
 using System.Diagnostics.CodeAnalysis;
-using static Mono.Security.X509.X520;
 
 namespace GodhomeQoL;
 
 public static class ModuleManager
 {
-    private static readonly Lazy<Dictionary<string, Module>> modules = new(() => Assembly
-        .GetExecutingAssembly()
-        .GetTypesSafely()
-        .Filter(type => type.IsSubclassOf(typeof(Module)) && !type.IsAbstract)
-        .OrderBy(type => type.FullName)
-#if DEBUG
-		.Filter(type => {
-			if (type.GetConstructor(Type.EmptyTypes) == null) {
-				LogError($"Default constructor not found on module type {type.FullName}");
-				return false;
-			}
-
-			if (!type.IsSealed) {
-				LogWarn($"Module type {type.FullName} is not sealed");
-			}
-
-			return true;
-		})
-		.Map(type => {
-			try {
-				return (Activator.CreateInstance(type) as Module)!;
-			} catch {
-				LogError($"Failed to initialize module {type.FullName}");
-				return null!;
-			}
-		})
-#else
-        .Map(type => (Activator.CreateInstance(type) as Module)!)
-#endif
-        .ToDictionary(module => module.Name)
-    );
+    private static readonly Lazy<Dictionary<string, Module>> modules = new(BuildModuleMap);
 
     internal static Dictionary<string, Module> Modules => modules.Value;
 
     internal static readonly Dictionary<int, (string suppressor, Module[] modules)> suppressions = [];
     private static int lastSuppressionHandle = 0;
 
+    private static Dictionary<string, Module> BuildModuleMap()
+    {
+        Dictionary<string, Module> map = new(StringComparer.Ordinal);
+        foreach (Type type in Assembly
+            .GetExecutingAssembly()
+            .GetTypesSafely()
+            .Where(type => type.IsSubclassOf(typeof(Module)) && !type.IsAbstract)
+            .OrderBy(type => type.FullName, StringComparer.Ordinal))
+        {
+            if (type.GetConstructor(Type.EmptyTypes) == null)
+            {
+                LogError($"Default constructor not found on module type {type.FullName}");
+                continue;
+            }
+
+#if DEBUG
+            if (!type.IsSealed)
+            {
+                LogWarn($"Module type {type.FullName} is not sealed");
+            }
+#endif
+
+            try
+            {
+                if (Activator.CreateInstance(type) is not Module module)
+                {
+                    LogError($"Failed to initialize module {type.FullName}: constructed value is not a Module");
+                    continue;
+                }
+
+                if (map.ContainsKey(module.Name))
+                {
+                    LogError($"Duplicate module name detected: {module.Name} ({type.FullName})");
+                    continue;
+                }
+
+                map.Add(module.Name, module);
+            }
+            catch (Exception ex)
+            {
+                LogError($"Failed to initialize module {type.FullName} - {ex}");
+            }
+        }
+
+        return map;
+    }
+
+    private static void ClearAllSuppressions(string reason, bool updateStatus)
+    {
+        if (suppressions.Count == 0)
+        {
+            return;
+        }
+
+        foreach ((int handle, (string suppressor, Module[] modules)) in suppressions.ToArray())
+        {
+            foreach (Module module in modules)
+            {
+                if (module == null)
+                {
+                    continue;
+                }
+
+                _ = module.suppressorMap.Remove(handle);
+                if (!updateStatus)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    module.UpdateStatus();
+                }
+                catch (Exception ex)
+                {
+                    LogError($"Failed to update module status while clearing suppression {handle} - {ex}");
+                }
+            }
+        }
+
+        int removed = suppressions.Count;
+        suppressions.Clear();
+        LogWarn($"Cleared {removed} stale module suppressions during {reason}");
+    }
+
     internal static void Load()
     {
-        try
-        {
-            Modules.Values.ForEach(module => module.Active = true);
+        ClearAllSuppressions("load", updateStatus: false);
 
-        }
-        catch (Exception ex)
+        foreach (Module module in Modules.Values)
         {
-            Logger.Log(ex.Message);
+            try
+            {
+                module.Active = true;
+            }
+            catch (Exception ex)
+            {
+                LogError($"Failed to activate module {module.Name} - {ex}");
+            }
         }
-
     }
 
 
     internal static void Unload()
     {
-        try
+        foreach (Module module in Modules.Values)
         {
-            Modules.Values.ForEach(module => module.Active = false);
-
-
+            try
+            {
+                module.Active = false;
+            }
+            catch (Exception ex)
+            {
+                LogError($"Failed to deactivate module {module.Name} - {ex}");
+            }
         }
-        catch (Exception ex)
-        {
-            Logger.Log(ex.Message);
-        }
 
+        ClearAllSuppressions("unload", updateStatus: false);
     }
 
-    public static Module GetModule<T>() where T : Module
+    public static Module? GetModule<T>() where T : Module
     {
         try
         {
-            _ = TryGetModule(typeof(T).Name, out Module? m);
-            return m!;
+            return TryGetModule(typeof(T).Name, out Module? module) ? module : null;
 
         }
         catch (Exception ex)
         {
             Logger.Log(ex.Message);
-            return null!;
+            return null;
         }
 
     }
@@ -208,18 +266,23 @@ public static class ModuleManager
     {
         try
         {
+            Module[] validModules = modules.Where(module => module != null).ToArray();
+            if (validModules.Length == 0)
+            {
+                return 0;
+            }
 
             int handle = ++lastSuppressionHandle;
 
-            suppressions.Add(handle, (suppressor, modules));
+            suppressions.Add(handle, (suppressor, validModules));
 
-            foreach (Module module in modules)
+            foreach (Module module in validModules)
             {
                 module.suppressorMap.Add(handle, suppressor);
                 module.UpdateStatus();
             }
 
-            Log(suppressor + " starts to suppress modules " + modules.Map(m => m.Name).Join(", ") + " with handle " + handle);
+            Log(suppressor + " starts to suppress modules " + validModules.Map(m => m.Name).Join(", ") + " with handle " + handle);
 
             return handle;
         }
@@ -235,8 +298,13 @@ public static class ModuleManager
     {
         try
         {
+            if (!TryGetModule(typeof(T), out Module? module))
+            {
+                LogError($"Cannot suppress unknown module {typeof(T).Name}");
+                return 0;
+            }
 
-            return SuppressModules(suppressor, GetModule<T>());
+            return SuppressModules(suppressor, module);
         }
         catch (Exception ex)
         {

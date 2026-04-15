@@ -11,7 +11,52 @@ namespace GodhomeQoL.Modules.Tools;
 public sealed partial class QuickMenu : Module
 {
     private sealed partial class QuickMenuController
-    {        private void OnOverlayBackClicked()
+    {
+        private static readonly Type[] BossManipulateGlobalP5ModuleTypes = new[]
+        {
+            typeof(Modules.BossChallenge.GruzMotherHelper),
+            typeof(Modules.BossChallenge.BroodingMawlekHelper),
+            typeof(Modules.BossChallenge.HornetProtectorHelper),
+            typeof(Modules.BossChallenge.HornetSentinelHelper),
+            typeof(Modules.BossChallenge.MassiveMossChargerHelper),
+            typeof(Modules.BossChallenge.CrystalGuardianHelper),
+            typeof(Modules.BossChallenge.EnragedGuardianHelper),
+            typeof(Modules.BossChallenge.MarmuHelper),
+            typeof(Modules.BossChallenge.XeroHelper),
+            typeof(Modules.BossChallenge.MarkothHelper),
+            typeof(Modules.BossChallenge.GalienHelper),
+            typeof(Modules.BossChallenge.GorbHelper),
+            typeof(Modules.BossChallenge.ElderHuHelper),
+            typeof(Modules.BossChallenge.NoEyesHelper),
+            typeof(Modules.BossChallenge.DungDefenderHelper),
+            typeof(Modules.BossChallenge.WhiteDefenderHelper),
+            typeof(Modules.BossChallenge.HiveKnightHelper),
+            typeof(Modules.BossChallenge.BrokenVesselHelper),
+            typeof(Modules.BossChallenge.LostKinHelper),
+            typeof(Modules.BossChallenge.WingedNoskHelper),
+            typeof(Modules.BossChallenge.UumuuHelper),
+            typeof(Modules.BossChallenge.TraitorLordHelper),
+            typeof(Modules.BossChallenge.TroupeMasterGrimmHelper),
+            typeof(Modules.BossChallenge.NightmareKingGrimmHelper),
+            typeof(Modules.BossChallenge.PureVesselHelper),
+            typeof(Modules.BossChallenge.AbsoluteRadianceHelper),
+            typeof(Modules.BossChallenge.PaintmasterSheoHelper),
+            typeof(Modules.BossChallenge.SoulWarriorHelper),
+            typeof(Modules.BossChallenge.NailsageSlyHelper),
+            typeof(Modules.BossChallenge.SoulMasterHelper),
+            typeof(Modules.BossChallenge.SoulTyrantHelper),
+            typeof(Modules.BossChallenge.WatcherKnightHelper),
+            typeof(Modules.BossChallenge.OroMatoHelper),
+            typeof(Modules.BossChallenge.GodTamerHelper),
+            typeof(Modules.BossChallenge.OblobblesHelper),
+            typeof(Modules.BossChallenge.FalseKnightHelper),
+            typeof(Modules.BossChallenge.FailedChampionHelper),
+            typeof(Modules.BossChallenge.SisterOfBattleHelper),
+            typeof(Modules.BossChallenge.FlukemarmHelper),
+            typeof(Modules.BossChallenge.VengeflyKing),
+        };
+
+        private void OnOverlayBackClicked()
         {
             bool reopenQuick = returnToQuickOnClose;
             returnToQuickOnClose = false;
@@ -26,15 +71,329 @@ public sealed partial class QuickMenu : Module
 
         private void OnCollectorBackClicked()
         {
+            bool reopenBossManipulate = returnToBossManipulateOnClose;
+            bool reopenQuick = returnToQuickOnClose;
+            returnToBossManipulateOnClose = false;
+            returnToQuickOnClose = false;
+
+            if (reopenBossManipulate)
+            {
+                returnToQuickOnClose = reopenQuick;
+                SetBossManipulateVisible(true);
+            }
+            else if (reopenQuick)
+            {
+                SetQuickVisible(true);
+            }
+
+            SetCollectorVisible(false);
+        }
+
+        private void OnBossManipulateBackClicked()
+        {
             bool reopenQuick = returnToQuickOnClose;
             returnToQuickOnClose = false;
+            returnToBossManipulateOnClose = false;
 
             if (reopenQuick)
             {
                 SetQuickVisible(true);
             }
 
-            SetCollectorVisible(false);
+            SetBossManipulateVisible(false);
+        }
+
+        private bool GetBossManipulateGlobalP5Enabled()
+        {
+            QuickMenuMasterSettings settings = GodhomeQoL.GlobalSettings.QuickMenuMasters ??= new QuickMenuMasterSettings();
+            return settings.BossManipulateGlobalP5Enabled;
+        }
+
+        private void SetBossManipulateGlobalP5Enabled(bool value)
+        {
+            QuickMenuMasterSettings settings = GodhomeQoL.GlobalSettings.QuickMenuMasters ??= new QuickMenuMasterSettings();
+            List<string> touchedP5Modules = settings.BossManipulateGlobalP5TouchedModules ??= new List<string>();
+            List<string> enabledModules = settings.BossManipulateGlobalP5EnabledModules ??= new List<string>();
+
+            if (value)
+            {
+                touchedP5Modules.Clear();
+                enabledModules.Clear();
+                foreach (Type moduleType in BossManipulateGlobalP5ModuleTypes)
+                {
+                    string key = GetBossManipulateModuleKey(moduleType);
+
+                    if (TryGetModuleEnabled(moduleType, out bool isModuleEnabled) && !isModuleEnabled && TrySetModuleEnabled(moduleType, true))
+                    {
+                        if (!enabledModules.Contains(key))
+                        {
+                            enabledModules.Add(key);
+                        }
+                    }
+
+                    if (!TryGetModuleP5HpEnabled(moduleType, out bool currentValue) || currentValue)
+                    {
+                        continue;
+                    }
+
+                    if (!TrySetModuleP5HpEnabled(moduleType, true))
+                    {
+                        continue;
+                    }
+
+                    if (!touchedP5Modules.Contains(key))
+                    {
+                        touchedP5Modules.Add(key);
+                    }
+                }
+
+                settings.BossManipulateGlobalP5Enabled = true;
+            }
+            else
+            {
+                HashSet<string> touchedP5Set = new(touchedP5Modules);
+                HashSet<string> enabledSet = new(enabledModules);
+                foreach (Type moduleType in BossManipulateGlobalP5ModuleTypes)
+                {
+                    string key = GetBossManipulateModuleKey(moduleType);
+                    if (touchedP5Set.Contains(key))
+                    {
+                        _ = TrySetModuleP5HpEnabled(moduleType, false);
+                    }
+
+                    if (enabledSet.Contains(key))
+                    {
+                        _ = TrySetModuleEnabled(moduleType, false);
+                    }
+                }
+
+                touchedP5Modules.Clear();
+                enabledModules.Clear();
+                settings.BossManipulateGlobalP5Enabled = false;
+            }
+
+            GodhomeQoL.SaveGlobalSettingsSafe();
+            RefreshBossManipulateGlobalUi();
+            RefreshBossManipulateCardVisuals();
+            UpdateQuickMenuEntryStateColors();
+        }
+
+        private void OnBossManipulateResetAllClicked()
+        {
+            SetBossManipulateResetConfirmVisible(true);
+        }
+
+        private void OnBossManipulateResetConfirmYes()
+        {
+            SetBossManipulateResetConfirmVisible(false);
+
+            OnCollectorResetClicked();
+            OnZoteHelperResetDefaultsClicked();
+            OnGruzHelperResetDefaultsClicked();
+            OnGruzMotherP1HelperResetDefaultsClicked();
+            OnVengeflyKingP1HelperResetDefaultsClicked();
+            OnBroodingMawlekP1HelperResetDefaultsClicked();
+            OnNoskP2HelperResetDefaultsClicked();
+            OnUumuuP3HelperResetDefaultsClicked();
+            OnSoulWarriorP1HelperResetDefaultsClicked();
+            OnNoEyesP4HelperResetDefaultsClicked();
+            OnMarmuP2HelperResetDefaultsClicked();
+            OnXeroP2HelperResetDefaultsClicked();
+            OnMarkothP4HelperResetDefaultsClicked();
+            OnGorbP1HelperResetDefaultsClicked();
+            OnHornetHelperResetDefaultsClicked();
+            OnMawlekHelperResetDefaultsClicked();
+            OnMassiveMossHelperResetDefaultsClicked();
+            OnCrystalGuardianHelperResetDefaultsClicked();
+            OnEnragedGuardianHelperResetDefaultsClicked();
+            OnHornetSentinelHelperResetDefaultsClicked();
+
+            OnMarmuHelperResetDefaultsClicked();
+            OnXeroHelperResetDefaultsClicked();
+            OnMarkothHelperResetDefaultsClicked();
+            OnGalienHelperResetDefaultsClicked();
+            OnGorbHelperResetDefaultsClicked();
+            OnElderHuHelperResetDefaultsClicked();
+            OnNoEyesHelperResetDefaultsClicked();
+            OnDungDefenderHelperResetDefaultsClicked();
+            OnWhiteDefenderHelperResetDefaultsClicked();
+            OnHiveKnightHelperResetDefaultsClicked();
+            OnBrokenVesselHelperResetDefaultsClicked();
+            OnLostKinHelperResetDefaultsClicked();
+            OnNoskHelperResetDefaultsClicked();
+            OnWingedNoskHelperResetDefaultsClicked();
+            OnUumuuHelperResetDefaultsClicked();
+            OnTraitorLordHelperResetDefaultsClicked();
+            OnTroupeMasterGrimmHelperResetDefaultsClicked();
+            OnNightmareKingGrimmHelperResetDefaultsClicked();
+            OnPureVesselHelperResetDefaultsClicked();
+            OnAbsoluteRadianceHelperResetDefaultsClicked();
+            OnPaintmasterSheoHelperResetDefaultsClicked();
+            OnSoulWarriorHelperResetDefaultsClicked();
+            OnNailsageSlyHelperResetDefaultsClicked();
+            OnSoulMasterHelperResetDefaultsClicked();
+            OnSoulTyrantHelperResetDefaultsClicked();
+            OnWatcherKnightHelperResetDefaultsClicked();
+            OnOroMatoHelperResetDefaultsClicked();
+            OnGodTamerHelperResetDefaultsClicked();
+            OnOblobblesHelperResetDefaultsClicked();
+            OnFalseKnightHelperResetDefaultsClicked();
+            OnFailedChampionHelperResetDefaultsClicked();
+            OnFlukemarmHelperResetDefaultsClicked();
+            OnVengeflyKingResetDefaultsClicked();
+            OnSisterOfBattleHelperResetDefaultsClicked();
+            OnMantisLordHelperResetDefaultsClicked();
+
+            QuickMenuMasterSettings settings = GodhomeQoL.GlobalSettings.QuickMenuMasters ??= new QuickMenuMasterSettings();
+            settings.BossManipulateGlobalP5Enabled = false;
+            settings.BossManipulateGlobalP5TouchedModules ??= new List<string>();
+            settings.BossManipulateGlobalP5TouchedModules.Clear();
+            settings.BossManipulateGlobalP5EnabledModules ??= new List<string>();
+            settings.BossManipulateGlobalP5EnabledModules.Clear();
+
+            GodhomeQoL.SaveGlobalSettingsSafe();
+            RefreshBossManipulateGlobalUi();
+            RefreshBossManipulateCardVisuals();
+            UpdateQuickMenuEntryStateColors();
+        }
+
+        private void OnBossManipulateResetConfirmNo()
+        {
+            SetBossManipulateResetConfirmVisible(false);
+        }
+
+        private static string GetBossManipulateModuleKey(Type moduleType) =>
+            moduleType.FullName ?? moduleType.Name;
+
+        private static bool TryGetModuleEnabled(Type moduleType, out bool value)
+        {
+            value = false;
+            if (!ModuleManager.TryGetModule(moduleType, out Module? module) || module == null)
+            {
+                return false;
+            }
+
+            value = module.Enabled;
+            return true;
+        }
+
+        private static bool TrySetModuleEnabled(Type moduleType, bool value)
+        {
+            if (!ModuleManager.TryGetModule(moduleType, out Module? module) || module == null)
+            {
+                return false;
+            }
+
+            module.Enabled = value;
+            return true;
+        }
+
+        private static bool TryGetModuleP5HpEnabled(Type moduleType, out bool value)
+        {
+            value = false;
+            FieldInfo? field = moduleType
+                .GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+                .FirstOrDefault(candidate =>
+                    candidate.FieldType == typeof(bool)
+                    && candidate.Name.EndsWith("P5Hp", StringComparison.Ordinal));
+            if (field == null)
+            {
+                return false;
+            }
+
+            object? raw = field.GetValue(null);
+            if (raw is bool typed)
+            {
+                value = typed;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TrySetModuleP5HpEnabled(Type moduleType, bool value)
+        {
+            MethodInfo? method = moduleType.GetMethod(
+                "SetP5HpEnabled",
+                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            if (method == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                method.Invoke(null, new object[] { value });
+                return true;
+            }
+            catch (Exception exception)
+            {
+                LogDebug($"QuickMenu: failed to set global P5 for {moduleType.Name}: {exception.Message}");
+                return false;
+            }
+        }
+
+        private void OnBossManipulateCollectorClicked()
+        {
+            returnToBossManipulateOnClose = true;
+            SetBossManipulateVisible(false);
+            SetCollectorVisible(true);
+        }
+
+        private void OnBossManipulateZoteClicked()
+        {
+            returnToBossManipulateOnClose = true;
+            SetBossManipulateVisible(false);
+            SetZoteHelperVisible(true);
+        }
+
+        private void OnBossManipulateGruzClicked()
+        {
+            returnToBossManipulateOnClose = true;
+            SetBossManipulateVisible(false);
+            SetGruzHelperVisible(true);
+        }
+
+        private void OnBossManipulateHornetClicked()
+        {
+            returnToBossManipulateOnClose = true;
+            SetBossManipulateVisible(false);
+            SetHornetHelperVisible(true);
+        }
+
+        private void OnBossManipulateMawlekClicked()
+        {
+            returnToBossManipulateOnClose = true;
+            SetBossManipulateVisible(false);
+            SetMawlekHelperVisible(true);
+        }
+
+        private void OnBossManipulateMassiveMossClicked()
+        {
+            returnToBossManipulateOnClose = true;
+            SetBossManipulateVisible(false);
+            SetMassiveMossHelperVisible(true);
+        }
+
+        private void OnBossManipulateCrystalGuardianClicked()
+        {
+            returnToBossManipulateOnClose = true;
+            SetBossManipulateVisible(false);
+            SetCrystalGuardianHelperVisible(true);
+        }
+
+        private void OnBossManipulateEnragedGuardianClicked()
+        {
+            returnToBossManipulateOnClose = true;
+            SetBossManipulateVisible(false);
+            SetEnragedGuardianHelperVisible(true);
+        }
+
+        private void OnBossManipulateHornetSentinelClicked()
+        {
+            returnToBossManipulateOnClose = true;
+            SetBossManipulateVisible(false);
+            SetHornetSentinelHelperVisible(true);
         }
 
         private void OnFastReloadBackClicked()
@@ -55,7 +414,6 @@ public sealed partial class QuickMenu : Module
             SetFastReloadEnabled(false);
             waitingForReloadRebind = false;
             Modules.FastReload.reloadKeyCode = (int)KeyCode.None;
-            Modules.FastReload.teleportKeyCode = (int)KeyCode.None;
             RefreshFastReloadUi();
         }
 
@@ -74,10 +432,9 @@ public sealed partial class QuickMenu : Module
 
         private void OnDreamshieldResetDefaultsClicked()
         {
-            Modules.QoL.DreamshieldStartAngle.startAngleEnabled = false;
-            Modules.QoL.DreamshieldStartAngle.rotationDelay = 0f;
-            Modules.QoL.DreamshieldStartAngle.rotationSpeed = 1f;
+            Modules.QoL.DreamshieldStartAngle.ResetDefaults();
             RefreshDreamshieldUi();
+            UpdateQuickMenuEntryStateColors();
         }
 
         private void OnShowHpOnDeathBackClicked()
@@ -113,7 +470,8 @@ public sealed partial class QuickMenu : Module
             maskDamageUiPrevKey = string.Empty;
 
             SetMaskDamageEnabled(false);
-            MaskDamage.SetMultiplier(1);
+            MaskDamage.SetMultiplier(1f);
+            MaskDamage.SetUiVisible(true);
             MaskDamage.SetToggleUiKeybind(string.Empty);
             RefreshMaskDamageUi();
             UpdateQuickMenuEntryStateColors();
@@ -148,10 +506,7 @@ public sealed partial class QuickMenu : Module
         {
             waitingForShowHpRebind = false;
             showHpPrevBindingRaw = string.Empty;
-            ShowHpSettings.EnabledMod = false;
-            ShowHpSettings.ShowPB = true;
-            ShowHpSettings.HideAfter10Sec = true;
-            ShowHpSettings.HudFadeSeconds = 5f;
+            ShowHPOnDeath.ResetFeatureDefaults();
             ApplyShowHpBinding(null);
             RefreshShowHpOnDeathUi();
             UpdateQuickMenuEntryStateColors();
@@ -183,8 +538,6 @@ public sealed partial class QuickMenu : Module
             SpeedChanger.displayStyle = 0;
             SpeedChanger.toggleKeybind = string.Empty;
             SpeedChanger.inputSpeedKeybind = string.Empty;
-            SpeedChanger.slowDownKeybind = string.Empty;
-            SpeedChanger.speedUpKeybind = string.Empty;
             SpeedChanger.speed = 1f;
             ApplySpeedChangerDisplayStyle(0);
             RefreshSpeedChangerKeybinds();
@@ -240,6 +593,31 @@ public sealed partial class QuickMenu : Module
             }
 
             SetRandomPantheonsVisible(false);
+        }
+
+        private void OnRandomPantheonsResetDefaultsClicked()
+        {
+            randomPantheonsMasterEnabled = false;
+            randomPantheonsMasterHasSnapshot = false;
+            randomPantheonsSavedP1 = false;
+            randomPantheonsSavedP2 = false;
+            randomPantheonsSavedP3 = false;
+            randomPantheonsSavedP4 = false;
+            randomPantheonsSavedP5 = false;
+
+            Modules.BossChallenge.RandomPantheons.Pantheon1Enabled = false;
+            Modules.BossChallenge.RandomPantheons.Pantheon2Enabled = false;
+            Modules.BossChallenge.RandomPantheons.Pantheon3Enabled = false;
+            Modules.BossChallenge.RandomPantheons.Pantheon4Enabled = false;
+            Modules.BossChallenge.RandomPantheons.Pantheon5Enabled = false;
+            Modules.BossChallenge.RandomPantheons.RefreshPantheon(1);
+            Modules.BossChallenge.RandomPantheons.RefreshPantheon(2);
+            Modules.BossChallenge.RandomPantheons.RefreshPantheon(3);
+            Modules.BossChallenge.RandomPantheons.RefreshPantheon(4);
+            Modules.BossChallenge.RandomPantheons.RefreshPantheon(5);
+            SetRandomPantheonsEnabled(false);
+            RefreshRandomPantheonsUi();
+            SaveMasterSettings();
         }
 
         private void OnTrueBossRushBackClicked()
@@ -328,10 +706,7 @@ public sealed partial class QuickMenu : Module
             SetForceArriveAnimationEnabled(false);
             SetInfiniteGrimmPufferfishEnabled(false);
             SetInfiniteRadianceClimbingEnabled(false);
-            SetP5HealthEnabled(false);
             SetSegmentedP5Enabled(false);
-            SetHalveAscendedEnabled(false);
-            SetHalveAttunedEnabled(false);
             SetAddLifebloodEnabled(false);
             SetAddSoulEnabled(false);
 
@@ -387,7 +762,6 @@ public sealed partial class QuickMenu : Module
             SetFastDreamWarpEnabled(false);
             FastDreamWarpSettings.Keybinds.Toggle.ClearBindings();
             SetShortDeathAnimationEnabled(true);
-            Modules.QoL.SkipCutscenes.HallOfGodsStatues = true;
             SetUnlockAllModesEnabled(true);
             SetUnlockPantheonsEnabled(true);
             SetUnlockRadianceEnabled(true);
@@ -463,6 +837,7 @@ public sealed partial class QuickMenu : Module
         {
             bossAnimMasterEnabled = true;
             bossAnimMasterHasSnapshot = false;
+            Modules.QoL.SkipCutscenes.HallOfGodsStatues = true;
             Modules.QoL.SkipCutscenes.AbsoluteRadiance = true;
             Modules.QoL.SkipCutscenes.PureVesselRoar = true;
             Modules.QoL.SkipCutscenes.GrimmNightmare = true;
@@ -512,6 +887,27 @@ public sealed partial class QuickMenu : Module
             SetGearSwitcherPresetVisible(false);
             SetGearSwitcherCharmCostVisible(false);
             SetGearSwitcherVisible(false);
+            SetBossManipulateVisible(false);
+            SetBossManipulateOtherRoomsVisible(false);
+            SetGruzMotherP1HelperVisible(false);
+            SetVengeflyKingP1HelperVisible(false);
+            SetBroodingMawlekP1HelperVisible(false);
+            SetNoskP2HelperVisible(false);
+            SetUumuuP3HelperVisible(false);
+            SetSoulWarriorP1HelperVisible(false);
+            SetNoEyesP4HelperVisible(false);
+            SetMarmuP2HelperVisible(false);
+            SetXeroP2HelperVisible(false);
+            SetMarkothP4HelperVisible(false);
+            SetGorbP1HelperVisible(false);
+            SetGruzHelperVisible(false);
+            SetHornetHelperVisible(false);
+            SetMawlekHelperVisible(false);
+            SetMassiveMossHelperVisible(false);
+            SetCrystalGuardianHelperVisible(false);
+            SetEnragedGuardianHelperVisible(false);
+            SetHornetSentinelHelperVisible(false);
+            SetAllAdditionalGhostHelpersVisible(false);
             SetCheatsVisible(false);
             SetTrueBossRushVisible(false);
 
@@ -560,6 +956,14 @@ public sealed partial class QuickMenu : Module
             RefreshMenuAnimationUi();
             RefreshBossAnimationUi();
             RefreshZoteHelperUi();
+            RefreshGruzHelperUi();
+            RefreshHornetHelperUi();
+            RefreshMawlekHelperUi();
+            RefreshMassiveMossHelperUi();
+            RefreshCrystalGuardianHelperUi();
+            RefreshEnragedGuardianHelperUi();
+            RefreshHornetSentinelHelperUi();
+            RefreshAdditionalGhostHelpersUi();
         }
 
         private void OnQuickMenuSettingsBackClicked()
@@ -578,10 +982,17 @@ public sealed partial class QuickMenu : Module
 
         private void OnZoteHelperBackClicked()
         {
+            bool reopenBossManipulate = returnToBossManipulateOnClose;
             bool reopenQuick = returnToQuickOnClose;
+            returnToBossManipulateOnClose = false;
             returnToQuickOnClose = false;
 
-            if (reopenQuick)
+            if (reopenBossManipulate)
+            {
+                returnToQuickOnClose = reopenQuick;
+                SetBossManipulateVisible(true);
+            }
+            else if (reopenQuick)
             {
                 SetQuickVisible(true);
             }
@@ -607,23 +1018,220 @@ public sealed partial class QuickMenu : Module
             RefreshZoteHelperUi();
         }
 
+        private void OnGruzHelperBackClicked()
+        {
+            bool reopenBossManipulate = returnToBossManipulateOnClose;
+            bool reopenQuick = returnToQuickOnClose;
+            returnToBossManipulateOnClose = false;
+            returnToQuickOnClose = false;
+
+            if (reopenBossManipulate)
+            {
+                returnToQuickOnClose = reopenQuick;
+                SetBossManipulateVisible(true);
+            }
+            else if (reopenQuick)
+            {
+                SetQuickVisible(true);
+            }
+
+            SetGruzHelperVisible(false);
+        }
+
+        private void OnGruzHelperResetDefaultsClicked()
+        {
+            ResetGruzMotherHelperDefaults();
+            SetGruzMotherHelperEnabled(false);
+            Modules.BossChallenge.GruzMotherHelper.RestoreVanillaHealthIfPresent();
+            RefreshGruzHelperUi();
+        }
+
+        private void OnHornetHelperBackClicked()
+        {
+            bool reopenBossManipulate = returnToBossManipulateOnClose;
+            bool reopenQuick = returnToQuickOnClose;
+            returnToBossManipulateOnClose = false;
+            returnToQuickOnClose = false;
+
+            if (reopenBossManipulate)
+            {
+                returnToQuickOnClose = reopenQuick;
+                SetBossManipulateVisible(true);
+            }
+            else if (reopenQuick)
+            {
+                SetQuickVisible(true);
+            }
+
+            SetHornetHelperVisible(false);
+        }
+
+        private void OnHornetHelperResetDefaultsClicked()
+        {
+            ResetHornetProtectorHelperDefaults();
+            SetHornetProtectorHelperEnabled(false);
+            Modules.BossChallenge.HornetProtectorHelper.RestoreVanillaHealthIfPresent();
+            RefreshHornetHelperUi();
+        }
+
+        private void OnMawlekHelperBackClicked()
+        {
+            bool reopenBossManipulate = returnToBossManipulateOnClose;
+            bool reopenQuick = returnToQuickOnClose;
+            returnToBossManipulateOnClose = false;
+            returnToQuickOnClose = false;
+
+            if (reopenBossManipulate)
+            {
+                returnToQuickOnClose = reopenQuick;
+                SetBossManipulateVisible(true);
+            }
+            else if (reopenQuick)
+            {
+                SetQuickVisible(true);
+            }
+
+            SetMawlekHelperVisible(false);
+        }
+
+        private void OnMawlekHelperResetDefaultsClicked()
+        {
+            ResetBroodingMawlekHelperDefaults();
+            SetBroodingMawlekHelperEnabled(false);
+            Modules.BossChallenge.BroodingMawlekHelper.RestoreVanillaHealthIfPresent();
+            RefreshMawlekHelperUi();
+        }
+
+        private void OnMassiveMossHelperBackClicked()
+        {
+            bool reopenBossManipulate = returnToBossManipulateOnClose;
+            bool reopenQuick = returnToQuickOnClose;
+            returnToBossManipulateOnClose = false;
+            returnToQuickOnClose = false;
+
+            if (reopenBossManipulate)
+            {
+                returnToQuickOnClose = reopenQuick;
+                SetBossManipulateVisible(true);
+            }
+            else if (reopenQuick)
+            {
+                SetQuickVisible(true);
+            }
+
+            SetMassiveMossHelperVisible(false);
+        }
+
+        private void OnMassiveMossHelperResetDefaultsClicked()
+        {
+            ResetMassiveMossChargerHelperDefaults();
+            SetMassiveMossChargerHelperEnabled(false);
+            Modules.BossChallenge.MassiveMossChargerHelper.RestoreVanillaHealthIfPresent();
+            RefreshMassiveMossHelperUi();
+        }
+
+        private void OnCrystalGuardianHelperBackClicked()
+        {
+            bool reopenBossManipulate = returnToBossManipulateOnClose;
+            bool reopenQuick = returnToQuickOnClose;
+            returnToBossManipulateOnClose = false;
+            returnToQuickOnClose = false;
+
+            if (reopenBossManipulate)
+            {
+                returnToQuickOnClose = reopenQuick;
+                SetBossManipulateVisible(true);
+            }
+            else if (reopenQuick)
+            {
+                SetQuickVisible(true);
+            }
+
+            SetCrystalGuardianHelperVisible(false);
+        }
+
+        private void OnCrystalGuardianHelperResetDefaultsClicked()
+        {
+            ResetCrystalGuardianHelperDefaults();
+            SetCrystalGuardianHelperEnabled(false);
+            Modules.BossChallenge.CrystalGuardianHelper.RestoreVanillaHealthIfPresent();
+            RefreshCrystalGuardianHelperUi();
+        }
+
+        private void OnEnragedGuardianHelperBackClicked()
+        {
+            bool reopenBossManipulate = returnToBossManipulateOnClose;
+            bool reopenQuick = returnToQuickOnClose;
+            returnToBossManipulateOnClose = false;
+            returnToQuickOnClose = false;
+
+            if (reopenBossManipulate)
+            {
+                returnToQuickOnClose = reopenQuick;
+                SetBossManipulateVisible(true);
+            }
+            else if (reopenQuick)
+            {
+                SetQuickVisible(true);
+            }
+
+            SetEnragedGuardianHelperVisible(false);
+        }
+
+        private void OnEnragedGuardianHelperResetDefaultsClicked()
+        {
+            ResetEnragedGuardianHelperDefaults();
+            SetEnragedGuardianHelperEnabled(false);
+            Modules.BossChallenge.EnragedGuardianHelper.RestoreVanillaHealthIfPresent();
+            RefreshEnragedGuardianHelperUi();
+        }
+
+        private void OnHornetSentinelHelperBackClicked()
+        {
+            bool reopenBossManipulate = returnToBossManipulateOnClose;
+            bool reopenQuick = returnToQuickOnClose;
+            returnToBossManipulateOnClose = false;
+            returnToQuickOnClose = false;
+
+            if (reopenBossManipulate)
+            {
+                returnToQuickOnClose = reopenQuick;
+                SetBossManipulateVisible(true);
+            }
+            else if (reopenQuick)
+            {
+                SetQuickVisible(true);
+            }
+
+            SetHornetSentinelHelperVisible(false);
+            SetAllAdditionalGhostHelpersVisible(false);
+        }
+
+        private void OnHornetSentinelHelperResetDefaultsClicked()
+        {
+            ResetHornetSentinelHelperDefaults();
+            SetHornetSentinelHelperEnabled(false);
+            Modules.BossChallenge.HornetSentinelHelper.RestoreVanillaHealthIfPresent();
+            RefreshHornetSentinelHelperUi();
+        }
+
         private void OnFastSuperDashResetDefaultsClicked()
         {
             SetModuleEnabled(false);
             Modules.QoL.FastSuperDash.instantSuperDash = false;
             Modules.QoL.FastSuperDash.fastSuperDashEverywhere = false;
             Modules.QoL.FastSuperDash.fastSuperDashSpeedMultiplier = 1f;
+            fastSuperDashSpeedDirty = false;
+            GodhomeQoL.SaveGlobalSettingsSafe();
             RefreshFastSuperDashUi();
         }
 
         private void OnCollectorResetClicked()
         {
             ResetCollectorPhasesDefaults();
-            Modules.CollectorPhases.CollectorPhases.HoGOnly = true;
             SetCollectorRoarEnabled(false);
             SetCollectorPhasesEnabled(false);
             RefreshCollectorPhasesUi();
         }
     }
 }
-

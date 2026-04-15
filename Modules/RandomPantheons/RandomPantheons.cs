@@ -16,10 +16,14 @@ public sealed class RandomPantheons : Module
     [GlobalSetting] public static bool Pantheon4Enabled = false;
     [GlobalSetting] public static bool Pantheon5Enabled = false;
 
+    internal static bool AnyPantheonEnabled =>
+        Pantheon1Enabled || Pantheon2Enabled || Pantheon3Enabled || Pantheon4Enabled || Pantheon5Enabled;
+
     public override bool DefaultEnabled => false;
 
     private static readonly Dictionary<BossSequence, BossScene[]> OriginalSequences = new();
     private static readonly Dictionary<BossSequence, List<BossSequenceDoor>> SequenceDoors = new();
+    private static readonly FieldInfo BossScenesField = typeof(BossSequence).GetField("bossScenes", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!;
 
     private static readonly Dictionary<Pantheon, string[]> DefaultPantheonOrder = new()
     {
@@ -198,6 +202,13 @@ public sealed class RandomPantheons : Module
 
     private protected override void Load()
     {
+        ClearSequenceCaches();
+        if (AnyPantheonEnabled)
+        {
+            _ = PantheonSequenceCompatibility.DisableTrueBossRush();
+            _ = PantheonSequenceCompatibility.DisableSegmentedP5();
+        }
+
         Instance = this;
         On.BossSequenceDoor.Start += CacheSequenceDoor;
         On.BossSequenceController.SetupNewSequence += ApplySequenceToStart;
@@ -216,6 +227,73 @@ public sealed class RandomPantheons : Module
         On.BossSequenceController.SetupNewSequence -= ApplySequenceToStart;
         On.PlayMakerFSM.Start -= ModifyRadiance;
         USceneManager.activeSceneChanged -= OnSceneChange;
+        RestoreCachedSequences();
+        ClearSequenceCaches();
+    }
+
+    private static void ClearSequenceCaches()
+    {
+        OriginalSequences.Clear();
+        SequenceDoors.Clear();
+    }
+
+    private static void PruneSequenceCaches()
+    {
+        foreach (BossSequence sequence in OriginalSequences.Keys.ToArray())
+        {
+            if (sequence == null)
+            {
+                // Unity fake-null for destroyed objects; keep a non-null ref for dictionary removal.
+                if (sequence is not null)
+                {
+                    _ = OriginalSequences.Remove(sequence);
+                }
+            }
+        }
+
+        foreach ((BossSequence sequence, List<BossSequenceDoor> doors) in SequenceDoors.ToArray())
+        {
+            if (sequence == null)
+            {
+                // Unity fake-null for destroyed objects; keep a non-null ref for dictionary removal.
+                if (sequence is not null)
+                {
+                    _ = SequenceDoors.Remove(sequence);
+                }
+                continue;
+            }
+
+            doors.RemoveAll(door => door == null);
+            if (doors.Count == 0)
+            {
+                _ = SequenceDoors.Remove(sequence);
+            }
+        }
+    }
+
+    private static void RestoreCachedSequences()
+    {
+        PruneSequenceCaches();
+
+        foreach ((BossSequence sequence, BossScene[] original) in OriginalSequences.ToArray())
+        {
+            if (sequence == null || original == null || original.Length == 0)
+            {
+                continue;
+            }
+
+            try
+            {
+                if (SetBossScenes(sequence, original.ToArray()))
+                {
+                    SyncFirstScene(sequence);
+                }
+            }
+            catch
+            {
+                // Ignore restore failures for unloaded/changed sequences.
+            }
+        }
     }
 
     private void OnSceneChange(Scene prev, Scene next)
@@ -242,7 +320,8 @@ public sealed class RandomPantheons : Module
     {
         orig(self);
 
-        if (self is { name: "Absolute Radiance", FsmName: "Control" })
+        if (self is { name: "Absolute Radiance", FsmName: "Control" }
+            && PantheonSequenceCompatibility.ShouldApplyRandomPantheonsRadianceEndingSceneOverride())
         {
             self.GetAction<SetStaticVariable>("Ending Scene", 1).setValue.boolValue = false;
         }
@@ -256,6 +335,17 @@ public sealed class RandomPantheons : Module
     )
     {
         orig(sequence, bindings, playerData);
+
+        if (PantheonSequenceCompatibility.ShouldSkipRandomPantheons())
+        {
+            return;
+        }
+
+        if (!AnyPantheonEnabled)
+        {
+            TryRestoreDisabledSequence(sequence);
+            return;
+        }
 
         try
         {
@@ -294,7 +384,7 @@ public sealed class RandomPantheons : Module
             return;
         }
 
-        ref BossScene[] bossScenes = ref Mirror.GetFieldRef<BossSequence, BossScene[]>(sequence, "bossScenes");
+        BossScene[]? bossScenes = GetBossScenes(sequence);
         if (bossScenes == null || bossScenes.Length <= 1)
         {
             return;
@@ -304,23 +394,9 @@ public sealed class RandomPantheons : Module
         Pantheon pantheon = GetPantheon(scenes);
         CacheOriginalSequence(sequence, bossScenes);
 
-        bool applied = false;
         if (!IsPantheonEnabled(pantheon))
         {
-            if (!TryApplyDefaultSequence(scenes, pantheon, ref bossScenes))
-            {
-                applied = TryRestoreOriginalSequence(sequence, ref bossScenes);
-            }
-            else
-            {
-                applied = true;
-            }
-
-            if (applied)
-            {
-                SyncFirstScene(sequence);
-            }
-
+            _ = TryApplyRestoreOrDefault(sequence, pantheon, bossScenes);
             return;
         }
 
@@ -329,8 +405,10 @@ public sealed class RandomPantheons : Module
             return;
         }
 
-        bossScenes = rebuilt.ToArray();
-        SyncFirstScene(sequence);
+        if (SetBossScenes(sequence, rebuilt.ToArray()))
+        {
+            SyncFirstScene(sequence);
+        }
     }
 
     internal static void RefreshPantheon(int pantheonNumber)
@@ -355,12 +433,19 @@ public sealed class RandomPantheons : Module
             return;
         }
 
-        BossSequence[] sequences = SequenceDoors.Keys.ToArray();
+        bool anyEnabled = AnyPantheonEnabled;
+        BossSequence[] sequences = EnumerateKnownSequences().ToArray();
         foreach (BossSequence sequence in sequences)
         {
+            if (!anyEnabled)
+            {
+                TryRestoreDisabledSequence(sequence);
+                continue;
+            }
+
             try
             {
-                ref BossScene[] bossScenes = ref Mirror.GetFieldRef<BossSequence, BossScene[]>(sequence, "bossScenes");
+                BossScene[]? bossScenes = GetBossScenes(sequence);
                 if (bossScenes == null || bossScenes.Length <= 1)
                 {
                     continue;
@@ -381,6 +466,84 @@ public sealed class RandomPantheons : Module
         }
     }
 
+    private static IEnumerable<BossSequence> EnumerateKnownSequences()
+    {
+        PruneSequenceCaches();
+
+        HashSet<BossSequence> knownSequences = new();
+        foreach (BossSequence sequence in SequenceDoors.Keys)
+        {
+            if (sequence != null)
+            {
+                _ = knownSequences.Add(sequence);
+            }
+        }
+
+        foreach (BossSequence sequence in OriginalSequences.Keys)
+        {
+            if (sequence != null)
+            {
+                _ = knownSequences.Add(sequence);
+            }
+        }
+
+        return knownSequences;
+    }
+
+    private static void TryRestoreDisabledSequence(BossSequence? sequence)
+    {
+        if (sequence == null)
+        {
+            return;
+        }
+
+        try
+        {
+            BossScene[]? bossScenes = GetBossScenes(sequence);
+            if (bossScenes == null || bossScenes.Length <= 1)
+            {
+                return;
+            }
+
+            List<BossScene> scenes = bossScenes.ToList();
+            Pantheon pantheon = GetPantheon(scenes);
+            _ = TryApplyRestoreOrDefault(sequence, pantheon, bossScenes);
+        }
+        catch
+        {
+            // ignore restore failures for unloaded/changed sequences.
+        }
+    }
+
+    private static bool TryApplyRestoreOrDefault(BossSequence sequence, Pantheon pantheon, BossScene[] currentBossScenes)
+    {
+        List<BossScene> scenes = currentBossScenes.ToList();
+        bool applied = false;
+        BossScene[]? nextScenes = null;
+
+        if (!TryApplyDefaultSequence(scenes, pantheon, out BossScene[] defaultScenes))
+        {
+            if (TryRestoreOriginalSequence(sequence, out BossScene[] restored))
+            {
+                nextScenes = restored;
+                applied = true;
+            }
+        }
+        else
+        {
+            nextScenes = defaultScenes;
+            applied = true;
+        }
+
+        if (applied && nextScenes != null && SetBossScenes(sequence, nextScenes))
+        {
+            SyncFirstScene(sequence);
+            return true;
+        }
+
+        return false;
+    }
+
     private static void CacheOriginalSequence(BossSequence seq, BossScene[] scenes)
     {
         if (!OriginalSequences.ContainsKey(seq))
@@ -389,14 +552,15 @@ public sealed class RandomPantheons : Module
         }
     }
 
-    private static bool TryRestoreOriginalSequence(BossSequence seq, ref BossScene[] bossScenes)
+    private static bool TryRestoreOriginalSequence(BossSequence seq, out BossScene[] restored)
     {
         if (OriginalSequences.TryGetValue(seq, out BossScene[]? original))
         {
-            bossScenes = original.ToArray();
+            restored = original.ToArray();
             return true;
         }
 
+        restored = Array.Empty<BossScene>();
         return false;
     }
 
@@ -471,39 +635,43 @@ public sealed class RandomPantheons : Module
         return false;
     }
 
-    private static bool TryApplyDefaultSequence(List<BossScene> scenes, Pantheon pantheon, ref BossScene[] bossScenes)
+    private static bool TryApplyDefaultSequence(List<BossScene> scenes, Pantheon pantheon, out BossScene[] rebuilt)
     {
-        if (pantheon != Pantheon.Unknown && TryBuildDefaultSequence(pantheon, scenes, ref bossScenes))
+        if (pantheon != Pantheon.Unknown && TryBuildDefaultSequence(pantheon, scenes, out rebuilt))
         {
             return true;
         }
 
         foreach (Pantheon candidate in DefaultPantheonOrder.Keys)
         {
-            if (TryBuildDefaultSequence(candidate, scenes, ref bossScenes))
+            if (TryBuildDefaultSequence(candidate, scenes, out rebuilt))
             {
                 return true;
             }
         }
 
+        rebuilt = Array.Empty<BossScene>();
         return false;
     }
 
-    private static bool TryBuildDefaultSequence(Pantheon pantheon, List<BossScene> scenes, ref BossScene[] bossScenes)
+    private static bool TryBuildDefaultSequence(Pantheon pantheon, List<BossScene> scenes, out BossScene[] rebuiltArray)
     {
         if (!DefaultPantheonOrder.TryGetValue(pantheon, out string[]? defaultOrder))
         {
+            rebuiltArray = Array.Empty<BossScene>();
             return false;
         }
 
         if (scenes.Count != defaultOrder.Length)
         {
+            rebuiltArray = Array.Empty<BossScene>();
             return false;
         }
 
         BossScene? spaTemplate = scenes.FirstOrDefault(scene => IsSpa(scene.sceneName));
         if (spaTemplate == null)
         {
+            rebuiltArray = Array.Empty<BossScene>();
             return false;
         }
 
@@ -532,14 +700,50 @@ public sealed class RandomPantheons : Module
 
             if (!sceneMap.TryGetValue(name, out BossScene scene))
             {
+                rebuiltArray = Array.Empty<BossScene>();
                 return false;
             }
 
             rebuilt.Add(scene);
         }
 
-        bossScenes = rebuilt.ToArray();
+        rebuiltArray = rebuilt.ToArray();
         return true;
+    }
+
+    private static BossScene[]? GetBossScenes(BossSequence sequence)
+    {
+        if (sequence == null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return BossScenesField.GetValue(sequence) as BossScene[];
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static bool SetBossScenes(BossSequence sequence, BossScene[] scenes)
+    {
+        if (sequence == null || scenes == null)
+        {
+            return false;
+        }
+
+        try
+        {
+            BossScenesField.SetValue(sequence, scenes);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private bool TryBuildSequence(List<BossScene> scenes, Pantheon pantheon, out List<BossScene> result)

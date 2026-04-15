@@ -16,6 +16,8 @@ namespace GodhomeQoL
             GlobalSettings.MaskDamage ??= new MaskDamageSettings();
             GlobalSettings.GearSwitcher ??= new GearSwitcherSettings();
             GlobalSettings.QuickMenuMasters ??= new QuickMenuMasterSettings();
+            GlobalSettings.QuickMenuMasters.BossManipulateGlobalP5TouchedModules ??= new List<string>();
+            GlobalSettings.QuickMenuMasters.BossManipulateGlobalP5EnabledModules ??= new List<string>();
             GlobalSettings.QuickMenuOrder ??= new List<string>();
             GlobalSettings.QuickMenuPositions ??= new Dictionary<string, QuickMenuEntryPosition>();
             GlobalSettings.QuickMenuCustomLabels ??= new Dictionary<string, string>();
@@ -36,19 +38,24 @@ namespace GodhomeQoL
         public void OnLoadLocal(LocalSettings s)
         {
             LocalSettings = s;
-            if (GlobalSettings?.GearSwitcher != null && !string.IsNullOrWhiteSpace(s.GearSwitcherLastPreset))
+            if (GlobalSettings?.GearSwitcher != null
+                && string.IsNullOrWhiteSpace(GlobalSettings.GearSwitcher.LastPreset)
+                && !string.IsNullOrWhiteSpace(s.GearSwitcherLastPreset))
             {
-                string globalPreset = GlobalSettings.GearSwitcher.LastPreset ?? string.Empty;
-                if (string.IsNullOrWhiteSpace(globalPreset)
-                    || (string.Equals(globalPreset, "FullGear", StringComparison.OrdinalIgnoreCase)
-                        && !string.Equals(s.GearSwitcherLastPreset, "FullGear", StringComparison.OrdinalIgnoreCase)))
-                {
-                    GlobalSettings.GearSwitcher.LastPreset = s.GearSwitcherLastPreset;
-                    SaveGlobalSettingsSafe();
-                }
+                // Legacy fallback: only hydrate global value from local when global is missing.
+                GlobalSettings.GearSwitcher.LastPreset = s.GearSwitcherLastPreset;
+                SaveGlobalSettingsSafe();
             }
         }
-        public LocalSettings OnSaveLocal() => LocalSettings;
+        public LocalSettings OnSaveLocal()
+        {
+            if (GlobalSettings?.GearSwitcher != null)
+            {
+                LocalSettings.GearSwitcherLastPreset = GlobalSettings.GearSwitcher.LastPreset ?? "FullGear";
+            }
+
+            return LocalSettings;
+        }
 
         private static bool IsFirstRun()
         {

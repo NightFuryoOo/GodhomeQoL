@@ -82,7 +82,7 @@ public sealed class P5Health : Module {
 
 	private static bool IsHalveAscendedEnabled()
 	{
-		if (ModuleManager.TryGetModule(typeof(HalveDamageHoGAscendedOrAbove), out Module? module))
+		if (ModuleManager.TryGetModule("HalveDamageHoGAscendedOrAbove", out Module? module))
 		{
 			return module.Enabled;
 		}

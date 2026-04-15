@@ -1,4 +1,5 @@
 using InControl;
+using GodhomeQoL.Modules.Tools;
 
 namespace GodhomeQoL.Modules.Cheats;
 
@@ -28,11 +29,13 @@ public sealed class Cheats : Module
     };
 
     private static Vector3 noclipPosition;
+    private static int invincibilityClaimHandle;
 
     private protected override void Load()
     {
         ModHooks.TakeHealthHook += OnTakeHealth;
         ModHooks.HeroUpdateHook += OnHeroUpdate;
+        SyncInvincibilityClaimState();
 
         if (NoclipEnabled && HeroController.instance != null)
         {
@@ -44,11 +47,7 @@ public sealed class Cheats : Module
     {
         ModHooks.TakeHealthHook -= OnTakeHealth;
         ModHooks.HeroUpdateHook -= OnHeroUpdate;
-
-        if (InvincibilityEnabled && PlayerData.instance != null)
-        {
-            PlayerData.instance.isInvincible = false;
-        }
+        ReleaseInvincibilityClaim();
     }
 
     internal static bool GetInfiniteSoulEnabled() => InfiniteSoulEnabled;
@@ -72,9 +71,9 @@ public sealed class Cheats : Module
     internal static void SetInvincibilityEnabled(bool value)
     {
         InvincibilityEnabled = value;
-        if (!value && PlayerData.instance != null)
+        if (ModuleManager.IsModuleLoaded<Cheats>() || invincibilityClaimHandle != 0)
         {
-            PlayerData.instance.isInvincible = false;
+            SyncInvincibilityClaimState();
         }
 
         GodhomeQoL.SaveGlobalSettingsSafe();
@@ -182,6 +181,32 @@ public sealed class Cheats : Module
     private static int OnTakeHealth(int damageAmount) =>
         InfiniteHpEnabled ? 0 : damageAmount;
 
+    private static void SyncInvincibilityClaimState()
+    {
+        if (InvincibilityEnabled)
+        {
+            if (invincibilityClaimHandle == 0)
+            {
+                invincibilityClaimHandle = InvincibilityClaims.Acquire(nameof(Cheats));
+            }
+
+            return;
+        }
+
+        ReleaseInvincibilityClaim();
+    }
+
+    private static void ReleaseInvincibilityClaim()
+    {
+        if (invincibilityClaimHandle == 0)
+        {
+            return;
+        }
+
+        InvincibilityClaims.Release(invincibilityClaimHandle);
+        invincibilityClaimHandle = 0;
+    }
+
     private static void OnHeroUpdate()
     {
         HeroController? hero = HeroController.instance;
@@ -205,11 +230,6 @@ public sealed class Cheats : Module
             }
 
             hero.AddMPCharge(1);
-        }
-
-        if (InvincibilityEnabled)
-        {
-            pd.isInvincible = true;
         }
 
         if (!NoclipEnabled)

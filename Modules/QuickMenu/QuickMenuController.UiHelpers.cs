@@ -175,6 +175,168 @@ public sealed partial class QuickMenu : Module
             }
         }
 
+        private void CaptureSelectionBeforeQuickMenuActivation()
+        {
+            selectionBeforeQuickMenu = null;
+
+            EventSystem? eventSystem = EventSystem.current;
+            if (eventSystem == null)
+            {
+                return;
+            }
+
+            GameObject? selected = eventSystem.currentSelectedGameObject;
+            if (IsValidExternalSelection(selected))
+            {
+                selectionBeforeQuickMenu = selected;
+            }
+        }
+
+        private void TryRestoreSelectionAfterQuickMenuClose()
+        {
+            EventSystem? eventSystem = EventSystem.current;
+            if (eventSystem == null)
+            {
+                selectionBeforeQuickMenu = null;
+                return;
+            }
+
+            GameObject? currentSelection = eventSystem.currentSelectedGameObject;
+            if (IsValidExternalSelection(currentSelection))
+            {
+                selectionBeforeQuickMenu = null;
+                return;
+            }
+
+            GameObject? target = ResolveSelectionAfterQuickMenuClose();
+            selectionBeforeQuickMenu = null;
+            if (!IsSelectableTarget(target))
+            {
+                return;
+            }
+
+            eventSystem.SetSelectedGameObject(null);
+            eventSystem.SetSelectedGameObject(target);
+            EnsureUiInputReady();
+        }
+
+        private GameObject? ResolveSelectionAfterQuickMenuClose()
+        {
+            if (IsValidExternalSelection(selectionBeforeQuickMenu))
+            {
+                return selectionBeforeQuickMenu;
+            }
+
+            GameObject? challengeTarget = TryFindBossChallengeSelectionTarget();
+            if (challengeTarget != null)
+            {
+                return challengeTarget;
+            }
+
+            return TryFindBossDoorSelectionTarget();
+        }
+
+        private static GameObject? TryFindBossChallengeSelectionTarget()
+        {
+            BossChallengeUI? challengeUi = UObject.FindObjectOfType<BossChallengeUI>();
+            if (challengeUi == null || !challengeUi.gameObject.activeInHierarchy)
+            {
+                return null;
+            }
+
+            return FindFirstSelectableTarget(challengeUi.gameObject);
+        }
+
+        private static GameObject? TryFindBossDoorSelectionTarget()
+        {
+            BossDoorChallengeUI? doorUi = UObject.FindObjectOfType<BossDoorChallengeUI>();
+            if (doorUi == null || !doorUi.gameObject.activeInHierarchy)
+            {
+                return null;
+            }
+
+            GameObject? beginButton = doorUi.gameObject.Child("Panel", "BeginButton");
+            if (beginButton != null && IsSelectableTarget(beginButton))
+            {
+                return beginButton;
+            }
+
+            return FindFirstSelectableTarget(doorUi.gameObject);
+        }
+
+        private static GameObject? FindFirstSelectableTarget(GameObject root)
+        {
+            if (root == null || !root.activeInHierarchy)
+            {
+                return null;
+            }
+
+            foreach (Selectable selectable in root.GetComponentsInChildren<Selectable>(true))
+            {
+                if (selectable == null)
+                {
+                    continue;
+                }
+
+                GameObject target = selectable.gameObject;
+                if (!target.activeInHierarchy || !selectable.IsInteractable())
+                {
+                    continue;
+                }
+
+                return target;
+            }
+
+            return null;
+        }
+
+        private static bool IsSelectableTarget(GameObject? target)
+        {
+            if (target == null || !target.activeInHierarchy)
+            {
+                return false;
+            }
+
+            Selectable? selectable = target.GetComponent<Selectable>();
+            return selectable == null || (selectable.IsActive() && selectable.IsInteractable());
+        }
+
+        private bool IsValidExternalSelection(GameObject? target) =>
+            target != null
+            && IsSelectableTarget(target)
+            && !target.transform.IsChildOf(transform);
+
+        private static void EnsureUiInputReady()
+        {
+            InputHandler? inputHandler = InputHandler.Instance;
+            if (inputHandler == null)
+            {
+                return;
+            }
+
+            inputHandler.StartAcceptingInput();
+            inputHandler.StopUIInput();
+            inputHandler.StartUIInput();
+
+            if (UIManager.instance == null || EventSystem.current == null)
+            {
+                return;
+            }
+
+            var inputModule = UIManager.instance.inputModule;
+            var actions = inputHandler.inputActions;
+            if (inputModule == null || actions == null)
+            {
+                return;
+            }
+
+            inputModule.SubmitAction = actions.menuSubmit;
+            inputModule.CancelAction = actions.menuCancel;
+            inputModule.MoveAction = actions.moveVector;
+            inputModule.forceModuleActive = true;
+            inputModule.ActivateModule();
+        }
+
         private static void DestroyRoot(ref GameObject? root)
         {
             if (root != null)
@@ -279,6 +441,16 @@ public sealed partial class QuickMenu : Module
             statusText.text = message;
             statusText.gameObject.SetActive(true);
             statusHideTime = Time.unscaledTime + 2f;
+        }
+
+        internal void ShowStatusMessageFromExternal(string message)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                return;
+            }
+
+            ShowStatusMessage(message);
         }
 
         private void UpdateStatusMessage()

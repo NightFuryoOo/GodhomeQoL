@@ -6,9 +6,13 @@ namespace GodhomeQoL.Modules.Misc;
 internal sealed class BossChallengeUIEdit : Module
 {
     public override bool Hidden => true;
+    public override bool AlwaysEnabled => true;
 
     private protected override void Load() =>
         On.BossChallengeUI.Setup += HookSetup;
+
+    private protected override void Unload() =>
+        On.BossChallengeUI.Setup -= HookSetup;
 
     private static void HookSetup(
         On.BossChallengeUI.orig_Setup orig,

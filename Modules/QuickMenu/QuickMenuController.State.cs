@@ -32,21 +32,6 @@ public sealed partial class QuickMenu : Module
             }
         }
 
-        private bool GetP5HealthEnabled()
-        {
-            Module? module = GetP5HealthModule();
-            return module?.Enabled ?? false;
-        }
-
-        private void SetP5HealthEnabled(bool value)
-        {
-            Module? module = GetP5HealthModule();
-            if (module != null)
-            {
-                module.Enabled = value;
-            }
-        }
-
         private bool GetSegmentedP5Enabled()
         {
             Module? module = GetSegmentedP5Module();
@@ -55,37 +40,36 @@ public sealed partial class QuickMenu : Module
 
         private void SetSegmentedP5Enabled(bool value)
         {
+            if (value)
+            {
+                bool hadRandomPantheons =
+                    GetRandomPantheonsMasterEnabled()
+                    || GetRandomPantheonsEnabled()
+                    || Modules.BossChallenge.RandomPantheons.AnyPantheonEnabled;
+                bool hadTrueBossRush =
+                    GetTrueBossRushMasterEnabled()
+                    || Modules.BossChallenge.TrueBossRush.AnyPantheonEnabled;
+
+                if (hadRandomPantheons)
+                {
+                    SetRandomPantheonsMasterEnabled(false);
+                    SetRandomPantheonsEnabled(false);
+                    _ = Modules.BossChallenge.PantheonSequenceCompatibility.DisableRandomPantheons();
+                }
+
+                if (hadTrueBossRush)
+                {
+                    SetTrueBossRushMasterEnabled(false);
+                    _ = Modules.BossChallenge.PantheonSequenceCompatibility.DisableTrueBossRush();
+                }
+
+                if (hadRandomPantheons || hadTrueBossRush)
+                {
+                    ShowStatusMessage("Segmented P5 disabled Random Pantheons / True Boss Rush.");
+                }
+            }
+
             Module? module = GetSegmentedP5Module();
-            if (module != null)
-            {
-                module.Enabled = value;
-            }
-        }
-
-        private bool GetHalveAscendedEnabled()
-        {
-            Module? module = GetHalveAscendedModule();
-            return module?.Enabled ?? false;
-        }
-
-        private void SetHalveAscendedEnabled(bool value)
-        {
-            Module? module = GetHalveAscendedModule();
-            if (module != null)
-            {
-                module.Enabled = value;
-            }
-        }
-
-        private bool GetHalveAttunedEnabled()
-        {
-            Module? module = GetHalveAttunedModule();
-            return module?.Enabled ?? false;
-        }
-
-        private void SetHalveAttunedEnabled(bool value)
-        {
-            Module? module = GetHalveAttunedModule();
             if (module != null)
             {
                 module.Enabled = value;
@@ -251,6 +235,21 @@ public sealed partial class QuickMenu : Module
 
         private bool GetMenuAnimationMasterEnabled() => menuAnimMasterEnabled;
 
+        internal void InvalidateQolSnapshotFromExternal()
+        {
+            qolMasterHasSnapshot = false;
+        }
+
+        internal void InvalidateMenuAnimationSnapshotFromExternal()
+        {
+            menuAnimMasterHasSnapshot = false;
+        }
+
+        internal void InvalidateBossAnimationSnapshotFromExternal()
+        {
+            bossAnimMasterHasSnapshot = false;
+        }
+
         private void SetMenuAnimationMasterEnabled(bool value)
         {
             if (menuAnimMasterEnabled == value)
@@ -370,7 +369,6 @@ public sealed partial class QuickMenu : Module
             qolMasterHasSnapshot = true;
             qolSavedFastDreamWarp = GetFastDreamWarpEnabled();
             qolSavedShortDeath = GetShortDeathAnimationEnabled();
-            qolSavedHallOfGods = Modules.QoL.SkipCutscenes.HallOfGodsStatues;
             qolSavedUnlockAllModes = GetUnlockAllModesEnabled();
             qolSavedUnlockPantheons = GetUnlockPantheonsEnabled();
             qolSavedUnlockRadiance = GetUnlockRadianceEnabled();
@@ -388,7 +386,6 @@ public sealed partial class QuickMenu : Module
 
             SetFastDreamWarpEnabled(qolSavedFastDreamWarp);
             SetShortDeathAnimationEnabled(qolSavedShortDeath);
-            Modules.QoL.SkipCutscenes.HallOfGodsStatues = qolSavedHallOfGods;
             SetUnlockAllModesEnabled(qolSavedUnlockAllModes);
             SetUnlockPantheonsEnabled(qolSavedUnlockPantheons);
             SetUnlockRadianceEnabled(qolSavedUnlockRadiance);
@@ -401,7 +398,6 @@ public sealed partial class QuickMenu : Module
         {
             SetFastDreamWarpEnabled(value);
             SetShortDeathAnimationEnabled(value);
-            Modules.QoL.SkipCutscenes.HallOfGodsStatues = value;
             SetUnlockAllModesEnabled(value);
             SetUnlockPantheonsEnabled(value);
             SetUnlockRadianceEnabled(value);
@@ -498,6 +494,139 @@ public sealed partial class QuickMenu : Module
         private void UpdateZoteHelperInteractivity()
         {
             SetContentInteractivity(zoteHelperContent, GetZoteHelperEnabled(), "ZoteHelperEnableRow");
+            if (!GetZoteHelperEnabled())
+            {
+                return;
+            }
+
+            SetRowInteractivity(zoteHelperContent, "ZoteBossHpRow", Modules.BossChallenge.ZoteHelper.zoteUseCustomBossHp);
+            SetRowInteractivity(zoteHelperContent, "ZoteFlyingHpRow", Modules.BossChallenge.ZoteHelper.zoteUseCustomFlyingHp);
+            SetRowInteractivity(zoteHelperContent, "ZoteHoppingHpRow", Modules.BossChallenge.ZoteHelper.zoteUseCustomHoppingHp);
+            SetRowInteractivity(zoteHelperContent, "ZoteSummonLimitRow", Modules.BossChallenge.ZoteHelper.zoteUseCustomSummonLimit);
+        }
+
+        private void UpdateGruzHelperInteractivity()
+        {
+            SetContentInteractivity(gruzHelperContent, GetGruzMotherHelperEnabled(), "GruzHelperEnableRow");
+            if (!GetGruzMotherHelperEnabled())
+            {
+                return;
+            }
+
+            bool useMaxHp = Modules.BossChallenge.GruzMotherHelper.gruzUseMaxHp;
+            bool p5Hp = Modules.BossChallenge.GruzMotherHelper.gruzP5Hp;
+            SetRowInteractivity(gruzHelperContent, "GruzUseMaxHpRow", !p5Hp);
+            SetRowInteractivity(gruzHelperContent, "GruzMaxHpRow", useMaxHp && !p5Hp);
+        }
+
+        private void UpdateHornetHelperInteractivity()
+        {
+            SetContentInteractivity(hornetHelperContent, GetHornetProtectorHelperEnabled(), "HornetHelperEnableRow");
+            if (!GetHornetProtectorHelperEnabled())
+            {
+                return;
+            }
+
+            bool useMaxHp = Modules.BossChallenge.HornetProtectorHelper.hornetUseMaxHp;
+            bool p5Hp = Modules.BossChallenge.HornetProtectorHelper.hornetP5Hp;
+            SetRowInteractivity(hornetHelperContent, "HornetUseMaxHpRow", !p5Hp);
+            SetRowInteractivity(hornetHelperContent, "HornetMaxHpRow", useMaxHp && !p5Hp);
+        }
+
+        private void UpdateMawlekHelperInteractivity()
+        {
+            SetContentInteractivity(mawlekHelperContent, GetBroodingMawlekHelperEnabled(), "MawlekHelperEnableRow");
+            if (!GetBroodingMawlekHelperEnabled())
+            {
+                return;
+            }
+
+            bool useMaxHp = Modules.BossChallenge.BroodingMawlekHelper.mawlekUseMaxHp;
+            bool p5Hp = Modules.BossChallenge.BroodingMawlekHelper.mawlekP5Hp;
+            SetRowInteractivity(mawlekHelperContent, "MawlekUseMaxHpRow", !p5Hp);
+            SetRowInteractivity(mawlekHelperContent, "MawlekMaxHpRow", useMaxHp && !p5Hp);
+        }
+
+        private void UpdateMassiveMossHelperInteractivity()
+        {
+            SetContentInteractivity(massiveMossHelperContent, GetMassiveMossChargerHelperEnabled(), "MassiveMossHelperEnableRow");
+            if (!GetMassiveMossChargerHelperEnabled())
+            {
+                return;
+            }
+
+            bool useMaxHp = Modules.BossChallenge.MassiveMossChargerHelper.massiveMossUseMaxHp;
+            bool p5Hp = Modules.BossChallenge.MassiveMossChargerHelper.massiveMossP5Hp;
+            SetRowInteractivity(massiveMossHelperContent, "MassiveMossUseMaxHpRow", !p5Hp);
+            SetRowInteractivity(massiveMossHelperContent, "MassiveMossMaxHpRow", useMaxHp && !p5Hp);
+        }
+
+        private void UpdateCrystalGuardianHelperInteractivity()
+        {
+            SetContentInteractivity(crystalGuardianHelperContent, GetCrystalGuardianHelperEnabled(), "CrystalGuardianHelperEnableRow");
+            if (!GetCrystalGuardianHelperEnabled())
+            {
+                return;
+            }
+
+            bool useMaxHp = Modules.BossChallenge.CrystalGuardianHelper.crystalGuardianUseMaxHp;
+            bool p5Hp = Modules.BossChallenge.CrystalGuardianHelper.crystalGuardianP5Hp;
+            SetRowInteractivity(crystalGuardianHelperContent, "CrystalGuardianUseMaxHpRow", !p5Hp);
+            SetRowInteractivity(crystalGuardianHelperContent, "CrystalGuardianMaxHpRow", useMaxHp && !p5Hp);
+        }
+
+        private void UpdateEnragedGuardianHelperInteractivity()
+        {
+            SetContentInteractivity(enragedGuardianHelperContent, GetEnragedGuardianHelperEnabled(), "EnragedGuardianHelperEnableRow");
+            if (!GetEnragedGuardianHelperEnabled())
+            {
+                return;
+            }
+
+            bool useMaxHp = Modules.BossChallenge.EnragedGuardianHelper.enragedGuardianUseMaxHp;
+            bool p5Hp = Modules.BossChallenge.EnragedGuardianHelper.enragedGuardianP5Hp;
+            SetRowInteractivity(enragedGuardianHelperContent, "EnragedGuardianUseMaxHpRow", !p5Hp);
+            SetRowInteractivity(enragedGuardianHelperContent, "EnragedGuardianMaxHpRow", useMaxHp && !p5Hp);
+        }
+
+        private void UpdateHornetSentinelHelperInteractivity()
+        {
+            SetContentInteractivity(hornetSentinelHelperContent, GetHornetSentinelHelperEnabled(), "HornetSentinelHelperEnableRow");
+            if (!GetHornetSentinelHelperEnabled())
+            {
+                return;
+            }
+
+            bool useMaxHp = Modules.BossChallenge.HornetSentinelHelper.hornetSentinelUseMaxHp;
+            bool p5Hp = Modules.BossChallenge.HornetSentinelHelper.hornetSentinelP5Hp;
+            bool useCustomPhase = Modules.BossChallenge.HornetSentinelHelper.hornetSentinelUseCustomPhase;
+            SetRowInteractivity(hornetSentinelHelperContent, "HornetSentinelUseMaxHpRow", !p5Hp);
+            SetRowInteractivity(hornetSentinelHelperContent, "HornetSentinelMaxHpRow", useMaxHp && !p5Hp);
+            SetRowInteractivity(hornetSentinelHelperContent, "HornetSentinelUseCustomPhaseRow", !p5Hp);
+            SetRowInteractivity(hornetSentinelHelperContent, "HornetSentinelPhase2HpRow", useCustomPhase && !p5Hp);
+        }
+
+        private static void SetRowInteractivity(RectTransform? content, string rowName, bool enabled)
+        {
+            if (content == null)
+            {
+                return;
+            }
+
+            Transform? row = content.Find(rowName);
+            if (row == null)
+            {
+                return;
+            }
+
+            CanvasGroup group = row.GetComponent<CanvasGroup>() ?? row.gameObject.AddComponent<CanvasGroup>();
+            group.alpha = enabled ? 1f : DisabledContentAlpha;
+
+            Selectable[] selectables = row.GetComponentsInChildren<Selectable>(true);
+            foreach (Selectable selectable in selectables)
+            {
+                selectable.interactable = enabled;
+            }
         }
 
         private static void SetContentInteractivity(RectTransform? content, bool enabled, string masterRowName)

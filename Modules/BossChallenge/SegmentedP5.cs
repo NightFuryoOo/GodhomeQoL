@@ -1,5 +1,6 @@
 ﻿using Satchel;
 using Satchel.Futils;
+using ToggleableBindings.Extensions;
 using UnityEngine.UI;
 
 namespace GodhomeQoL.Modules.BossChallenge
@@ -44,11 +45,15 @@ namespace GodhomeQoL.Modules.BossChallenge
         private static Text? selectBtnText;
 
         private static string CurrentSegmentName =>
-            $"SegmentedP5/Segment/{selectedP5Segment}".Localize();
+            $"SegmentedP5/Segment/{GetSafeSegmentIndex()}".Localize();
 
 
         private protected override void Load()
         {
+            _ = PantheonSequenceCompatibility.DisableRandomPantheons();
+            _ = PantheonSequenceCompatibility.DisableTrueBossRush();
+            _ = GetSafeSegmentIndex();
+
             On.GameManager.BeginScene += SetupScene;
             On.BossSequenceController.SetupNewSequence += StartSequence;
             On.BossSequence.CanLoad += SkipNotSelectedScenes;
@@ -59,6 +64,8 @@ namespace GodhomeQoL.Modules.BossChallenge
 
         private protected override void Unload()
         {
+            BossFightRestartCompatibility.ClearTransientSetupEventOverride();
+
             if (doorOnline)
             {
                 doorOnline = false;
@@ -89,6 +96,7 @@ namespace GodhomeQoL.Modules.BossChallenge
             if (running && !BossSceneController.IsBossScene)
             {
                 running = false;
+                BossFightRestartCompatibility.ClearTransientSetupEventOverride();
                 LogDebug("Segmented P5 sequence finished");
             }
 
@@ -316,29 +324,17 @@ namespace GodhomeQoL.Modules.BossChallenge
                 .challengeFSM.GetVariable<FsmString>("To Scene")
                 .Value = sequence.GetSceneAt(firstSceneIndex);
 
+            BossFightRestartCompatibility.ClearTransientSetupEventOverride();
             if (firstSceneIndex != 0)
             {
-                BossSceneController.SetupEventDelegate oldSetupEvent = BossSceneController.SetupEvent;
-                BossSceneController.SetupEvent = self => {
-                    oldSetupEvent(self);
-
+                bool installed = BossFightRestartCompatibility.InstallTransientSetupEventOverride(_ => {
                     BossSequenceController.ApplyBindings();
+                });
 
-                    //if (ModuleManager.IsModuleLoaded<ActivateFury>())
-                    //{
-                    //    BossSceneController.SetupEventDelegate oldSetupEvent = BossSceneController.SetupEvent;
-                    //    BossSceneController.SetupEvent = self => {
-                    //        oldSetupEvent(self);
-
-                    //        ActivateFury.Activate();
-                    //    };
-                    //}
-
-                    //if (ModuleManager.IsModuleLoaded<AddLifeblood>())
-                    //{
-                    //    AddLifeblood.Add();
-                    //}
-                };
+                if (!installed)
+                {
+                    LogWarn("Segmented P5: failed to install transient SetupEvent override for bindings.");
+                }
             }
 
             LogDebug("Starting segmented P5 sequence");
@@ -346,7 +342,12 @@ namespace GodhomeQoL.Modules.BossChallenge
 
         private static bool SkipNotSelectedScenes(On.BossSequence.orig_CanLoad orig, BossSequence self, int index)
         {
-            (int start, int end) = segments[selectedP5Segment];
+            if (segments.Length == 0)
+            {
+                return orig(self, index);
+            }
+
+            (int start, int end) = segments[GetSafeSegmentIndex()];
             return (!running || (index >= start && index <= end)) && orig(self, index);
         }
 
@@ -361,6 +362,7 @@ namespace GodhomeQoL.Modules.BossChallenge
         private static IEnumerator Quit()
         {
             running = false;
+            BossFightRestartCompatibility.ClearTransientSetupEventOverride();
 
             yield return new WaitWhile(() => Ref.GM.gameState == GameState.PAUSED);
 
@@ -372,12 +374,32 @@ namespace GodhomeQoL.Modules.BossChallenge
 
         private static void IncreamentP5SegmentSelection()
         {
-            selectedP5Segment++;
-
-            if (selectedP5Segment >= segments.Length)
+            int nextIndex = GetSafeSegmentIndex() + 1;
+            if (nextIndex >= segments.Length)
             {
-                selectedP5Segment = 0;
+                nextIndex = 0;
             }
+
+            selectedP5Segment = nextIndex;
+        }
+
+        private static int GetSafeSegmentIndex()
+        {
+            if (segments.Length == 0)
+            {
+                return 0;
+            }
+
+            int clamped = Mathf.Clamp(selectedP5Segment, 0, segments.Length - 1);
+            if (selectedP5Segment != clamped)
+            {
+                selectedP5Segment = clamped;
+                LogWarn($"SegmentedP5: clamped invalid segment index to {clamped}.");
+            }
+
+            return clamped;
         }
     }
 }
+
+

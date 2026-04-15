@@ -19,12 +19,15 @@
     <AssemblyName>GodhomeQoL</AssemblyName>
     <Nullable>enable</Nullable>
     <TargetFramework>net472</TargetFramework>
+    <!-- Ensure weaving also runs for Compile-only invocations so obj/bin stay consistent -->
+    <FodyAfterTargets>Compile</FodyAfterTargets>
     <AssemblyTitle>GodhomeQoL</AssemblyTitle>
     <Product>GodhomeQoL</Product>
     <Description>A Hollow Knight Mod</Description>
     <Copyright>Copyright c  2025</Copyright>
-    <AssemblyVersion>1.0.0.8</AssemblyVersion>
-    <FileVersion>1.0.0.8</FileVersion>
+    <AssemblyVersion>1.0.1.0</AssemblyVersion>
+    <FileVersion>1.0.1.0</FileVersion>
+    <InformationalVersion>1.0.1.0</InformationalVersion>
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
@@ -60,9 +63,14 @@
       <Output TaskParameter="Items" ItemName="ZipFilesWithHashes" />
     </GetFileHash>
     <WriteLinesToFile File="$(ExportDir)/$(TargetName)/SHA.txt" Lines="$(OutputFileString);@(FilesWithHashes->'%(FileHash)');$(OutputZipString);@(ZipFilesWithHashes->'%(FileHash)')" Overwrite="true" Encoding="UTF-8" />
+
+    <!-- Keep intermediate assembly synchronized with final output to avoid accidental deployment of stale obj DLL -->
+    <Copy SourceFiles="$(TargetPath)" DestinationFiles="$(IntermediateOutputPath)$(TargetName).dll" OverwriteReadOnlyFiles="true" />
+    <Copy Condition="Exists('$(TargetDir)$(TargetName).pdb')" SourceFiles="$(TargetDir)$(TargetName).pdb" DestinationFiles="$(IntermediateOutputPath)$(TargetName).pdb" OverwriteReadOnlyFiles="true" />
   </Target>
   <ItemGroup>
     <Compile Remove="ToggleableBindings\UI\BindingsUIController.cs" />
+    <Compile Remove="Compatibility\*.cs" />
     <None Remove="Resources\Lang\en.json" />
     <None Remove="Resources\Howling Wraiths.png" />
     <None Remove="Resources\Abyss Shriek.png" />
@@ -78,10 +86,6 @@
     <None Remove="Resources\Dream Nail.png" />
     <None Remove="Resources\Awoken Dream Nail.png" />
     <None Remove="Resources\Dreamgate.png" />
-    <None Remove="Resources\Nail Binding.png" />
-    <None Remove="Resources\Shell Binding.png" />
-    <None Remove="Resources\Charms Binding.png" />
-    <None Remove="Resources\Soul Binding.png" />
     <None Remove="Resources\Desolate Dive.png" />
     <None Remove="Resources\Descending Dark.png" />
     <None Remove="Resources\Pin_Knight.png" />
@@ -94,8 +98,8 @@
     <None Remove="Resources\OVERCHARMED.png" />
     <None Remove="Resources\Edit.png" />
     <None Remove="Resources\Del.png" />
-    <None Remove="Resources\Charms\Charms Prompt.png" />
-    <None Remove="Resources\Charms\Wayward Compass.png" />
+    <None Remove="Resources\Charms Prompt.png" />
+    <None Remove="Resources\Wayward Compass.png" />
     <None Remove="Resources\Charms\Gathering Swarm.png" />
     <None Remove="Resources\Charms\Stalwart Shell.png" />
     <None Remove="Resources\Charms\Soul Catcher.png" />
@@ -133,12 +137,6 @@
     </Reference>
     <Reference Include="MonoMod.Utils">
       <HintPath>$(HollowKnightRefs)/MonoMod.Utils.dll</HintPath>
-    </Reference>
-    <Reference Include="SFCore">
-      <HintPath>$(HollowKnightRefs)/Mods/SFCore/SFCore.dll</HintPath>
-    </Reference>
-    <Reference Include="Vasi">
-      <HintPath>$(HollowKnightRefs)/Mods/Vasi/Vasi.dll</HintPath>
     </Reference>
     <Reference Include="netstandard">
       <HintPath>$(HollowKnightRefs)/netstandard.dll</HintPath>
@@ -421,6 +419,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Resources\Lang\en.json" />
+    <EmbeddedResource Include="Resources\Boss Manipulate Images\*.png" Condition="Exists('Resources\Boss Manipulate Images')" />
     <EmbeddedResource Include="Resources\Collector_Roar.wav" />
     <EmbeddedResource Include="Resources\Howling Wraiths.png" Condition="Exists('Resources\Howling Wraiths.png')" />
     <EmbeddedResource Include="Resources\Abyss Shriek.png" Condition="Exists('Resources\Abyss Shriek.png')" />

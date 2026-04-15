@@ -28,10 +28,41 @@ public static class Exports
 
     public static void AddInfiniteChallengeReturnScenePredicate(Func<GameManager.SceneLoadInfo, bool> predicate)
     {
+        _ = AddInfiniteChallengeReturnScenePredicateHandle(predicate);
+    }
+
+    public static int AddInfiniteChallengeReturnScenePredicateHandle(Func<GameManager.SceneLoadInfo, bool> predicate)
+    {
         try
         {
-            InfiniteChallenge.returnScenePredicates.Add(predicate);
+            return InfiniteChallenge.AddReturnScenePredicate(predicate);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log(ex.Message);
+            return 0;
+        }
+    }
+
+    public static void RemoveInfiniteChallengeReturnScenePredicate(int handle)
+    {
+        try
+        {
+            InfiniteChallenge.RemoveReturnScenePredicate(handle);
         }
         catch (Exception ex) { Logger.Log(ex.Message); }
+    }
+
+    public static bool RemoveInfiniteChallengeReturnScenePredicateByDelegate(Func<GameManager.SceneLoadInfo, bool> predicate)
+    {
+        try
+        {
+            return InfiniteChallenge.RemoveReturnScenePredicate(predicate) > 0;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log(ex.Message);
+            return false;
+        }
     }
 }

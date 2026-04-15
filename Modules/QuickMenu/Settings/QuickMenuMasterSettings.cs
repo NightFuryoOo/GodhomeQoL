@@ -11,10 +11,7 @@ public sealed class QuickMenuMasterSettings
     public int BossChallengeSavedCarefreeMelodyMode { get; set; } = -1;
     public bool BossChallengeSavedInfiniteGrimm { get; set; }
     public bool BossChallengeSavedInfiniteRadiance { get; set; }
-    public bool BossChallengeSavedP5Health { get; set; }
     public bool BossChallengeSavedSegmentedP5 { get; set; }
-    public bool BossChallengeSavedHalveAscended { get; set; }
-    public bool BossChallengeSavedHalveAttuned { get; set; }
     public bool BossChallengeSavedAddLifeblood { get; set; }
     public bool BossChallengeSavedAddSoul { get; set; }
     public bool BossChallengeSavedForceArriveAnimation { get; set; }
@@ -44,6 +41,7 @@ public sealed class QuickMenuMasterSettings
 
     public bool BossAnimEnabled { get; set; } = true;
     public bool BossAnimHasSnapshot { get; set; }
+    public bool BossAnimSavedHallOfGods { get; set; }
     public bool BossAnimSavedAbsoluteRadiance { get; set; }
     public bool BossAnimSavedPureVesselRoar { get; set; }
     public bool BossAnimSavedGrimmNightmare { get; set; }
@@ -73,4 +71,8 @@ public sealed class QuickMenuMasterSettings
     public bool CheatsSavedInfiniteHp { get; set; }
     public bool CheatsSavedInvincibility { get; set; }
     public bool CheatsSavedNoclip { get; set; }
+
+    public bool BossManipulateGlobalP5Enabled { get; set; }
+    public List<string> BossManipulateGlobalP5TouchedModules { get; set; } = new();
+    public List<string> BossManipulateGlobalP5EnabledModules { get; set; } = new();
 }

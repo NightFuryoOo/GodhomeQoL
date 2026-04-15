@@ -3,7 +3,7 @@ namespace GodhomeQoL.Settings;
 public sealed class MaskDamageSettings
 {
     public bool Enabled = false;
-    public int DamageMultiplier = 1;
+    public float DamageMultiplier = 1f;
     public bool ShowUI = true;
-    public string ToggleUiKeybind = "P";
+    public string ToggleUiKeybind = string.Empty;
 }

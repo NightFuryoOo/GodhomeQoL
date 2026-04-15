@@ -43,18 +43,40 @@ namespace GodhomeQoL.Settings
 
         private void WriteFields()
         {
-            static void Write<T>(Dictionary<string, Dictionary<string, SettingInfo<T>>> fields, Dictionary<string, T> values) =>
-                fields.Values.Flatten().ForEach(
-                    pair => pair.Value.setter.Invoke(values![pair.Key]!)
-                );
+            static void Write<T>(Dictionary<string, Dictionary<string, SettingInfo<T>>> fields, Dictionary<string, T>? values)
+            {
+                if (values == null)
+                {
+                    return;
+                }
+
+                fields.Values.Flatten().ForEach(pair =>
+                {
+                    if (values.TryGetValue(pair.Key, out T value))
+                    {
+                        pair.Value.setter.Invoke(value);
+                    }
+                });
+            }
 
             Write(boolFields, booleans!);
             Write(intFields, integers!);
             Write(floatFields, floats!);
             Write(stringFields, strings!);
-            enumFields.Values.Flatten().ForEach(pair => pair.Value.setter.Invoke(
-                Enum.ToObject(pair.Value.fi.FieldType, enums![pair.Key]!)
-            ));
+            if (enums != null)
+            {
+                enumFields.Values.Flatten().ForEach(pair =>
+                {
+                    if (!enums.TryGetValue(pair.Key, out object? value) || value == null)
+                    {
+                        return;
+                    }
+
+                    pair.Value.setter.Invoke(
+                        Enum.ToObject(pair.Value.fi.FieldType, value)
+                    );
+                });
+            }
 
             booleans = null;
             integers = null;
@@ -178,7 +200,7 @@ namespace GodhomeQoL.Settings
                         ),
                         OptionType.Slider => new CustomSlider(
                             $"Settings/{name}".Localize(),
-                            (val) => setter((int)val),
+                            setter,
                             () => getter(),
                             attr.Options.First(),
                             attr.Options.Last(),

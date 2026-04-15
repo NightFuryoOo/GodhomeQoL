@@ -6,11 +6,60 @@ public sealed partial class QuickMenu : Module
 {
     private sealed partial class QuickMenuController : MonoBehaviour
     {
+        internal bool IsAnyUiVisible()
+        {
+            return quickVisible
+                || quickSettingsVisible
+                || overlayVisible
+                || collectorVisible
+                || fastReloadVisible
+                || dreamshieldVisible
+                || showHpOnDeathVisible
+                || maskDamageVisible
+                || freezeHitboxesVisible
+                || speedChangerVisible
+                || teleportKitVisible
+                || bossChallengeVisible
+                || randomPantheonsVisible
+                || trueBossRushVisible
+                || cheatsVisible
+                || alwaysFuriousVisible
+                || gearSwitcherVisible
+                || gearSwitcherCharmCostVisible
+                || gearSwitcherPresetVisible
+                || qolVisible
+                || menuAnimationVisible
+                || bossAnimationVisible
+                || zoteHelperVisible
+                || gruzHelperVisible
+                || hornetHelperVisible
+                || mawlekHelperVisible
+                || massiveMossHelperVisible
+                || crystalGuardianHelperVisible
+                || enragedGuardianHelperVisible
+                || hornetSentinelHelperVisible
+                || IsAnyAdditionalGhostHelperVisible()
+                || bossManipulateOtherRoomsVisible
+                || gruzMotherP1HelperVisible
+                || vengeflyKingP1HelperVisible
+                || broodingMawlekP1HelperVisible
+                || noskP2HelperVisible
+                || uumuuP3HelperVisible
+                || soulWarriorP1HelperVisible
+                || noEyesP4HelperVisible
+                || marmuP2HelperVisible
+                || xeroP2HelperVisible
+                || markothP4HelperVisible
+                || gorbP1HelperVisible
+                || bossManipulateVisible;
+        }
+
         private void ToggleMenu()
         {
-            if (quickVisible || quickSettingsVisible || overlayVisible || collectorVisible || fastReloadVisible || dreamshieldVisible || showHpOnDeathVisible || maskDamageVisible || speedChangerVisible || teleportKitVisible || bossChallengeVisible || randomPantheonsVisible || trueBossRushVisible || cheatsVisible || alwaysFuriousVisible || gearSwitcherVisible || gearSwitcherCharmCostVisible || gearSwitcherPresetVisible || qolVisible || menuAnimationVisible || bossAnimationVisible || zoteHelperVisible)
+            if (IsAnyUiVisible())
             {
                 returnToQuickOnClose = false;
+                returnToBossManipulateOnClose = false;
                 returnToQolOnClose = false;
                 SetQuickVisible(false);
                 SetOverlayVisible(false);
@@ -34,6 +83,27 @@ public sealed partial class QuickMenu : Module
                 SetMenuAnimationVisible(false);
                 SetBossAnimationVisible(false);
                 SetZoteHelperVisible(false);
+                SetGruzHelperVisible(false);
+                SetHornetHelperVisible(false);
+                SetMawlekHelperVisible(false);
+                SetMassiveMossHelperVisible(false);
+                SetCrystalGuardianHelperVisible(false);
+                SetEnragedGuardianHelperVisible(false);
+                SetHornetSentinelHelperVisible(false);
+                SetAllAdditionalGhostHelpersVisible(false);
+                SetBossManipulateVisible(false);
+                SetBossManipulateOtherRoomsVisible(false);
+                SetGruzMotherP1HelperVisible(false);
+                SetVengeflyKingP1HelperVisible(false);
+                SetBroodingMawlekP1HelperVisible(false);
+                SetNoskP2HelperVisible(false);
+                SetUumuuP3HelperVisible(false);
+                SetSoulWarriorP1HelperVisible(false);
+                SetNoEyesP4HelperVisible(false);
+                SetMarmuP2HelperVisible(false);
+                SetXeroP2HelperVisible(false);
+                SetMarkothP4HelperVisible(false);
+                SetGorbP1HelperVisible(false);
                 SetQuickSettingsVisible(false);
                 return;
             }
@@ -111,6 +181,11 @@ public sealed partial class QuickMenu : Module
 
         private void SetOverlayVisible(bool value)
         {
+            if (!value)
+            {
+                FlushFastSuperDashSpeedSaveIfDirty();
+            }
+
             overlayVisible = value;
             if (overlayRoot != null)
             {
@@ -502,12 +577,147 @@ public sealed partial class QuickMenu : Module
             UpdateUiState();
         }
 
+        private void SetGruzHelperVisible(bool value)
+        {
+            gruzHelperVisible = value;
+            if (gruzHelperRoot != null)
+            {
+                gruzHelperRoot.SetActive(value);
+            }
+
+            if (value)
+            {
+                RefreshGruzHelperUi();
+            }
+
+            UpdateUiState();
+        }
+
+        private void SetHornetHelperVisible(bool value)
+        {
+            hornetHelperVisible = value;
+            if (hornetHelperRoot != null)
+            {
+                hornetHelperRoot.SetActive(value);
+            }
+
+            if (value)
+            {
+                RefreshHornetHelperUi();
+            }
+
+            UpdateUiState();
+        }
+
+        private void SetMawlekHelperVisible(bool value)
+        {
+            mawlekHelperVisible = value;
+            if (mawlekHelperRoot != null)
+            {
+                mawlekHelperRoot.SetActive(value);
+            }
+
+            if (value)
+            {
+                RefreshMawlekHelperUi();
+            }
+
+            UpdateUiState();
+        }
+
+        private void SetMassiveMossHelperVisible(bool value)
+        {
+            massiveMossHelperVisible = value;
+            if (massiveMossHelperRoot != null)
+            {
+                massiveMossHelperRoot.SetActive(value);
+            }
+
+            if (value)
+            {
+                RefreshMassiveMossHelperUi();
+            }
+
+            UpdateUiState();
+        }
+
+        private void SetCrystalGuardianHelperVisible(bool value)
+        {
+            crystalGuardianHelperVisible = value;
+            if (crystalGuardianHelperRoot != null)
+            {
+                crystalGuardianHelperRoot.SetActive(value);
+            }
+
+            if (value)
+            {
+                RefreshCrystalGuardianHelperUi();
+            }
+
+            UpdateUiState();
+        }
+
+        private void SetEnragedGuardianHelperVisible(bool value)
+        {
+            enragedGuardianHelperVisible = value;
+            if (enragedGuardianHelperRoot != null)
+            {
+                enragedGuardianHelperRoot.SetActive(value);
+            }
+
+            if (value)
+            {
+                RefreshEnragedGuardianHelperUi();
+            }
+
+            UpdateUiState();
+        }
+
+        private void SetHornetSentinelHelperVisible(bool value)
+        {
+            hornetSentinelHelperVisible = value;
+            if (hornetSentinelHelperRoot != null)
+            {
+                hornetSentinelHelperRoot.SetActive(value);
+            }
+
+            if (value)
+            {
+                RefreshHornetSentinelHelperUi();
+            }
+
+            UpdateUiState();
+        }
+
+        private void SetBossManipulateVisible(bool value)
+        {
+            bossManipulateVisible = value;
+            if (bossManipulateRoot != null)
+            {
+                bossManipulateRoot.SetActive(value);
+            }
+
+            if (value)
+            {
+                RefreshBossManipulateCardVisuals();
+                RefreshBossManipulateGlobalUi();
+                SetBossManipulateResetConfirmVisible(false);
+            }
+            else
+            {
+                SetBossManipulateResetConfirmVisible(false);
+            }
+
+            UpdateUiState();
+        }
+
         private void UpdateUiState()
         {
-            bool anyVisible = quickVisible || quickSettingsVisible || overlayVisible || collectorVisible || fastReloadVisible || dreamshieldVisible || showHpOnDeathVisible || maskDamageVisible || freezeHitboxesVisible || speedChangerVisible || teleportKitVisible || bossChallengeVisible || randomPantheonsVisible || trueBossRushVisible || cheatsVisible || alwaysFuriousVisible || gearSwitcherVisible || gearSwitcherCharmCostVisible || gearSwitcherPresetVisible || qolVisible || menuAnimationVisible || bossAnimationVisible || zoteHelperVisible;
+            bool anyVisible = IsAnyUiVisible();
 
             if (anyVisible && !uiActive)
             {
+                CaptureSelectionBeforeQuickMenuActivation();
                 EnableUiInteraction();
                 EnableCursorHook();
                 uiActive = true;
@@ -518,6 +728,7 @@ public sealed partial class QuickMenu : Module
             {
                 DisableCursorHook();
                 RestoreUiInteraction();
+                TryRestoreSelectionAfterQuickMenuClose();
                 uiActive = false;
             }
         }

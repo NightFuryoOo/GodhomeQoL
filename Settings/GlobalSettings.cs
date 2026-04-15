@@ -16,14 +16,21 @@ public sealed class GlobalSettings : SettingBase<GlobalSettingAttribute>
         get => modules;
         set
         {
+            if (value == null)
+            {
+                return;
+            }
+
             foreach (KeyValuePair<string, bool> pair in value)
             {
                 if (modules.ContainsKey(pair.Key))
                 {
                     modules[pair.Key] = pair.Value;
 
-                    _ = ModuleManager.TryGetModule(pair.Key, out Module? module);
-                    module!.Enabled = pair.Value;
+                    if (ModuleManager.TryGetModule(pair.Key, out Module? module))
+                    {
+                        module.Enabled = pair.Value;
+                    }
                 }
             }
         }

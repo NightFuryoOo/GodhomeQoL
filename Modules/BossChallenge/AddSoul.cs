@@ -19,17 +19,27 @@ public sealed class AddSoul : Module {
 			yield break;
 		}
 
-		Ref.HC.AddMPCharge(soulAmount);
+		if (Ref.HC == null || soulAmount <= 0) {
+			yield break;
+		}
 
-		_ = Ref.HC.StartCoroutine(UpdateHUD());
-
-		LogDebug("Soul added");
+		_ = Ref.HC.StartCoroutine(ApplySoulWhenReady(soulAmount));
 	}
 
-	private static IEnumerator UpdateHUD() {
-		yield return new WaitUntil(() => Ref.GM.gameState == GameState.PLAYING);
+	private static IEnumerator ApplySoulWhenReady(int amount) {
+		yield return new WaitUntil(() => Ref.GM != null && Ref.GM.gameState == GameState.PLAYING);
+		// Let restart flows normalize MP for this frame first, then apply configured start soul.
+		yield return null;
 
-		Ref.GC.soulOrbFSM.SendEvent("MP GAIN SPA");
-		Ref.GC.soulVesselFSM.SendEvent("MP RESERVE UP");
+		if (Ref.HC == null) {
+			yield break;
+		}
+
+		Ref.HC.AddMPCharge(amount);
+
+		Ref.GC?.soulOrbFSM?.SendEvent("MP GAIN SPA");
+		Ref.GC?.soulVesselFSM?.SendEvent("MP RESERVE UP");
+
+		LogDebug("Soul added");
 	}
 }

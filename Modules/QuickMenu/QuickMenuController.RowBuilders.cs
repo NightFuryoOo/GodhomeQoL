@@ -210,6 +210,48 @@ public sealed partial class QuickMenu : Module
             AttachRowHighlight(plus.gameObject, highlight);
         }
 
+        private void CreateAdjustFloatInputRow(
+            Transform parent,
+            string name,
+            string label,
+            float y,
+            Func<float> getter,
+            Action<float> setter,
+            float minValue,
+            float maxValue,
+            float baseStep,
+            out InputField valueField)
+        {
+            GameObject row = CreateRow(parent, name, y, new Vector2(RowWidth, RowHeight));
+            Image image = row.AddComponent<Image>();
+            image.color = new Color(0f, 0f, 0f, 0f);
+
+            _ = CreateRowLabel(row.transform, label);
+
+            InputField input = CreateInputField(
+                row.transform,
+                getter().ToString("0.##", System.Globalization.CultureInfo.InvariantCulture),
+                new Vector2(InputControlValueRight, 0f),
+                new Vector2(InputControlValueWidth, RowHeight));
+            input.contentType = InputField.ContentType.DecimalNumber;
+            valueField = input;
+
+            input.onEndEdit.AddListener(value =>
+                ApplyFloatInputValue(value, getter, setter, input, minValue, maxValue));
+
+            Button minus = CreateMiniButton(row.transform, "Minus", "-", new Vector2(InputControlMinusRight, 0f));
+            minus.onClick.AddListener(() => AdjustFloatInputValue(getter, setter, input, -1, minValue, maxValue, baseStep));
+
+            Button plus = CreateMiniButton(row.transform, "Plus", "+", new Vector2(InputControlPlusRight, 0f));
+            plus.onClick.AddListener(() => AdjustFloatInputValue(getter, setter, input, 1, minValue, maxValue, baseStep));
+
+            RowHighlight highlight = CreateRowHighlight(row, image);
+            AttachRowHighlight(row, highlight);
+            AttachRowHighlight(input.gameObject, highlight);
+            AttachRowHighlight(minus.gameObject, highlight);
+            AttachRowHighlight(plus.gameObject, highlight);
+        }
+
         private void CreateSpeedRow(Transform parent, float labelY, float sliderY)
         {
             GameObject row = CreateRow(parent, "SpeedRow", labelY, new Vector2(RowWidth, RowHeight));

@@ -1,7 +1,16 @@
-﻿namespace GodhomeQoL.Modules.QoL;
+﻿using GodhomeQoL.Modules.Tools;
+
+namespace GodhomeQoL.Modules.QoL;
 
 public sealed class TeleportKit : Module
 {
+    internal enum HotkeySlot
+    {
+        Menu,
+        SaveTeleport,
+        Teleport
+    }
+
     internal static TeleportKit? Instance { get; private set; }
 
     [GlobalSetting]
@@ -28,6 +37,93 @@ public sealed class TeleportKit : Module
 
     private static bool IsValidHotkey(KeyCode key) => key != KeyCode.None;
 
+    private static KeyCode GetEffectiveKey(HotkeySlot slot) =>
+        slot switch
+        {
+            HotkeySlot.Menu => MenuHotkey,
+            HotkeySlot.SaveTeleport => SaveTeleportHotkey == KeyCode.None ? KeyCode.R : SaveTeleportHotkey,
+            HotkeySlot.Teleport => TeleportHotkey == KeyCode.None ? KeyCode.T : TeleportHotkey,
+            _ => KeyCode.None
+        };
+
+    private static string GetOwnerLabel(HotkeySlot slot) =>
+        slot switch
+        {
+            HotkeySlot.Menu => "TeleportKit/MenuHotkey".Localize(),
+            HotkeySlot.SaveTeleport => "TeleportKit/SaveHotkey".Localize(),
+            HotkeySlot.Teleport => "TeleportKit/TeleportHotkey".Localize(),
+            _ => "TeleportKit"
+        };
+
+    private static bool TryGetInternalConflictOwners(HotkeySlot slot, KeyCode key, out string ownersText)
+    {
+        var owners = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        if (slot != HotkeySlot.Menu && GetEffectiveKey(HotkeySlot.Menu) == key)
+        {
+            owners.Add(GetOwnerLabel(HotkeySlot.Menu));
+        }
+
+        if (slot != HotkeySlot.SaveTeleport && GetEffectiveKey(HotkeySlot.SaveTeleport) == key)
+        {
+            owners.Add(GetOwnerLabel(HotkeySlot.SaveTeleport));
+        }
+
+        if (slot != HotkeySlot.Teleport && GetEffectiveKey(HotkeySlot.Teleport) == key)
+        {
+            owners.Add(GetOwnerLabel(HotkeySlot.Teleport));
+        }
+
+        ownersText = string.Join(", ", owners);
+        return owners.Count > 0;
+    }
+
+    internal static bool TryAssignHotkey(HotkeySlot slot, KeyCode key, out string failureReason)
+    {
+        failureReason = string.Empty;
+
+        if (key == KeyCode.None)
+        {
+            failureReason = "недоступен для этой привязки";
+            return false;
+        }
+
+        if ((slot == HotkeySlot.SaveTeleport || slot == HotkeySlot.Teleport)
+            && (key == KeyCode.LeftControl || key == KeyCode.RightControl))
+        {
+            failureReason = "недоступен для этой привязки";
+            return false;
+        }
+
+        string selfOwner = GetOwnerLabel(slot);
+        if (QuickMenu.TryGetHotkeyConflictOwnersExceptSelf(key, selfOwner, out string conflictOwners))
+        {
+            failureReason = $"занят: {conflictOwners}";
+            return false;
+        }
+
+        if (TryGetInternalConflictOwners(slot, key, out string internalOwners))
+        {
+            failureReason = $"конфликтует с {internalOwners}";
+            return false;
+        }
+
+        switch (slot)
+        {
+            case HotkeySlot.Menu:
+                MenuHotkey = key;
+                break;
+            case HotkeySlot.SaveTeleport:
+                SaveTeleportHotkey = key;
+                break;
+            case HotkeySlot.Teleport:
+                TeleportHotkey = key;
+                break;
+        }
+
+        return true;
+    }
+
     private protected override void Load()
     {
         Instance = this;
@@ -50,6 +146,7 @@ public sealed class TeleportKit : Module
         GUI?.Dispose();
         Input?.Dispose();
         Teleport?.Dispose();
+        Log?.Dispose();
 
         Instance = null;
     }

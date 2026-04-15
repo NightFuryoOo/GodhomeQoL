@@ -34,11 +34,17 @@ public sealed partial class QuickMenu : Module
 
         internal bool IsHotkeyInputBlocked()
         {
-            return quickRenameMode
+            return (quickVisible && quickRenameMode)
                 || IsAnyRebinding()
                 || gearSwitcherPresetDeleteVisible
                 || gearSwitcherResetConfirmVisible
-                || quickSettingsResetConfirmVisible;
+                || quickSettingsResetConfirmVisible
+                || IsTeleportKitGameplayMenuVisible();
+        }
+
+        private static bool IsTeleportKitGameplayMenuVisible()
+        {
+            return Modules.QoL.TeleportKit.Instance?.Input.ShowMenu ?? false;
         }
 
         internal void StartQuickMenuHotkeyRebind()
@@ -168,12 +174,18 @@ public sealed partial class QuickMenu : Module
                 return;
             }
 
-            bool isQuickMenuKey = key == GetQuickMenuToggleKey();
-            string raw = key == overlayHotkeyPrevKey
-                || IsOverlayKeyboardHotkeyInUse(overlayHotkeyRebindId, key)
-                || isQuickMenuKey
-                ? string.Empty
-                : key.ToString();
+            bool clear = key == overlayHotkeyPrevKey;
+            if (!clear && TryGetHotkeyConflictOwnersExceptSelf(key, GetOverlayHotkeyOwnerLabel(overlayHotkeyRebindId), out string conflictOwners))
+            {
+                ShowStatusMessage($"HOTKEY {FormatKeyLabel(key)} занят: {conflictOwners}");
+                if (quickSettingsHotkeyValues.TryGetValue(overlayHotkeyRebindId, out Text? text))
+                {
+                    UpdateKeybindValue(text, "Settings/FastReload/SetKey".Localize());
+                }
+                return;
+            }
+
+            string raw = clear ? string.Empty : key.ToString();
             SetOverlayHotkeyRaw(overlayHotkeyRebindId, raw);
             GodhomeQoL.SaveGlobalSettingsSafe();
             GodhomeQoL.MarkMenuDirty();
@@ -232,10 +244,15 @@ public sealed partial class QuickMenu : Module
                 return;
             }
 
-            bool hasOverlayConflict = IsOverlayKeyboardHotkeyInUse(string.Empty, key);
-            GodhomeQoL.GlobalSettings.QuickMenuHotkey = key == quickMenuPrevKey || hasOverlayConflict
-                ? string.Empty
-                : key.ToString();
+            bool clear = key == quickMenuPrevKey;
+            if (!clear && TryGetHotkeyConflictOwnersExceptSelf(key, "Settings/QuickMenu/Hotkey".Localize(), out string conflictOwners))
+            {
+                ShowStatusMessage($"HOTKEY {FormatKeyLabel(key)} занят: {conflictOwners}");
+                UpdateQuickMenuHotkeyButton("Settings/FastReload/SetKey".Localize());
+                return;
+            }
+
+            GodhomeQoL.GlobalSettings.QuickMenuHotkey = clear ? string.Empty : key.ToString();
             GodhomeQoL.SaveGlobalSettingsSafe();
             GodhomeQoL.MarkMenuDirty();
             overlayHotkeySuppressFrames = 2;
@@ -280,28 +297,167 @@ public sealed partial class QuickMenu : Module
                 return;
             }
 
-            Modules.FastReload.reloadKeyCode = key == reloadPrevKey || IsFastReloadKeyInUse(key, forReload: true)
-                ? (int)KeyCode.None
-                : (int)key;
+            if (key == reloadPrevKey)
+            {
+                Modules.FastReload.reloadKeyCode = (int)KeyCode.None;
+                waitingForReloadRebind = false;
+                UpdateKeybindValue(reloadKeyValue, FormatKeyLabel(GetReloadKey()));
+                return;
+            }
+
+            if (TryGetFastReloadHotkeyConflictOwners(key, out string conflictOwners))
+            {
+                ShowStatusMessage($"HOTKEY {FormatKeyLabel(key)} занят: {conflictOwners}");
+                UpdateKeybindValue(reloadKeyValue, "Settings/FastReload/SetKey".Localize());
+                return;
+            }
+
+            Modules.FastReload.reloadKeyCode = (int)key;
 
             waitingForReloadRebind = false;
             UpdateKeybindValue(reloadKeyValue, FormatKeyLabel(GetReloadKey()));
         }
 
-        private static bool IsFastReloadKeyInUse(KeyCode key, bool forReload)
+        private bool TryGetFastReloadHotkeyConflictOwners(KeyCode key, out string ownersText)
         {
-            if (key == KeyCode.None)
+            List<string> owners = new();
+            HashSet<string> unique = new(StringComparer.OrdinalIgnoreCase);
+
+            void AddOwner(string owner)
             {
+                if (string.IsNullOrWhiteSpace(owner))
+                {
+                    return;
+                }
+
+                if (unique.Add(owner))
+                {
+                    owners.Add(owner);
+                }
+            }
+
+            if (GetQuickMenuToggleKey() == key)
+            {
+                AddOwner("Settings/QuickMenu/Hotkey".Localize());
+            }
+
+            foreach (QuickMenuItemDefinition def in GetOrderedQuickMenuDefinitions())
+            {
+                if (!IsOverlayHotkeySupported(def.Id))
+                {
+                    continue;
+                }
+
+                if (GetOverlayHotkeyKey(def.Id) == key)
+                {
+                    AddOwner($"{def.Label} Overlay Hotkey");
+                }
+            }
+
+            if (KeyCodeMatchesRawKeybind(MaskDamage.GetToggleUiKeybind(), key))
+            {
+                AddOwner("Settings/MaskDamage/ToggleUI".Localize());
+            }
+
+            if (KeyCodeMatchesRawKeybind(FreezeHitboxes.GetUnfreezeKeybind(), key))
+            {
+                AddOwner("Freeze Hitboxes Unfreeze Hotkey");
+            }
+
+            if (KeyCodeMatchesRawKeybind(Modules.Cheats.Cheats.GetKillAllHotkeyRaw(), key))
+            {
+                AddOwner("Settings/Cheats/KillAllHotkey".Localize());
+            }
+
+            if (KeyCodeMatchesRawKeybind(SpeedChanger.toggleKeybind, key))
+            {
+                AddOwner("SpeedChanger/ToggleKey".Localize());
+            }
+
+            if (KeyCodeMatchesRawKeybind(SpeedChanger.inputSpeedKeybind, key))
+            {
+                AddOwner("SpeedChanger/InputKey".Localize());
+            }
+
+            if (Modules.QoL.TeleportKit.MenuHotkey == key)
+            {
+                AddOwner("TeleportKit/MenuHotkey".Localize());
+            }
+
+            if (GetTeleportKitSaveKeyDisplay() == key)
+            {
+                AddOwner("TeleportKit/SaveHotkey".Localize());
+            }
+
+            if (GetTeleportKitTeleportKeyDisplay() == key)
+            {
+                AddOwner("TeleportKit/TeleportHotkey".Localize());
+            }
+
+            if (TryMapKeyCodeToInControlKey(key, out Key mapped))
+            {
+                string mappedRaw = mapped.ToString();
+                if (string.Equals(GetShowHpBindingRaw(), mappedRaw, StringComparison.OrdinalIgnoreCase))
+                {
+                    AddOwner("ShowHPOnDeath/HudToggleKey".Localize());
+                }
+
+                if (string.Equals(GetFastDreamWarpKeyBindingRaw(), mappedRaw, StringComparison.OrdinalIgnoreCase))
+                {
+                    AddOwner("Settings/FastDreamWarp/Hotkey".Localize());
+                }
+            }
+
+            ownersText = string.Join(", ", owners);
+            return owners.Count > 0;
+        }
+
+        private bool TryGetHotkeyConflictOwnersExceptSelf(KeyCode key, string selfOwner, out string ownersText)
+        {
+            if (!TryGetFastReloadHotkeyConflictOwners(key, out string allOwners))
+            {
+                ownersText = string.Empty;
                 return false;
             }
 
-            KeyCode other = forReload ? GetTeleportKey() : GetReloadKey();
-            return key == other;
+            List<string> filtered = allOwners
+                .Split(',')
+                .Select(o => o.Trim())
+                .Where(o => !string.IsNullOrWhiteSpace(o))
+                .Where(o => !string.Equals(o, selfOwner, StringComparison.OrdinalIgnoreCase))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            ownersText = string.Join(", ", filtered);
+            return filtered.Count > 0;
+        }
+
+        internal bool TryGetHotkeyConflictOwnersExceptSelfExternal(KeyCode key, string selfOwner, out string ownersText)
+        {
+            return TryGetHotkeyConflictOwnersExceptSelf(key, selfOwner, out ownersText);
+        }
+
+        private string GetOverlayHotkeyOwnerLabel(string id)
+        {
+            QuickMenuItemDefinition? definition = GetOrderedQuickMenuDefinitions()
+                .FirstOrDefault(def => string.Equals(def.Id, id, StringComparison.Ordinal));
+
+            if (definition == null)
+            {
+                return "Overlay Hotkey";
+            }
+
+            return $"{definition.Label} Overlay Hotkey";
+        }
+
+        private static bool KeyCodeMatchesRawKeybind(string raw, KeyCode key)
+        {
+            return !string.IsNullOrWhiteSpace(raw)
+                && Enum.TryParse(raw, true, out KeyCode parsed)
+                && parsed == key;
         }
 
         private static KeyCode GetReloadKey() => (KeyCode)Modules.FastReload.reloadKeyCode;
-
-        private static KeyCode GetTeleportKey() => (KeyCode)Modules.FastReload.teleportKeyCode;
 
         private static string FormatKeyLabel(KeyCode key)
         {
@@ -408,9 +564,21 @@ public sealed partial class QuickMenu : Module
             bool clear = !string.IsNullOrEmpty(showHpPrevBindingRaw)
                 && string.Equals(showHpPrevBindingRaw, newLabel, StringComparison.Ordinal);
 
+            if (!clear && TryGetShowHpOnDeathHotkeyConflictOwners(key, out string conflictOwners))
+            {
+                ShowStatusMessage($"HOTKEY {FormatKeyLabel(key)} занят: {conflictOwners}");
+                UpdateKeybindValue(showHpHudToggleKeyValue, "Settings/FastReload/SetKey".Localize());
+                return;
+            }
+
             ApplyShowHpBinding(clear ? (Key?)null : mapped);
             waitingForShowHpRebind = false;
             UpdateKeybindValue(showHpHudToggleKeyValue, GetShowHpBindingLabel());
+        }
+
+        private bool TryGetShowHpOnDeathHotkeyConflictOwners(KeyCode key, out string ownersText)
+        {
+            return TryGetHotkeyConflictOwnersExceptSelf(key, "ShowHPOnDeath/HudToggleKey".Localize(), out ownersText);
         }
 
         private static void ApplyShowHpBinding(Key? key)
@@ -503,9 +671,21 @@ public sealed partial class QuickMenu : Module
             bool clear = !string.IsNullOrEmpty(maskDamageUiPrevKey)
                 && string.Equals(maskDamageUiPrevKey, keyName, StringComparison.OrdinalIgnoreCase);
 
+            if (!clear && TryGetMaskDamageHotkeyConflictOwners(key, out string conflictOwners))
+            {
+                ShowStatusMessage($"HOTKEY {FormatKeyLabel(key)} занят: {conflictOwners}");
+                UpdateKeybindValue(maskDamageToggleUiKeyValue, "Settings/FastReload/SetKey".Localize());
+                return;
+            }
+
             MaskDamage.SetToggleUiKeybind(clear ? string.Empty : keyName);
             waitingForMaskDamageUiRebind = false;
             UpdateKeybindValue(maskDamageToggleUiKeyValue, GetMaskDamageToggleUiKeyLabel());
+        }
+
+        private bool TryGetMaskDamageHotkeyConflictOwners(KeyCode key, out string ownersText)
+        {
+            return TryGetHotkeyConflictOwnersExceptSelf(key, "Settings/MaskDamage/ToggleUI".Localize(), out ownersText);
         }
 
         private bool IsFreezeHitboxesRebinding()
@@ -567,6 +747,13 @@ public sealed partial class QuickMenu : Module
             string keyName = key.ToString();
             bool clear = !string.IsNullOrEmpty(freezeHitboxesPrevKey)
                 && string.Equals(freezeHitboxesPrevKey, keyName, StringComparison.OrdinalIgnoreCase);
+
+            if (!clear && TryGetHotkeyConflictOwnersExceptSelf(key, "Freeze Hitboxes Unfreeze Hotkey", out string conflictOwners))
+            {
+                ShowStatusMessage($"HOTKEY {FormatKeyLabel(key)} занят: {conflictOwners}");
+                UpdateKeybindValue(freezeHitboxesUnfreezeKeyValue, "Settings/FastReload/SetKey".Localize());
+                return;
+            }
 
             FreezeHitboxes.SetUnfreezeKeybind(clear ? string.Empty : keyName);
             waitingForFreezeHitboxesRebind = false;
@@ -637,6 +824,13 @@ public sealed partial class QuickMenu : Module
             string keyName = key.ToString();
             bool clear = !string.IsNullOrEmpty(cheatsKillAllPrevKey)
                 && string.Equals(cheatsKillAllPrevKey, keyName, StringComparison.OrdinalIgnoreCase);
+
+            if (!clear && TryGetHotkeyConflictOwnersExceptSelf(key, "Settings/Cheats/KillAllHotkey".Localize(), out string conflictOwners))
+            {
+                ShowStatusMessage($"HOTKEY {FormatKeyLabel(key)} занят: {conflictOwners}");
+                UpdateKeybindValue(cheatsKillAllHotkeyValue, "Settings/FastReload/SetKey".Localize());
+                return;
+            }
 
             Modules.Cheats.Cheats.SetKillAllHotkeyRaw(clear ? string.Empty : keyName);
             waitingForCheatsKillAllRebind = false;
@@ -765,7 +959,8 @@ public sealed partial class QuickMenu : Module
 
         private bool IsSpeedChangerRebinding()
         {
-            return waitingForSpeedToggleRebind || waitingForSpeedInputRebind;
+            return waitingForSpeedToggleRebind
+                || waitingForSpeedInputRebind;
         }
 
         private void StartSpeedChangerToggleRebind()
@@ -840,6 +1035,14 @@ public sealed partial class QuickMenu : Module
                 return;
             }
 
+            bool clear = string.Equals(speedTogglePrevKey, key.ToString(), StringComparison.OrdinalIgnoreCase);
+            if (!clear && TryGetHotkeyConflictOwnersExceptSelf(key, "SpeedChanger/ToggleKey".Localize(), out string conflictOwners))
+            {
+                ShowStatusMessage($"HOTKEY {FormatKeyLabel(key)} занят: {conflictOwners}");
+                UpdateKeybindValue(speedChangerToggleKeyValue, "Settings/FastReload/SetKey".Localize());
+                return;
+            }
+
             SetSpeedChangerKeybind(key, speedTogglePrevKey, "toggle", value => SpeedChanger.toggleKeybind = value);
             SpeedChanger.SuppressToggleUntilRelease(key);
             waitingForSpeedToggleRebind = false;
@@ -852,6 +1055,14 @@ public sealed partial class QuickMenu : Module
             {
                 waitingForSpeedInputRebind = false;
                 UpdateKeybindValue(speedChangerInputKeyValue, FormatSpeedChangerKeyLabel(SpeedChanger.inputSpeedKeybind));
+                return;
+            }
+
+            bool clear = string.Equals(speedInputPrevKey, key.ToString(), StringComparison.OrdinalIgnoreCase);
+            if (!clear && TryGetHotkeyConflictOwnersExceptSelf(key, "SpeedChanger/InputKey".Localize(), out string conflictOwners))
+            {
+                ShowStatusMessage($"HOTKEY {FormatKeyLabel(key)} занят: {conflictOwners}");
+                UpdateKeybindValue(speedChangerInputKeyValue, "Settings/FastReload/SetKey".Localize());
                 return;
             }
 
@@ -883,12 +1094,8 @@ public sealed partial class QuickMenu : Module
                 && string.Equals(SpeedChanger.toggleKeybind, keyName, StringComparison.OrdinalIgnoreCase);
             bool inInput = !string.Equals(except, "input", StringComparison.OrdinalIgnoreCase)
                 && string.Equals(SpeedChanger.inputSpeedKeybind, keyName, StringComparison.OrdinalIgnoreCase);
-            bool inUp = !string.Equals(except, "up", StringComparison.OrdinalIgnoreCase)
-                && string.Equals(SpeedChanger.speedUpKeybind, keyName, StringComparison.OrdinalIgnoreCase);
-            bool inDown = !string.Equals(except, "down", StringComparison.OrdinalIgnoreCase)
-                && string.Equals(SpeedChanger.slowDownKeybind, keyName, StringComparison.OrdinalIgnoreCase);
 
-            return inToggle || inInput || inUp || inDown;
+            return inToggle || inInput;
         }
 
         private void RefreshSpeedChangerKeybinds()
@@ -1011,7 +1218,13 @@ public sealed partial class QuickMenu : Module
                 return;
             }
 
-            Modules.QoL.TeleportKit.MenuHotkey = key;
+            if (!Modules.QoL.TeleportKit.TryAssignHotkey(Modules.QoL.TeleportKit.HotkeySlot.Menu, key, out string failureReason))
+            {
+                ShowStatusMessage($"HOTKEY {FormatKeyLabel(key)} {failureReason}");
+                UpdateKeybindValue(teleportKitMenuKeyValue, "Settings/FastReload/SetKey".Localize());
+                return;
+            }
+
             waitingForTeleportKitMenuRebind = false;
             UpdateKeybindValue(teleportKitMenuKeyValue, GetTeleportKitMenuKeyLabel());
         }
@@ -1025,7 +1238,13 @@ public sealed partial class QuickMenu : Module
                 return;
             }
 
-            Modules.QoL.TeleportKit.SaveTeleportHotkey = key;
+            if (!Modules.QoL.TeleportKit.TryAssignHotkey(Modules.QoL.TeleportKit.HotkeySlot.SaveTeleport, key, out string failureReason))
+            {
+                ShowStatusMessage($"HOTKEY {FormatKeyLabel(key)} {failureReason}");
+                UpdateKeybindValue(teleportKitSaveKeyValue, "Settings/FastReload/SetKey".Localize());
+                return;
+            }
+
             waitingForTeleportKitSaveRebind = false;
             UpdateKeybindValue(teleportKitSaveKeyValue, GetTeleportKitSaveKeyLabel());
         }
@@ -1039,7 +1258,13 @@ public sealed partial class QuickMenu : Module
                 return;
             }
 
-            Modules.QoL.TeleportKit.TeleportHotkey = key;
+            if (!Modules.QoL.TeleportKit.TryAssignHotkey(Modules.QoL.TeleportKit.HotkeySlot.Teleport, key, out string failureReason))
+            {
+                ShowStatusMessage($"HOTKEY {FormatKeyLabel(key)} {failureReason}");
+                UpdateKeybindValue(teleportKitTeleportKeyValue, "Settings/FastReload/SetKey".Localize());
+                return;
+            }
+
             waitingForTeleportKitTeleportRebind = false;
             UpdateKeybindValue(teleportKitTeleportKeyValue, GetTeleportKitTeleportKeyLabel());
         }
@@ -1115,6 +1340,13 @@ public sealed partial class QuickMenu : Module
             bool clear = !string.IsNullOrEmpty(fastDreamWarpPrevKeyRaw)
                 && string.Equals(fastDreamWarpPrevKeyRaw, newLabel, StringComparison.Ordinal);
 
+            if (!clear && TryGetHotkeyConflictOwnersExceptSelf(key, "Settings/FastDreamWarp/Hotkey".Localize(), out string conflictOwners))
+            {
+                ShowStatusMessage($"HOTKEY {FormatKeyLabel(key)} занят: {conflictOwners}");
+                UpdateKeybindValue(fastDreamWarpKeyValue, "Settings/FastReload/SetKey".Localize());
+                return;
+            }
+
             ApplyFastDreamWarpKeyBinding(clear ? (Key?)null : mapped);
             waitingForFastDreamWarpRebind = false;
             UpdateKeybindValue(fastDreamWarpKeyValue, GetFastDreamWarpBindingLabel());
@@ -1132,6 +1364,11 @@ public sealed partial class QuickMenu : Module
 
         private void HandleFastDreamWarpHotkey()
         {
+            if (IsAnyUiVisible())
+            {
+                return;
+            }
+
             PlayerAction action = FastDreamWarpSettings.Keybinds.Toggle;
             if (!action.WasPressed)
             {
@@ -1186,7 +1423,6 @@ public sealed partial class QuickMenu : Module
             return id switch
             {
                 "FastSuperDash" => GetModuleEnabled(),
-                "CollectorPhases" => GetCollectorPhasesEnabled(),
                 "FastReload" => GetFastReloadEnabled(),
                 "DreamshieldSettings" => GetDreamshieldEnabled(),
                 "ShowHPOnDeath" => GetShowHpOnDeathEnabled(),
@@ -1195,12 +1431,12 @@ public sealed partial class QuickMenu : Module
                 "SpeedChanger" => GetSpeedChangerEnabled(),
                 "TeleportKit" => GetTeleportKitEnabled(),
                 "BossChallenge" => GetBossChallengeMasterEnabled(),
+                "BossManipulate" => GetCollectorPhasesEnabled() || GetZoteHelperEnabled() || GetGruzMotherHelperEnabled() || GetHornetProtectorHelperEnabled() || GetBroodingMawlekHelperEnabled() || GetMassiveMossChargerHelperEnabled() || GetCrystalGuardianHelperEnabled() || GetEnragedGuardianHelperEnabled() || GetHornetSentinelHelperEnabled() || GetAdditionalGhostHelpersEnabled() || GetGruzMotherP1HelperEnabled() || GetVengeflyKingP1HelperEnabled() || GetBroodingMawlekP1HelperEnabled() || GetNoskP2HelperEnabled() || GetUumuuP3HelperEnabled() || GetSoulWarriorP1HelperEnabled() || GetNoEyesP4HelperEnabled() || GetMarmuP2HelperEnabled() || GetXeroP2HelperEnabled() || GetMarkothP4HelperEnabled() || GetGorbP1HelperEnabled(),
                 "RandomPantheons" => GetRandomPantheonsMasterEnabled(),
                 "TrueBossRush" => GetTrueBossRushMasterEnabled() && GetTrueBossRushEnabled(),
                 "Cheats" => GetCheatsMasterEnabled(),
                 "AlwaysFurious" => GetAlwaysFuriousEnabled(),
                 "GearSwitcher" => GetGearSwitcherEnabled(),
-                "ZoteHelper" => GetZoteHelperEnabled(),
                 "QualityOfLife" => GetQolMasterEnabled(),
                 "BossAnimationSkipping" => GetBossAnimationMasterEnabled(),
                 "MenuAnimationSkipping" => GetMenuAnimationMasterEnabled(),
@@ -1213,7 +1449,6 @@ public sealed partial class QuickMenu : Module
             return id switch
             {
                 "FastSuperDash" => overlayVisible,
-                "CollectorPhases" => collectorVisible,
                 "FastReload" => fastReloadVisible,
                 "DreamshieldSettings" => dreamshieldVisible,
                 "ShowHPOnDeath" => showHpOnDeathVisible,
@@ -1222,12 +1457,12 @@ public sealed partial class QuickMenu : Module
                 "SpeedChanger" => speedChangerVisible,
                 "TeleportKit" => teleportKitVisible,
                 "BossChallenge" => bossChallengeVisible,
+                "BossManipulate" => bossManipulateVisible || bossManipulateOtherRoomsVisible || gruzMotherP1HelperVisible || vengeflyKingP1HelperVisible || broodingMawlekP1HelperVisible || noskP2HelperVisible || uumuuP3HelperVisible || soulWarriorP1HelperVisible || noEyesP4HelperVisible || marmuP2HelperVisible || xeroP2HelperVisible || markothP4HelperVisible || gorbP1HelperVisible || collectorVisible || zoteHelperVisible || gruzHelperVisible || hornetHelperVisible || mawlekHelperVisible || massiveMossHelperVisible || crystalGuardianHelperVisible || enragedGuardianHelperVisible || hornetSentinelHelperVisible || IsAnyAdditionalGhostHelperVisible(),
                 "RandomPantheons" => randomPantheonsVisible,
                 "TrueBossRush" => trueBossRushVisible,
                 "Cheats" => cheatsVisible,
                 "AlwaysFurious" => alwaysFuriousVisible,
                 "GearSwitcher" => gearSwitcherVisible || gearSwitcherCharmCostVisible || gearSwitcherPresetVisible,
-                "ZoteHelper" => zoteHelperVisible,
                 "QualityOfLife" => qolVisible,
                 "BossAnimationSkipping" => bossAnimationVisible,
                 "MenuAnimationSkipping" => menuAnimationVisible,
@@ -1249,6 +1484,7 @@ public sealed partial class QuickMenu : Module
             }
 
             returnToQuickOnClose = false;
+            returnToBossManipulateOnClose = false;
             returnToQolOnClose = false;
 
             SetQuickVisible(false);
@@ -1259,9 +1495,6 @@ public sealed partial class QuickMenu : Module
             {
                 case "FastSuperDash":
                     SetOverlayVisible(true);
-                    break;
-                case "CollectorPhases":
-                    SetCollectorVisible(true);
                     break;
                 case "FastReload":
                     SetFastReloadVisible(true);
@@ -1287,6 +1520,9 @@ public sealed partial class QuickMenu : Module
                 case "BossChallenge":
                     SetBossChallengeVisible(true);
                     break;
+                case "BossManipulate":
+                    SetBossManipulateVisible(true);
+                    break;
                 case "RandomPantheons":
                     SetRandomPantheonsVisible(true);
                     break;
@@ -1302,9 +1538,6 @@ public sealed partial class QuickMenu : Module
                 case "GearSwitcher":
                     SetGearSwitcherVisible(true);
                     break;
-                case "ZoteHelper":
-                    SetZoteHelperVisible(true);
-                    break;
                 case "QualityOfLife":
                     SetQolVisible(true);
                     break;
@@ -1319,6 +1552,7 @@ public sealed partial class QuickMenu : Module
 
         private void CloseAllOverlaysForHotkey()
         {
+            returnToBossManipulateOnClose = false;
             SetOverlayVisible(false);
             SetCollectorVisible(false);
             SetFastReloadVisible(false);
@@ -1340,6 +1574,27 @@ public sealed partial class QuickMenu : Module
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetGruzHelperVisible(false);
+            SetHornetHelperVisible(false);
+            SetMawlekHelperVisible(false);
+            SetMassiveMossHelperVisible(false);
+            SetCrystalGuardianHelperVisible(false);
+            SetEnragedGuardianHelperVisible(false);
+            SetHornetSentinelHelperVisible(false);
+            SetAllAdditionalGhostHelpersVisible(false);
+            SetBossManipulateVisible(false);
+            SetBossManipulateOtherRoomsVisible(false);
+            SetGruzMotherP1HelperVisible(false);
+            SetVengeflyKingP1HelperVisible(false);
+            SetBroodingMawlekP1HelperVisible(false);
+            SetNoskP2HelperVisible(false);
+            SetUumuuP3HelperVisible(false);
+            SetSoulWarriorP1HelperVisible(false);
+            SetNoEyesP4HelperVisible(false);
+            SetMarmuP2HelperVisible(false);
+            SetXeroP2HelperVisible(false);
+            SetMarkothP4HelperVisible(false);
+            SetGorbP1HelperVisible(false);
         }
 
         private static void ApplyFastDreamWarpKeyBinding(Key? key)
@@ -1481,4 +1736,3 @@ public sealed partial class QuickMenu : Module
         }
     }
 }
-

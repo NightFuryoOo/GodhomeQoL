@@ -32,8 +32,7 @@ public sealed class CarefreeMelodyReset : Module {
             ResetMode = ModeHoG;
         }
 
-        pantheonRunActive = false;
-        pantheonResetApplied = false;
+        ResetRuntimeTracking();
 
         OsmiHooks.SceneChangeHook += ResetCount;
         On.BossSequenceController.SetupNewSequence += OnSetupNewSequence;
@@ -43,6 +42,14 @@ public sealed class CarefreeMelodyReset : Module {
     {
         OsmiHooks.SceneChangeHook -= ResetCount;
         On.BossSequenceController.SetupNewSequence -= OnSetupNewSequence;
+        ResetRuntimeTracking();
+    }
+
+    private static void ResetRuntimeTracking()
+    {
+        enteredBossFromWorkshop = false;
+        trackedBossScene = null;
+        lastHubScene = null;
         pantheonRunActive = false;
         pantheonResetApplied = false;
     }

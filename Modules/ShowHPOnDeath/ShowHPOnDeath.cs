@@ -1,7 +1,5 @@
 using InControl;
 using Satchel.BetterMenus;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace GodhomeQoL.Modules.Tools;
 
@@ -9,19 +7,36 @@ public sealed class ShowHPOnDeath : Module
 {
     public override bool DefaultEnabled => false;
     public override bool Hidden => true;
+    public override bool AlwaysEnabled => true;
 
-    private static List<(string Name, int HP)> currentBosses = [];
+    private sealed class BossState
+    {
+        public string DisplayName = "";
+        public int CurrentHP;
+    }
+
+    private static readonly Dictionary<string, BossState> trackedBossesByKey = [];
+    private static readonly List<string> trackedBossOrder = [];
+    private static readonly Dictionary<int, string> bossKeyByInstanceId = [];
+    private static readonly Dictionary<string, int> bossSignatureCounts = [];
     private static readonly Dictionary<string, int> initialHPs = [];
-    private static int personalBest = int.MaxValue;
-    private static string lastBossName = "";
-    private static CancellationTokenSource? currentDisplayToken;
+    private static readonly Dictionary<string, int> personalBestByBoss = [];
+    private static ShowHPOnDeath? activeInstance;
     private static bool shouldTrackBosses = false;
     private static bool enteredFromWorkshop = false;
     private static string trackedScene = "";
+    private static int trackedSceneHandle = -1;
+    private static bool pendingTrackingStart = false;
+    private static string pendingTrackingScene = "";
+    private static bool pendingTrackingFromWorkshop = false;
+    private static bool pendingTrackingClearDisplay = true;
     private static bool hasPendingDisplay = false;
     private static string pendingDisplayText = "";
     private static string lastDisplayText = "";
     private static bool isHudVisible = false;
+    private static int trackingGeneration;
+    private static int autoHideGeneration;
+    private bool runtimeHooksInstalled;
 
     private static readonly HashSet<string> showAtScenes = new() { "GG_Workshop", "GG_Atrium", "GG_Atrium_Roof" };
     private static readonly HashSet<string> phaseBosses = new() { "False Knight", "Failed Champion" };
@@ -106,35 +121,90 @@ public sealed class ShowHPOnDeath : Module
 
     private static ShowHPOnDeathSettings Settings => GodhomeQoL.GlobalSettings.ShowHPOnDeath ??= new ShowHPOnDeathSettings();
 
+    internal static void SetFeatureEnabled(bool value)
+    {
+        Settings.EnabledMod = value;
+        if (activeInstance == null || !activeInstance.Loaded)
+        {
+            return;
+        }
+
+        if (value)
+        {
+            activeInstance.InstallRuntimeHooks();
+        }
+        else
+        {
+            activeInstance.RemoveRuntimeHooks();
+            activeInstance.ClearRuntimeState(clearLastDisplay: true);
+            ShowHPOnDeathDisplay.Instance?.Destroy();
+        }
+    }
+
+    internal static void ResetFeatureDefaults()
+    {
+        SetFeatureEnabled(false);
+        Settings.ShowPB = true;
+        Settings.HideAfter10Sec = true;
+        Settings.HudFadeSeconds = 5f;
+    }
+
     private protected override void Load()
     {
-        On.HealthManager.OnEnable += OnHealthManagerEnable;
-        On.HealthManager.Update += OnHealthManagerUpdate;
-        ModHooks.BeforeSceneLoadHook += BeforeSceneLoad;
-        ModHooks.HeroUpdateHook += OnHeroUpdate;
-        ModHooks.AfterPlayerDeadHook += OnPlayerDead;
-        CreateUI();
+        activeInstance = this;
+        runtimeHooksInstalled = false;
+        if (Settings.EnabledMod)
+        {
+            InstallRuntimeHooks();
+        }
+        else
+        {
+            ClearRuntimeState(clearLastDisplay: true);
+        }
     }
 
     private protected override void Unload()
     {
-        On.HealthManager.OnEnable -= OnHealthManagerEnable;
-        On.HealthManager.Update -= OnHealthManagerUpdate;
-        ModHooks.BeforeSceneLoadHook -= BeforeSceneLoad;
-        ModHooks.HeroUpdateHook -= OnHeroUpdate;
-        ModHooks.AfterPlayerDeadHook -= OnPlayerDead;
-
-        currentDisplayToken?.Cancel();
-        currentDisplayToken?.Dispose();
-        currentDisplayToken = null;
-
-        ResetTracking();
-        UpdateDisplay("");
+        RemoveRuntimeHooks();
+        ClearRuntimeState(clearLastDisplay: true);
 
         if (ShowHPOnDeathDisplay.Instance != null)
         {
             ShowHPOnDeathDisplay.Instance.Destroy();
         }
+
+        activeInstance = null;
+        runtimeHooksInstalled = false;
+    }
+
+    private void InstallRuntimeHooks()
+    {
+        if (runtimeHooksInstalled)
+        {
+            return;
+        }
+
+        On.HealthManager.OnEnable += OnHealthManagerEnable;
+        On.HealthManager.Update += OnHealthManagerUpdate;
+        ModHooks.BeforeSceneLoadHook += BeforeSceneLoad;
+        ModHooks.HeroUpdateHook += OnHeroUpdate;
+        ModHooks.AfterPlayerDeadHook += OnPlayerDead;
+        runtimeHooksInstalled = true;
+    }
+
+    private void RemoveRuntimeHooks()
+    {
+        if (!runtimeHooksInstalled)
+        {
+            return;
+        }
+
+        On.HealthManager.OnEnable -= OnHealthManagerEnable;
+        On.HealthManager.Update -= OnHealthManagerUpdate;
+        ModHooks.BeforeSceneLoadHook -= BeforeSceneLoad;
+        ModHooks.HeroUpdateHook -= OnHeroUpdate;
+        ModHooks.AfterPlayerDeadHook -= OnPlayerDead;
+        runtimeHooksInstalled = false;
     }
 
     internal static MenuScreen GetMenu(MenuScreen parent)
@@ -144,7 +214,7 @@ public sealed class ShowHPOnDeath : Module
             Blueprints.HorizontalBoolOption(
                 "ShowHPOnDeath/GlobalSwitch".Localize(),
                 "",
-                b => Settings.EnabledMod = b,
+                SetFeatureEnabled,
                 () => Settings.EnabledMod
             ),
             Blueprints.HorizontalBoolOption(
@@ -187,6 +257,13 @@ public sealed class ShowHPOnDeath : Module
 
     private void OnHeroUpdate()
     {
+        if (!Settings.EnabledMod)
+        {
+            return;
+        }
+
+        TryBeginPendingTrackingAfterTransition();
+
         if (QuickMenu.IsHotkeyInputBlocked())
         {
             return;
@@ -198,15 +275,25 @@ public sealed class ShowHPOnDeath : Module
         }
     }
 
-    private void StartTracking(string sceneName, bool fromWorkshop, bool clearDisplay = true)
+    private static void StartTracking(string sceneName, bool fromWorkshop, bool clearDisplay = true)
     {
+        trackingGeneration++;
         shouldTrackBosses = true;
         enteredFromWorkshop = fromWorkshop;
         trackedScene = sceneName;
-        hasPendingDisplay = false;
-        pendingDisplayText = "";
-        currentBosses.Clear();
-        initialHPs.Clear();
+        Scene activeScene = USceneManager.GetActiveScene();
+        trackedSceneHandle = activeScene.IsValid()
+            && activeScene.isLoaded
+            && string.Equals(activeScene.name, sceneName, StringComparison.Ordinal)
+            ? activeScene.handle
+            : -1;
+        pendingTrackingStart = false;
+        pendingTrackingScene = "";
+        pendingTrackingFromWorkshop = false;
+        pendingTrackingClearDisplay = true;
+        lastDisplayText = string.Empty;
+        ClearPendingDisplay();
+        ClearTrackedBossCollection();
         phaseTrackers.Clear();
         headHPs.Clear();
         headConfirmed.Clear();
@@ -216,16 +303,78 @@ public sealed class ShowHPOnDeath : Module
         }
     }
 
-    private void ResetTracking()
+    private static void ResetTracking()
     {
+        trackingGeneration++;
         shouldTrackBosses = false;
         enteredFromWorkshop = false;
         trackedScene = "";
-        currentBosses.Clear();
-        initialHPs.Clear();
+        trackedSceneHandle = -1;
+        pendingTrackingStart = false;
+        pendingTrackingScene = "";
+        pendingTrackingFromWorkshop = false;
+        pendingTrackingClearDisplay = true;
+        ClearTrackedBossCollection();
         phaseTrackers.Clear();
         headHPs.Clear();
         headConfirmed.Clear();
+    }
+
+    private static void ScheduleTrackingStart(string sceneName, bool fromWorkshop, bool clearDisplay)
+    {
+        trackingGeneration++;
+        shouldTrackBosses = false;
+        enteredFromWorkshop = false;
+        trackedScene = "";
+        trackedSceneHandle = -1;
+        pendingTrackingStart = true;
+        pendingTrackingScene = sceneName;
+        pendingTrackingFromWorkshop = fromWorkshop;
+        pendingTrackingClearDisplay = clearDisplay;
+        lastDisplayText = string.Empty;
+        ClearPendingDisplay();
+        ClearTrackedBossCollection();
+        phaseTrackers.Clear();
+        headHPs.Clear();
+        headConfirmed.Clear();
+        if (clearDisplay)
+        {
+            UpdateDisplay("");
+        }
+    }
+
+    private static void ClearTrackedBossCollection()
+    {
+        trackedBossesByKey.Clear();
+        trackedBossOrder.Clear();
+        bossKeyByInstanceId.Clear();
+        bossSignatureCounts.Clear();
+        initialHPs.Clear();
+    }
+
+    private static void ClearPendingDisplay()
+    {
+        hasPendingDisplay = false;
+        pendingDisplayText = "";
+    }
+
+    private static void CancelAutoHide()
+    {
+        autoHideGeneration++;
+    }
+
+    private void ClearRuntimeState(bool clearLastDisplay)
+    {
+        CancelAutoHide();
+        ClearPendingDisplay();
+        ResetTracking();
+        personalBestByBoss.Clear();
+        if (clearLastDisplay)
+        {
+            lastDisplayText = "";
+        }
+
+        UpdateDisplay("");
     }
 
     private string BeforeSceneLoad(string newSceneName)
@@ -239,8 +388,7 @@ public sealed class ShowHPOnDeath : Module
 
         if (!Settings.EnabledMod)
         {
-            ResetTracking();
-            UpdateDisplay("");
+            ClearRuntimeState(clearLastDisplay: true);
             return newSceneName;
         }
         if (enteringFromWorkshop)
@@ -253,8 +401,7 @@ public sealed class ShowHPOnDeath : Module
         {
             string text = BuildDisplayText();
             DisplayWithAutoHide(text);
-            ResetTracking();
-            StartTracking(newSceneName, fromWorkshop: true, clearDisplay: false);
+            ScheduleTrackingStart(newSceneName, fromWorkshop: true, clearDisplay: false);
             return newSceneName;
         }
 
@@ -277,8 +424,7 @@ public sealed class ShowHPOnDeath : Module
                 {
                     DisplayWithAutoHide(text);
                 }
-                hasPendingDisplay = false;
-                pendingDisplayText = "";
+                ClearPendingDisplay();
             }
             else
             {
@@ -295,56 +441,236 @@ public sealed class ShowHPOnDeath : Module
             {
                 DisplayWithAutoHide(pendingDisplayText);
             }
-            hasPendingDisplay = false;
-            pendingDisplayText = "";
+            ClearPendingDisplay();
             ResetTracking();
             return newSceneName;
         }
 
         if (!shouldTrackBosses && !hasPendingDisplay)
         {
-            currentBosses.Clear();
-            initialHPs.Clear();
+            ClearTrackedBossCollection();
             UpdateDisplay("");
         }
 
         return newSceneName;
     }
 
-    private void OnHealthManagerEnable(On.HealthManager.orig_OnEnable orig, HealthManager self)
+    private static void TryBeginPendingTrackingAfterTransition()
     {
-        if (!Settings.EnabledMod || !shouldTrackBosses)
+        if (!pendingTrackingStart || string.IsNullOrEmpty(pendingTrackingScene))
         {
-            orig(self);
             return;
         }
-        if (BossNames.Map.TryGetValue(self.gameObject.name, out string displayName))
-        {
-            if (!initialHPs.ContainsKey(displayName))
-            {
-                _ = Task.Delay(1000).ContinueWith(_ =>
-                {
-                    HealthManager hm = self.gameObject.GetComponent<HealthManager>();
-                    if (hm != null)
-                    {
-                        initialHPs[displayName] = hm.hp;
-                    }
-                });
-            }
 
-            if (!currentBosses.Any(b => b.Name == displayName))
+        GameManager? manager = GameManager.instance;
+        if (manager == null || manager.IsInSceneTransition)
+        {
+            return;
+        }
+
+        Scene activeScene = USceneManager.GetActiveScene();
+        if (!activeScene.IsValid() || !activeScene.isLoaded)
+        {
+            return;
+        }
+
+        if (!string.Equals(activeScene.name, pendingTrackingScene, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        StartTracking(pendingTrackingScene, pendingTrackingFromWorkshop, pendingTrackingClearDisplay);
+    }
+
+    private void OnHealthManagerEnable(On.HealthManager.orig_OnEnable orig, HealthManager self)
+    {
+        orig(self);
+
+        if (!Settings.EnabledMod || !shouldTrackBosses)
+        {
+            return;
+        }
+
+        if (BossNames.Map.TryGetValue(self.gameObject.name, out string displayName)
+            && TryEnsureTrackedBossKey(self, displayName, out string bossKey))
+        {
+            UpdateTrackedBossHp(bossKey, self.hp);
+            if (!initialHPs.ContainsKey(bossKey))
             {
-                _ = Task.Delay(1000).ContinueWith(_ =>
-                {
-                    HealthManager hm = self.gameObject.GetComponent<HealthManager>();
-                    if (hm != null)
-                    {
-                        currentBosses.Add((displayName, hm.hp));
-                    }
-                });
+                int generation = trackingGeneration;
+                string sceneName = trackedScene;
+                _ = GlobalCoroutineExecutor.Start(CaptureBossStateAfterDelay(self, bossKey, sceneName, generation));
             }
         }
-        orig(self);
+    }
+
+    private static IEnumerator CaptureBossStateAfterDelay(
+        HealthManager source,
+        string bossKey,
+        string sceneName,
+        int generation)
+    {
+        yield return new WaitForSecondsRealtime(1f);
+
+        if (generation != trackingGeneration || !Settings.EnabledMod || !shouldTrackBosses)
+        {
+            yield break;
+        }
+
+        if (source == null || source.gameObject == null)
+        {
+            yield break;
+        }
+
+        if (!string.Equals(source.gameObject.scene.name, sceneName, StringComparison.Ordinal))
+        {
+            yield break;
+        }
+
+        HealthManager? hm = source.gameObject.GetComponent<HealthManager>();
+        if (hm == null)
+        {
+            yield break;
+        }
+
+        if (!trackedBossesByKey.TryGetValue(bossKey, out BossState? state))
+        {
+            yield break;
+        }
+
+        int hp = Math.Max(hm.hp, 0);
+        if (!initialHPs.ContainsKey(bossKey) && hp > 0)
+        {
+            initialHPs[bossKey] = hp;
+        }
+
+        state.CurrentHP = hp;
+    }
+
+    private static bool TryEnsureTrackedBossKey(HealthManager source, string displayName, out string bossKey)
+    {
+        bossKey = "";
+        if (source == null || source.gameObject == null)
+        {
+            return false;
+        }
+
+        string sourceScene = source.gameObject.scene.name;
+        if (!string.Equals(sourceScene, trackedScene, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        int sourceSceneHandle = source.gameObject.scene.handle;
+        if (trackedSceneHandle < 0)
+        {
+            Scene activeScene = USceneManager.GetActiveScene();
+            if (activeScene.IsValid()
+                && activeScene.isLoaded
+                && string.Equals(activeScene.name, trackedScene, StringComparison.Ordinal))
+            {
+                trackedSceneHandle = activeScene.handle;
+            }
+            else
+            {
+                trackedSceneHandle = sourceSceneHandle;
+            }
+        }
+
+        if (sourceSceneHandle != trackedSceneHandle)
+        {
+            return false;
+        }
+
+        int instanceId = source.GetInstanceID();
+        if (bossKeyByInstanceId.TryGetValue(instanceId, out bossKey))
+        {
+            if (trackedBossesByKey.TryGetValue(bossKey, out BossState? existingState))
+            {
+                existingState.DisplayName = displayName;
+            }
+            return true;
+        }
+
+        string signature = $"{sourceScene}|{displayName}|{source.gameObject.name}";
+        int slot = bossSignatureCounts.TryGetValue(signature, out int count) ? count + 1 : 1;
+        bossSignatureCounts[signature] = slot;
+
+        bossKey = $"{signature}#{slot}";
+        bossKeyByInstanceId[instanceId] = bossKey;
+
+        if (!trackedBossesByKey.ContainsKey(bossKey))
+        {
+            trackedBossesByKey[bossKey] = new BossState
+            {
+                DisplayName = displayName,
+                CurrentHP = Math.Max(source.hp, 0)
+            };
+            trackedBossOrder.Add(bossKey);
+        }
+
+        return true;
+    }
+
+    private static void UpdateTrackedBossHp(string bossKey, int hp)
+    {
+        if (trackedBossesByKey.TryGetValue(bossKey, out BossState? state))
+        {
+            state.CurrentHP = Math.Max(hp, 0);
+        }
+    }
+
+    private static bool IsCollectorImmortalTrackingSuppressed(GameObject? target = null)
+    {
+        return global::GodhomeQoL.Modules.CollectorPhases.CollectorPhases.IsCollectorImmortalityActiveFor(target);
+    }
+
+    private static bool IsZoteImmortalTrackingSuppressed(GameObject? target = null)
+    {
+        return global::GodhomeQoL.Modules.BossChallenge.ZoteHelper.IsGreyPrinceImmortalityActiveFor(target);
+    }
+
+    private static void RemoveTrackedBossEntriesByName(string displayName)
+    {
+        List<string> keysToRemove = trackedBossesByKey
+            .Where(kvp => string.Equals(kvp.Value.DisplayName, displayName, StringComparison.Ordinal))
+            .Select(kvp => kvp.Key)
+            .ToList();
+
+        if (keysToRemove.Count == 0)
+        {
+            return;
+        }
+
+        HashSet<string> keySet = [.. keysToRemove];
+        for (int i = trackedBossOrder.Count - 1; i >= 0; i--)
+        {
+            if (keySet.Contains(trackedBossOrder[i]))
+            {
+                trackedBossOrder.RemoveAt(i);
+            }
+        }
+
+        foreach (string key in keysToRemove)
+        {
+            trackedBossesByKey.Remove(key);
+            initialHPs.Remove(key);
+            personalBestByBoss.Remove(key);
+
+            int hashIndex = key.LastIndexOf('#');
+            if (hashIndex > 0)
+            {
+                bossSignatureCounts.Remove(key[..hashIndex]);
+            }
+        }
+
+        foreach ((int instanceId, string key) in bossKeyByInstanceId.ToArray())
+        {
+            if (keySet.Contains(key))
+            {
+                bossKeyByInstanceId.Remove(instanceId);
+            }
+        }
     }
 
     private void OnHealthManagerUpdate(On.HealthManager.orig_Update orig, HealthManager self)
@@ -357,7 +683,42 @@ public sealed class ShowHPOnDeath : Module
 
         UpdateHeadCandidate(self);
 
-        if (BossNames.Map.TryGetValue(self.gameObject.name, out string displayName) && phaseBosses.Contains(displayName))
+        if (self.gameObject.name == "Jar Collector" && IsCollectorImmortalTrackingSuppressed(self.gameObject))
+        {
+            if (BossNames.Map.TryGetValue(self.gameObject.name, out string collectorName))
+            {
+                RemoveTrackedBossEntriesByName(collectorName);
+            }
+
+            return;
+        }
+
+        if (self.gameObject.name == "Grey Prince" && IsZoteImmortalTrackingSuppressed(self.gameObject))
+        {
+            if (BossNames.Map.TryGetValue(self.gameObject.name, out string zoteName))
+            {
+                RemoveTrackedBossEntriesByName(zoteName);
+            }
+
+            return;
+        }
+
+        if (!BossNames.Map.TryGetValue(self.gameObject.name, out string displayName))
+        {
+            return;
+        }
+
+        if (TryEnsureTrackedBossKey(self, displayName, out string bossKey))
+        {
+            int hp = Math.Max(self.hp, 0);
+            UpdateTrackedBossHp(bossKey, hp);
+            if (!initialHPs.ContainsKey(bossKey) && hp > 0)
+            {
+                initialHPs[bossKey] = hp;
+            }
+        }
+
+        if (phaseBosses.Contains(displayName))
         {
             UpdatePhaseTracker(displayName, self.hp);
         }
@@ -453,12 +814,12 @@ public sealed class ShowHPOnDeath : Module
         }
     }
 
-    private static string BuildPhaseLines(string displayName, PhaseTracker tracker)
+    private static string BuildPhaseLines(string bossName, PhaseTracker tracker, int fallbackInitialHp)
     {
         int fallbackMax = tracker.MaxHP[Math.Min(tracker.CurrentPhase, 2)];
-        if (fallbackMax == 0 && initialHPs.TryGetValue(displayName, out int initial))
+        if (fallbackMax == 0 && fallbackInitialHp > 0)
         {
-            fallbackMax = initial;
+            fallbackMax = fallbackInitialHp;
         }
 
         string phaseText = "";
@@ -487,7 +848,7 @@ public sealed class ShowHPOnDeath : Module
             phaseText += $"HP: {current} / {max}\n";
         }
 
-        int headHp = headHPs.TryGetValue(displayName, out int head) ? head : 0;
+        int headHp = headHPs.TryGetValue(bossName, out int head) ? head : 0;
         phaseText += $"HP: {headHp} / 0\n";
 
         return phaseText;
@@ -500,11 +861,10 @@ public sealed class ShowHPOnDeath : Module
             return;
         }
 
-        string sceneName = USceneManager.GetActiveScene().name;
-        ShowBossDisplayForScene(sceneName);
+        ShowBossDisplayForScene();
     }
 
-    private void ShowBossDisplayForScene(string sceneName)
+    private void ShowBossDisplayForScene()
     {
         string displayText = BuildDisplayText();
         DisplayWithAutoHide(displayText);
@@ -512,35 +872,37 @@ public sealed class ShowHPOnDeath : Module
 
     private string BuildDisplayText()
     {
-        var snapshot = new List<(string Name, int HP)>();
-
-        foreach (var boss in UObject.FindObjectsOfType<HealthManager>())
+        var snapshot = new List<(string Key, string Name, int HP)>();
+        bool suppressCollector = IsCollectorImmortalTrackingSuppressed();
+        bool suppressZote = IsZoteImmortalTrackingSuppressed();
+        foreach (string bossKey in trackedBossOrder)
         {
-            if (boss != null && boss.gameObject.activeInHierarchy && boss.hp > 0)
+            if (!trackedBossesByKey.TryGetValue(bossKey, out BossState? state))
             {
-                if (BossNames.Map.TryGetValue(boss.gameObject.name, out string displayName))
-                {
-                    snapshot.Add((displayName, boss.hp));
-
-                    if (displayName == lastBossName)
-                    {
-                        if (boss.hp < personalBest)
-                        {
-                            personalBest = boss.hp;
-                        }
-                    }
-                    else
-                    {
-                        personalBest = boss.hp;
-                        lastBossName = displayName;
-                    }
-                }
+                continue;
             }
-        }
 
-        if (snapshot.Count > 0)
-        {
-            currentBosses = snapshot;
+            if (suppressCollector && string.Equals(state.DisplayName, "The Collector", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (suppressZote && string.Equals(state.DisplayName, "Grey Prince Zote", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            int hp = Math.Max(state.CurrentHP, 0);
+            if (hp <= 0)
+            {
+                continue;
+            }
+
+            snapshot.Add((bossKey, state.DisplayName, hp));
+            if (!personalBestByBoss.TryGetValue(bossKey, out int best) || hp < best)
+            {
+                personalBestByBoss[bossKey] = hp;
+            }
         }
 
         string hideKey = Settings.Keybinds.Hide.UnfilteredBindings.Count > 0
@@ -548,17 +910,19 @@ public sealed class ShowHPOnDeath : Module
             : "Unbound";
         string displayText = $"Press [{hideKey}] to hide\n";
 
-        for (int i = 0; i < currentBosses.Count; i++)
+        Dictionary<string, int> nameInstances = [];
+        foreach (var (bossKey, name, currentHP) in snapshot)
         {
-            var (name, currentHP) = currentBosses[i];
-            int count = currentBosses.Take(i).Count(b => b.Name == name);
-            string finalName = count > 0 ? $"{name} ({count + 1})" : name;
+            int count = nameInstances.TryGetValue(name, out int existingCount) ? existingCount + 1 : 1;
+            nameInstances[name] = count;
+            string finalName = count > 1 ? $"{name} ({count})" : name;
 
             if (phaseBosses.Contains(name) && phaseTrackers.TryGetValue(name, out PhaseTracker? tracker))
             {
-                string pbText = personalBest == int.MaxValue ? "-" : personalBest.ToString();
+                int fallbackInitialHp = initialHPs.TryGetValue(bossKey, out int initialForPhase) ? initialForPhase : 0;
+                string pbText = personalBestByBoss.TryGetValue(bossKey, out int pb) ? pb.ToString() : "-";
                 displayText += $"[{finalName}]\n";
-                displayText += BuildPhaseLines(name, tracker);
+                displayText += BuildPhaseLines(name, tracker, fallbackInitialHp);
                 if (Settings.ShowPB)
                 {
                     displayText += $"PB: {pbText}\n";
@@ -566,9 +930,9 @@ public sealed class ShowHPOnDeath : Module
                 continue;
             }
 
-            if (initialHPs.TryGetValue(name, out int initialHP))
+            if (initialHPs.TryGetValue(bossKey, out int initialHP))
             {
-                string pbText = personalBest == int.MaxValue ? "-" : personalBest.ToString();
+                string pbText = personalBestByBoss.TryGetValue(bossKey, out int pb) ? pb.ToString() : "-";
                 displayText += $"[{finalName}]\nHP: {currentHP} / {initialHP}\n";
                 if (Settings.ShowPB)
                 {
@@ -586,26 +950,27 @@ public sealed class ShowHPOnDeath : Module
 
     private void DisplayWithAutoHide(string text)
     {
-        currentDisplayToken?.Cancel();
-        currentDisplayToken?.Dispose();
-        currentDisplayToken = new CancellationTokenSource();
+        int displayGeneration = ++autoHideGeneration;
 
         lastDisplayText = text;
         UpdateDisplay(text);
 
-        if (Settings.HideAfter10Sec)
+        if (Settings.HideAfter10Sec && !string.IsNullOrWhiteSpace(text))
         {
             float seconds = Math.Max(1f, Math.Min(10f, Settings.HudFadeSeconds));
-            int delayMs = (int)Math.Round(seconds * 1000f, MidpointRounding.AwayFromZero);
-            _ = Task.Delay(delayMs, currentDisplayToken.Token)
-                .ContinueWith(_ =>
-                {
-                    if (!_.IsCanceled)
-                    {
-                        UpdateDisplay("");
-                    }
-                }, TaskScheduler.Default);
+            _ = GlobalCoroutineExecutor.Start(HideDisplayAfterDelay(displayGeneration, seconds));
         }
+    }
+
+    private static IEnumerator HideDisplayAfterDelay(int displayGeneration, float seconds)
+    {
+        yield return new WaitForSecondsRealtime(seconds);
+        if (displayGeneration != autoHideGeneration)
+        {
+            yield break;
+        }
+
+        UpdateDisplay("");
     }
 
     private void CreateUI()
@@ -614,15 +979,31 @@ public sealed class ShowHPOnDeath : Module
         {
             _ = new ShowHPOnDeathDisplay();
         }
-        else
-        {
-            ShowHPOnDeathDisplay.Instance.Destroy();
-            _ = new ShowHPOnDeathDisplay();
-        }
     }
 
-    private void UpdateDisplay(string text)
+    private static void EnsureDisplayUi()
     {
+        if (ShowHPOnDeathDisplay.Instance != null || activeInstance == null || !activeInstance.Loaded)
+        {
+            return;
+        }
+
+        activeInstance.CreateUI();
+    }
+
+    private static void UpdateDisplay(string text)
+    {
+        if (ShowHPOnDeathDisplay.Instance == null)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                isHudVisible = false;
+                return;
+            }
+
+            EnsureDisplayUi();
+        }
+
         ShowHPOnDeathDisplay.Instance?.Display(text);
         isHudVisible = !string.IsNullOrWhiteSpace(text);
     }
@@ -631,7 +1012,7 @@ public sealed class ShowHPOnDeath : Module
     {
         if (isHudVisible)
         {
-            currentDisplayToken?.Cancel();
+            CancelAutoHide();
             UpdateDisplay("");
             return;
         }

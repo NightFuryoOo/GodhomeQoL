@@ -2,11 +2,13 @@ namespace GodhomeQoL.Modules.Tools;
 
 public sealed class MaskDamage : Module
 {
+    private const float HalfMultiplier = 0.5f;
     private const int MinMultiplier = 1;
     private const int MaxMultiplier = 999;
 
     public override bool DefaultEnabled => false;
     public override bool Hidden => true;
+    public override bool AlwaysEnabled => true;
 
     private static MaskDamageSettings Settings => GodhomeQoL.GlobalSettings.MaskDamage ??= new MaskDamageSettings();
 
@@ -31,8 +33,8 @@ public sealed class MaskDamage : Module
         DestroyDisplay();
     }
 
-    internal static int GetMultiplier() =>
-        Mathf.Clamp(Settings.DamageMultiplier, MinMultiplier, MaxMultiplier);
+    internal static float GetMultiplier() =>
+        NormalizeMultiplier(Settings.DamageMultiplier);
 
     internal static bool GetEnabled() => Settings.Enabled;
 
@@ -54,9 +56,9 @@ public sealed class MaskDamage : Module
         }
     }
 
-    internal static void SetMultiplier(int value)
+    internal static void SetMultiplier(float value)
     {
-        Settings.DamageMultiplier = Mathf.Clamp(value, MinMultiplier, MaxMultiplier);
+        Settings.DamageMultiplier = NormalizeMultiplier(value);
         GodhomeQoL.SaveGlobalSettingsSafe();
         UpdateDisplay();
     }
@@ -70,8 +72,11 @@ public sealed class MaskDamage : Module
 
         if (value)
         {
-            EnsureDisplay();
-            UpdateDisplay();
+            if (Settings.Enabled)
+            {
+                EnsureDisplay();
+                UpdateDisplay();
+            }
         }
         else
         {
@@ -106,7 +111,33 @@ public sealed class MaskDamage : Module
         }
 
         EnsureDisplay();
-        display?.Display($"Damage Multiplier: {GetMultiplier()}");
+        display?.Display($"Damage Multiplier: {FormatMultiplierLabel(GetMultiplier())}");
+    }
+
+    private static float NormalizeMultiplier(float value)
+    {
+        if (float.IsNaN(value) || float.IsInfinity(value))
+        {
+            return 1f;
+        }
+
+        if (value < 1f)
+        {
+            return HalfMultiplier;
+        }
+
+        int integerMultiplier = Mathf.Clamp(Mathf.FloorToInt(value), MinMultiplier, MaxMultiplier);
+        return integerMultiplier;
+    }
+
+    private static bool IsHalfMultiplier(float value) =>
+        Mathf.Abs(value - HalfMultiplier) < 0.0001f;
+
+    private static string FormatMultiplierLabel(float value)
+    {
+        return IsHalfMultiplier(value)
+            ? "0.5"
+            : Mathf.RoundToInt(value).ToString();
     }
 
     private static void EnsureDisplay()
@@ -132,13 +163,45 @@ public sealed class MaskDamage : Module
             return damageAmount;
         }
 
-        int multiplier = GetMultiplier();
-        return damageAmount * multiplier;
+        if (damageAmount <= 0)
+        {
+            return damageAmount;
+        }
+
+        float multiplier = GetMultiplier();
+        if (IsHalfMultiplier(multiplier))
+        {
+            if (damageAmount <= 1)
+            {
+                return 1;
+            }
+
+            return damageAmount / 2;
+        }
+
+        int integerMultiplier = Mathf.RoundToInt(multiplier);
+        long scaled = (long)damageAmount * integerMultiplier;
+        if (scaled > int.MaxValue)
+        {
+            return int.MaxValue;
+        }
+
+        if (scaled < int.MinValue)
+        {
+            return int.MinValue;
+        }
+
+        return (int)scaled;
     }
 
     private static void OnHeroUpdate()
     {
         if (!Settings.Enabled)
+        {
+            return;
+        }
+
+        if (QuickMenu.IsAnyUiVisible())
         {
             return;
         }

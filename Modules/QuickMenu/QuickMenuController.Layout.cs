@@ -12,7 +12,7 @@ public sealed partial class QuickMenu : Module
     {
         private void BeginQuickMenuDrag(QuickMenuEntry? entry, PointerEventData eventData)
         {
-            if (entry == null || quickPanelRect == null || !quickVisible)
+            if (entry == null || quickPanelRect == null || !quickVisible || quickRenameMode || renameField != null)
             {
                 return;
             }

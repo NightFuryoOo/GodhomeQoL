@@ -90,6 +90,55 @@ public sealed partial class QuickMenu : Module
             return null;
         }
 
+        private static Sprite? LoadBossManipulateIconSprite(string fileName, string name)
+        {
+            try
+            {
+                Assembly asm = typeof(QuickMenu).Assembly;
+                string? resourceName = asm
+                    .GetManifestResourceNames()
+                    .FirstOrDefault(resource => resource.EndsWith(fileName, StringComparison.OrdinalIgnoreCase));
+
+                if (resourceName != null)
+                {
+                    using Stream? stream = asm.GetManifestResourceStream(resourceName);
+                    if (stream != null)
+                    {
+                        return LoadSpriteFromStream(stream, name);
+                    }
+                }
+
+                string dir = Path.GetDirectoryName(asm.Location)
+                    ?? AppDomain.CurrentDomain.BaseDirectory
+                    ?? Environment.CurrentDirectory;
+
+                string[] candidates =
+                {
+                    Path.Combine(dir, "Boss Manipulate Images", fileName),
+                    Path.Combine(dir, "Resources", "Boss Manipulate Images", fileName),
+                    Path.Combine(dir, "Resources", fileName),
+                    Path.Combine(dir, fileName),
+                };
+
+                foreach (string path in candidates)
+                {
+                    if (!File.Exists(path))
+                    {
+                        continue;
+                    }
+
+                    using FileStream stream = File.OpenRead(path);
+                    return LoadSpriteFromStream(stream, name);
+                }
+            }
+            catch (Exception e)
+            {
+                LogDebug($"QuickMenu: failed to load Boss Manipulate icon {fileName} - {e.Message}");
+            }
+
+            return null;
+        }
+
         private static Sprite? LoadSpriteFromStream(Stream stream, string name)
         {
             using MemoryStream ms = new();

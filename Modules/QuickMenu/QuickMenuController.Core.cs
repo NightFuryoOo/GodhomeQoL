@@ -31,6 +31,27 @@ public sealed partial class QuickMenu : Module
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetGruzHelperVisible(false);
+            SetHornetHelperVisible(false);
+            SetMawlekHelperVisible(false);
+            SetMassiveMossHelperVisible(false);
+            SetCrystalGuardianHelperVisible(false);
+            SetEnragedGuardianHelperVisible(false);
+            SetHornetSentinelHelperVisible(false);
+            SetAllAdditionalGhostHelpersVisible(false);
+            SetBossManipulateVisible(false);
+            SetBossManipulateOtherRoomsVisible(false);
+            SetGruzMotherP1HelperVisible(false);
+            SetVengeflyKingP1HelperVisible(false);
+            SetBroodingMawlekP1HelperVisible(false);
+            SetNoskP2HelperVisible(false);
+            SetUumuuP3HelperVisible(false);
+            SetSoulWarriorP1HelperVisible(false);
+            SetNoEyesP4HelperVisible(false);
+            SetMarmuP2HelperVisible(false);
+            SetXeroP2HelperVisible(false);
+            SetMarkothP4HelperVisible(false);
+            SetGorbP1HelperVisible(false);
             SetQuickSettingsVisible(false);
         }
 
@@ -53,10 +74,7 @@ public sealed partial class QuickMenu : Module
             }
             bossChallengeSavedInfiniteGrimm = settings.BossChallengeSavedInfiniteGrimm;
             bossChallengeSavedInfiniteRadiance = settings.BossChallengeSavedInfiniteRadiance;
-            bossChallengeSavedP5Health = settings.BossChallengeSavedP5Health;
             bossChallengeSavedSegmentedP5 = settings.BossChallengeSavedSegmentedP5;
-            bossChallengeSavedHalveAscended = settings.BossChallengeSavedHalveAscended;
-            bossChallengeSavedHalveAttuned = settings.BossChallengeSavedHalveAttuned;
             bossChallengeSavedAddLifeblood = settings.BossChallengeSavedAddLifeblood;
             bossChallengeSavedAddSoul = settings.BossChallengeSavedAddSoul;
             bossChallengeSavedForceArrive = settings.BossChallengeSavedForceArriveAnimation;
@@ -65,7 +83,6 @@ public sealed partial class QuickMenu : Module
             qolMasterHasSnapshot = settings.QolHasSnapshot;
             qolSavedFastDreamWarp = settings.QolSavedFastDreamWarp;
             qolSavedShortDeath = settings.QolSavedShortDeath;
-            qolSavedHallOfGods = settings.QolSavedHallOfGods;
             qolSavedUnlockAllModes = settings.QolSavedUnlockAllModes;
             qolSavedUnlockPantheons = settings.QolSavedUnlockPantheons;
             qolSavedUnlockRadiance = settings.QolSavedUnlockRadiance;
@@ -86,6 +103,7 @@ public sealed partial class QuickMenu : Module
 
             bossAnimMasterEnabled = settings.BossAnimEnabled;
             bossAnimMasterHasSnapshot = settings.BossAnimHasSnapshot;
+            bossAnimSavedHallOfGods = settings.BossAnimSavedHallOfGods || settings.QolSavedHallOfGods;
             bossAnimSavedAbsoluteRadiance = settings.BossAnimSavedAbsoluteRadiance;
             bossAnimSavedPureVesselRoar = settings.BossAnimSavedPureVesselRoar;
             bossAnimSavedGrimmNightmare = settings.BossAnimSavedGrimmNightmare;
@@ -116,6 +134,20 @@ public sealed partial class QuickMenu : Module
             cheatsSavedInvincibility = settings.CheatsSavedInvincibility;
             cheatsSavedNoclip = settings.CheatsSavedNoclip;
 
+            if (randomPantheonsMasterEnabled && trueBossRushMasterEnabled)
+            {
+                _ = Modules.BossChallenge.PantheonSequenceCompatibility.DisableTrueBossRush();
+
+                settings = GodhomeQoL.GlobalSettings.QuickMenuMasters ??= new QuickMenuMasterSettings();
+                trueBossRushMasterEnabled = settings.TrueBossRushEnabled;
+                trueBossRushMasterHasSnapshot = settings.TrueBossRushHasSnapshot;
+                trueBossRushSavedP1 = settings.TrueBossRushSavedP1;
+                trueBossRushSavedP2 = settings.TrueBossRushSavedP2;
+                trueBossRushSavedP3 = settings.TrueBossRushSavedP3;
+                trueBossRushSavedP4 = settings.TrueBossRushSavedP4;
+                trueBossRushSavedP5 = settings.TrueBossRushSavedP5;
+            }
+
             if (!bossChallengeMasterEnabled)
             {
                 SetBossChallengeAll(false);
@@ -140,9 +172,13 @@ public sealed partial class QuickMenu : Module
             {
                 SetRandomPantheonsAll(false);
             }
-            else if (randomPantheonsMasterHasSnapshot)
+            else
             {
-                RestoreRandomPantheonsSnapshot();
+                SetRandomPantheonsEnabled(true);
+                if (randomPantheonsMasterHasSnapshot)
+                {
+                    RestoreRandomPantheonsSnapshot();
+                }
             }
 
             if (!trueBossRushMasterEnabled)
@@ -214,6 +250,27 @@ public sealed partial class QuickMenu : Module
             DestroyRoot(ref menuAnimationRoot);
             DestroyRoot(ref bossAnimationRoot);
             DestroyRoot(ref zoteHelperRoot);
+            DestroyRoot(ref gruzHelperRoot);
+            DestroyRoot(ref hornetHelperRoot);
+            DestroyRoot(ref mawlekHelperRoot);
+            DestroyRoot(ref massiveMossHelperRoot);
+            DestroyRoot(ref crystalGuardianHelperRoot);
+            DestroyRoot(ref enragedGuardianHelperRoot);
+            DestroyRoot(ref hornetSentinelHelperRoot);
+            DestroyAdditionalGhostHelperRoots();
+            DestroyRoot(ref bossManipulateRoot);
+            DestroyRoot(ref bossManipulateOtherRoomsRoot);
+            DestroyRoot(ref gruzMotherP1HelperRoot);
+            DestroyRoot(ref vengeflyKingP1HelperRoot);
+            DestroyRoot(ref broodingMawlekP1HelperRoot);
+            DestroyRoot(ref noskP2HelperRoot);
+            DestroyRoot(ref uumuuP3HelperRoot);
+            DestroyRoot(ref soulWarriorP1HelperRoot);
+            DestroyRoot(ref noEyesP4HelperRoot);
+            DestroyRoot(ref marmuP2HelperRoot);
+            DestroyRoot(ref xeroP2HelperRoot);
+            DestroyRoot(ref markothP4HelperRoot);
+            DestroyRoot(ref gorbP1HelperRoot);
             DestroyRoot(ref quickSettingsRoot);
             DestroyRoot(ref statusRoot);
         }

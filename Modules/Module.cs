@@ -16,6 +16,11 @@
 
         public virtual bool Hidden => false;
 
+        // Hidden controls menu visibility only.
+        // AlwaysEnabled is for service modules that should stay loaded
+        // and use their own internal feature toggles.
+        public virtual bool AlwaysEnabled => false;
+
         public bool Loaded { get; private set; }
 
         internal Dictionary<int, string> suppressorMap = [];
@@ -40,7 +45,7 @@
 
         public bool Enabled
         {
-            get => enabled || Hidden;
+            get => enabled || AlwaysEnabled;
             internal set
             {
                 enabled = Setting.Global.Modules[Name] = value;
@@ -80,9 +85,16 @@
             {
                 if (Loaded)
                 {
-                    Unload();
-                    LogDebug($"Deactivated module {Name}");
-                    Loaded = false;
+                    try
+                    {
+                        Unload();
+                        LogDebug($"Deactivated module {Name}");
+                        Loaded = false;
+                    }
+                    catch (Exception e)
+                    {
+                        LogError($"Failed to deactivate module {Name} - {e}");
+                    }
                 }
             }
         }

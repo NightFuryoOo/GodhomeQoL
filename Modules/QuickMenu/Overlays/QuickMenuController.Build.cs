@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using InControl;
 using UnityEngine.UI;
 
@@ -14,6 +14,8 @@ public sealed partial class QuickMenu : Module
             BuildQuickUi();
             BuildQuickSettingsOverlayUi();
             BuildOverlayUi();
+            BuildBossManipulateOverlayUi();
+            BuildBossManipulateOtherRoomsOverlayUi();
             BuildCollectorOverlayUi();
             BuildFastReloadOverlayUi();
             BuildDreamshieldOverlayUi();
@@ -34,6 +36,25 @@ public sealed partial class QuickMenu : Module
             BuildMenuAnimationOverlayUi();
             BuildBossAnimationOverlayUi();
             BuildZoteHelperOverlayUi();
+            BuildGruzHelperOverlayUi();
+            BuildGruzMotherP1HelperOverlayUi();
+            BuildVengeflyKingP1HelperOverlayUi();
+            BuildBroodingMawlekP1HelperOverlayUi();
+            BuildNoskP2HelperOverlayUi();
+            BuildUumuuP3HelperOverlayUi();
+            BuildSoulWarriorP1HelperOverlayUi();
+            BuildNoEyesP4HelperOverlayUi();
+            BuildMarmuP2HelperOverlayUi();
+            BuildXeroP2HelperOverlayUi();
+            BuildMarkothP4HelperOverlayUi();
+            BuildGorbP1HelperOverlayUi();
+            BuildHornetHelperOverlayUi();
+            BuildMawlekHelperOverlayUi();
+            BuildMassiveMossHelperOverlayUi();
+            BuildCrystalGuardianHelperOverlayUi();
+            BuildEnragedGuardianHelperOverlayUi();
+            BuildHornetSentinelHelperOverlayUi();
+            BuildAdditionalGhostHelpersOverlayUi();
         }
 
         private void BuildQuickUi()
@@ -146,7 +167,9 @@ public sealed partial class QuickMenu : Module
             float lastY = rowY;
             foreach (QuickMenuItemDefinition def in GetOrderedQuickMenuDefinitions())
             {
-                if (string.Equals(def.Id, "Settings", StringComparison.Ordinal))
+                if (string.Equals(def.Id, "Settings", StringComparison.Ordinal)
+                    || string.Equals(def.Id, "FreeMenu", StringComparison.Ordinal)
+                    || string.Equals(def.Id, "RenameMode", StringComparison.Ordinal))
                 {
                     continue;
                 }
@@ -324,7 +347,11 @@ public sealed partial class QuickMenu : Module
                 "Settings/instantSuperDash".Localize(),
                 rowY,
                 () => Modules.QoL.FastSuperDash.instantSuperDash,
-                value => Modules.QoL.FastSuperDash.instantSuperDash = value,
+                value =>
+                {
+                    Modules.QoL.FastSuperDash.instantSuperDash = value;
+                    GodhomeQoL.SaveGlobalSettingsSafe();
+                },
                 out instantToggleValue
             );
 
@@ -336,7 +363,11 @@ public sealed partial class QuickMenu : Module
                 "Settings/fastSuperDashEverywhere".Localize(),
                 rowY,
                 () => Modules.QoL.FastSuperDash.fastSuperDashEverywhere,
-                value => Modules.QoL.FastSuperDash.fastSuperDashEverywhere = value,
+                value =>
+                {
+                    Modules.QoL.FastSuperDash.fastSuperDashEverywhere = value;
+                    GodhomeQoL.SaveGlobalSettingsSafe();
+                },
                 out everywhereToggleValue
             );
 
@@ -349,6 +380,310 @@ public sealed partial class QuickMenu : Module
 
             CreateButtonRow(panel.transform, "FastSuperDashResetRow", "Settings/FastSuperDash/Reset".Localize(), resetY, OnFastSuperDashResetDefaultsClicked);
             CreateButtonRow(panel.transform, "BackRow", "Back", backY, OnOverlayBackClicked);
+        }
+
+        private void BuildBossManipulateOverlayUi()
+        {
+            bossManipulateRoot = new GameObject("BossManipulateOverlayCanvas");
+            bossManipulateRoot.transform.SetParent(transform, false);
+
+            Canvas canvas = bossManipulateRoot.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = BossManipulateCanvasSortOrder;
+
+            CanvasScaler scaler = bossManipulateRoot.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
+
+            bossManipulateRoot.AddComponent<GraphicRaycaster>();
+
+            CanvasGroup group = bossManipulateRoot.AddComponent<CanvasGroup>();
+            group.interactable = true;
+            group.blocksRaycasts = true;
+
+            GameObject dim = new GameObject("Dim");
+            dim.transform.SetParent(bossManipulateRoot.transform, false);
+            RectTransform dimRect = dim.AddComponent<RectTransform>();
+            dimRect.anchorMin = Vector2.zero;
+            dimRect.anchorMax = Vector2.one;
+            dimRect.offsetMin = Vector2.zero;
+            dimRect.offsetMax = Vector2.zero;
+
+            Image dimImage = dim.AddComponent<Image>();
+            dimImage.color = OverlayDimColor;
+
+            GameObject panel = new GameObject("BossManipulatePanel");
+            panel.transform.SetParent(dim.transform, false);
+            RectTransform panelRect = panel.AddComponent<RectTransform>();
+            panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+            panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+            panelRect.pivot = new Vector2(0.5f, 0.5f);
+            panelRect.anchoredPosition = Vector2.zero;
+            panelRect.sizeDelta = new Vector2(BossManipulatePanelWidth, BossManipulatePanelHeight);
+
+            Image panelImage = panel.AddComponent<Image>();
+            panelImage.color = OverlayPanelColor;
+
+            Text title = CreateText(panel.transform, "Title", "Categories/BossManipulate".Localize(), 52, TextAnchor.MiddleCenter);
+            RectTransform titleRect = title.rectTransform;
+            titleRect.anchorMin = new Vector2(0.5f, 0.5f);
+            titleRect.anchorMax = new Vector2(0.5f, 0.5f);
+            titleRect.pivot = new Vector2(0.5f, 0.5f);
+            titleRect.anchoredPosition = new Vector2(0f, (BossManipulatePanelHeight * 0.5f) - 70f);
+            titleRect.sizeDelta = new Vector2(BossManipulatePanelWidth - 120f, 60f);
+
+            float backY = GetFixedBackY(BossManipulatePanelHeight);
+            float controlsTopY = Mathf.Max(BossManipulateOtherRoomsY, BossManipulateGlobalP5Y) + (RowHeight * 0.5f);
+            RectTransform gridRoot = CreateBossManipulateGridRoot(panel.transform, titleRect, controlsTopY);
+            BuildBossManipulateImageGrid(gridRoot);
+            CreateToggleRow(
+                panel.transform,
+                "BossManipulateGlobalP5Row",
+                "P5 HP",
+                BossManipulateGlobalP5Y,
+                GetBossManipulateGlobalP5Enabled,
+                SetBossManipulateGlobalP5Enabled,
+                out bossManipulateGlobalP5Value
+            );
+            CreateButtonRow(panel.transform, "BossManipulateOtherRoomsRow", "Other Rooms", BossManipulateOtherRoomsY, OnBossManipulateOtherRoomsClicked);
+            CreateButtonRow(panel.transform, "BossManipulateResetRow", "Reset Default", BossManipulateResetY, OnBossManipulateResetAllClicked);
+            CreateButtonRow(panel.transform, "BossManipulateBackRow", "Back", backY, OnBossManipulateBackClicked);
+            CreateBossManipulateResetConfirm(panel.transform);
+            SetBossManipulateResetConfirmVisible(false);
+            RefreshBossManipulateCardVisuals();
+            RefreshBossManipulateGlobalUi();
+        }
+
+        private static RectTransform CreateBossManipulateGridRoot(Transform panel, RectTransform titleRect, float controlsTopY)
+        {
+            float titleBottomY = titleRect.anchoredPosition.y - (titleRect.sizeDelta.y * 0.5f);
+            float gridTopY = titleBottomY - 20f;
+            float gridBottomY = controlsTopY + 18f;
+
+            GameObject gridObj = new("BossManipulateGrid");
+            gridObj.transform.SetParent(panel, false);
+
+            RectTransform gridRect = gridObj.AddComponent<RectTransform>();
+            gridRect.anchorMin = new Vector2(0.5f, 0.5f);
+            gridRect.anchorMax = new Vector2(0.5f, 0.5f);
+            gridRect.pivot = new Vector2(0.5f, 0.5f);
+            gridRect.anchoredPosition = new Vector2(0f, (gridTopY + gridBottomY) * 0.5f);
+            gridRect.sizeDelta = new Vector2(BossManipulatePanelWidth - 70f, Mathf.Max(240f, gridTopY - gridBottomY));
+            return gridRect;
+        }
+
+        private void BuildBossManipulateImageGrid(RectTransform gridRoot)
+        {
+            bossManipulateCards.Clear();
+
+            var cards = new (string Label, string ImageFile, Type ModuleType, Action OnClick)[]
+            {
+                ("Gruz Mother", "Gruz Mother.png", typeof(Modules.BossChallenge.GruzMotherHelper), OnBossManipulateGruzClicked),
+                ("Vengefly King", "Vengefly King.png", typeof(Modules.BossChallenge.VengeflyKing), OnBossManipulateVengeflyKingClicked),
+                ("Brooding Mawlek", "Brooding Mawlek.png", typeof(Modules.BossChallenge.BroodingMawlekHelper), OnBossManipulateMawlekClicked),
+                ("False Knight", "False Knight.png", typeof(Modules.BossChallenge.FalseKnightHelper), OnBossManipulateFalseKnightClicked),
+                ("Failed Champion", "Failed Champion.png", typeof(Modules.BossChallenge.FailedChampionHelper), OnBossManipulateFailedChampionClicked),
+                ("Hornet Protector", "Hornet Protector.png", typeof(Modules.BossChallenge.HornetProtectorHelper), OnBossManipulateHornetClicked),
+                ("Hornet Sentinel", "Hornet Sentinel.png", typeof(Modules.BossChallenge.HornetSentinelHelper), OnBossManipulateHornetSentinelClicked),
+                ("Massive Moss Charger", "Massive Moss Charger.png", typeof(Modules.BossChallenge.MassiveMossChargerHelper), OnBossManipulateMassiveMossClicked),
+                ("Flukemarm", "Flukemarm.png", typeof(Modules.BossChallenge.FlukemarmHelper), OnBossManipulateFlukemarmClicked),
+                ("Mantis Lords", "Mantis Lords.png", typeof(Modules.BossChallenge.MantisLordHelper), OnBossManipulateMantisLordClicked),
+                ("Sisters of Battle", "Sisters of Battle.png", typeof(Modules.BossChallenge.SisterOfBattleHelper), OnBossManipulateSisterOfBattleClicked),
+                ("Oblobbles", "Oblobbles.png", typeof(Modules.BossChallenge.OblobblesHelper), OnBossManipulateOblobblesClicked),
+                ("Hive Knight", "Hive Knight.png", typeof(Modules.BossChallenge.HiveKnightHelper), OnBossManipulateHiveKnightClicked),
+                ("Broken Vessel", "Broken Vessel.png", typeof(Modules.BossChallenge.BrokenVesselHelper), OnBossManipulateBrokenVesselClicked),
+                ("Lost Kin", "Lost Kin.png", typeof(Modules.BossChallenge.LostKinHelper), OnBossManipulateLostKinClicked),
+                ("Nosk", "Nosk.png", typeof(Modules.BossChallenge.NoskHelper), OnBossManipulateNoskClicked),
+                ("Winged Nosk", "Winged Nosk.png", typeof(Modules.BossChallenge.WingedNoskHelper), OnBossManipulateWingedNoskClicked),
+                ("The Collector", "The Collector.png", typeof(Modules.CollectorPhases.CollectorPhases), OnBossManipulateCollectorClicked),
+                ("God Tamer", "God Tamer.png", typeof(Modules.BossChallenge.GodTamerHelper), OnBossManipulateGodTamerClicked),
+                ("Crystal Guardian", "Crystal Guardian.png", typeof(Modules.BossChallenge.CrystalGuardianHelper), OnBossManipulateCrystalGuardianClicked),
+                ("Enraged Guardian", "Enraged Guardian.png", typeof(Modules.BossChallenge.EnragedGuardianHelper), OnBossManipulateEnragedGuardianClicked),
+                ("Uumuu", "Uumuu.png", typeof(Modules.BossChallenge.UumuuHelper), OnBossManipulateUumuuClicked),
+                ("Traitor Lord", "Traitor Lord.png", typeof(Modules.BossChallenge.TraitorLordHelper), OnBossManipulateTraitorLordClicked),
+                ("Grey Prince Zote", "Grey Prince Zote.png", typeof(Modules.BossChallenge.ZoteHelper), OnBossManipulateZoteClicked),
+                ("Soul Warrior", "Soul Warrior.png", typeof(Modules.BossChallenge.SoulWarriorHelper), OnBossManipulateSoulWarriorClicked),
+                ("Soul Master", "Soul Master.png", typeof(Modules.BossChallenge.SoulMasterHelper), OnBossManipulateSoulMasterClicked),
+                ("Soul Tyrant", "Soul Tyrant.png", typeof(Modules.BossChallenge.SoulTyrantHelper), OnBossManipulateSoulTyrantClicked),
+                ("Dung Defender", "Dung Defender.png", typeof(Modules.BossChallenge.DungDefenderHelper), OnBossManipulateDungDefenderClicked),
+                ("White Defender", "White Defender.png", typeof(Modules.BossChallenge.WhiteDefenderHelper), OnBossManipulateWhiteDefenderClicked),
+                ("Watcher Knight", "Watcher Knight.png", typeof(Modules.BossChallenge.WatcherKnightHelper), OnBossManipulateWatcherKnightClicked),
+                ("No Eyes", "No Eyes.png", typeof(Modules.BossChallenge.NoEyesHelper), OnBossManipulateNoEyesClicked),
+                ("Marmu", "Marmu.png", typeof(Modules.BossChallenge.MarmuHelper), OnBossManipulateMarmuClicked),
+                ("Xero", "Xero.png", typeof(Modules.BossChallenge.XeroHelper), OnBossManipulateXeroClicked),
+                ("Markoth", "Markoth.png", typeof(Modules.BossChallenge.MarkothHelper), OnBossManipulateMarkothClicked),
+                ("Galien", "Galien.png", typeof(Modules.BossChallenge.GalienHelper), OnBossManipulateGalienClicked),
+                ("Gorb", "Gorb.png", typeof(Modules.BossChallenge.GorbHelper), OnBossManipulateGorbClicked),
+                ("Elder Hu", "Elder Hu.png", typeof(Modules.BossChallenge.ElderHuHelper), OnBossManipulateElderHuClicked),
+                ("Oro & Mato", "Oro & Mato.png", typeof(Modules.BossChallenge.OroMatoHelper), OnBossManipulateOroMatoClicked),
+                ("Paintmaster Sheo", "Paintmaster Sheo.png", typeof(Modules.BossChallenge.PaintmasterSheoHelper), OnBossManipulatePaintmasterSheoClicked),
+                ("Nailsage Sly", "Great Nailsage Sly.png", typeof(Modules.BossChallenge.NailsageSlyHelper), OnBossManipulateNailsageSlyClicked),
+                ("Pure Vessel", "Pure Vessel.png", typeof(Modules.BossChallenge.PureVesselHelper), OnBossManipulatePureVesselClicked),
+                ("Grimm", "Grimm.png", typeof(Modules.BossChallenge.TroupeMasterGrimmHelper), OnBossManipulateTroupeMasterGrimmClicked),
+                ("Nightmare King", "Nightmare King.png", typeof(Modules.BossChallenge.NightmareKingGrimmHelper), OnBossManipulateNightmareKingGrimmClicked),
+                ("Absolute Radiance", "Absolute Radiance.png", typeof(Modules.BossChallenge.AbsoluteRadianceHelper), OnBossManipulateAbsoluteRadianceClicked),
+            };
+
+            const int columns = 11;
+            const float spacingX = 10f;
+            const float spacingY = 12f;
+            int rows = Mathf.CeilToInt(cards.Length / (float)columns);
+
+            float gridWidth = gridRoot.sizeDelta.x;
+            float gridHeight = gridRoot.sizeDelta.y;
+            float cardWidth = (gridWidth - ((columns - 1) * spacingX)) / columns;
+            float cardHeight = (gridHeight - ((rows - 1) * spacingY)) / rows;
+
+            float totalWidth = (cardWidth * columns) + ((columns - 1) * spacingX);
+            float totalHeight = (cardHeight * rows) + ((rows - 1) * spacingY);
+            float startX = -(totalWidth * 0.5f) + (cardWidth * 0.5f);
+            float startY = (totalHeight * 0.5f) - (cardHeight * 0.5f);
+
+            for (int index = 0; index < cards.Length; index++)
+            {
+                int row = index / columns;
+                int column = index % columns;
+                float x = startX + (column * (cardWidth + spacingX));
+                float y = startY - (row * (cardHeight + spacingY));
+                CreateBossManipulateImageCard(
+                    gridRoot,
+                    $"BossManipulateCard{index + 1:D2}",
+                    cards[index].Label,
+                    cards[index].ImageFile,
+                    cards[index].ModuleType,
+                    x,
+                    y,
+                    cardWidth,
+                    cardHeight,
+                    cards[index].OnClick);
+            }
+        }
+
+        private void CreateBossManipulateImageCard(
+            Transform parent,
+            string name,
+            string label,
+            string imageFile,
+            Type moduleType,
+            float x,
+            float y,
+            float width,
+            float height,
+            Action onClick)
+        {
+            GameObject card = new(name);
+            card.transform.SetParent(parent, false);
+
+            RectTransform cardRect = card.AddComponent<RectTransform>();
+            cardRect.anchorMin = new Vector2(0.5f, 0.5f);
+            cardRect.anchorMax = new Vector2(0.5f, 0.5f);
+            cardRect.pivot = new Vector2(0.5f, 0.5f);
+            cardRect.anchoredPosition = new Vector2(x, y);
+            cardRect.sizeDelta = new Vector2(width, height);
+            CanvasGroup group = card.AddComponent<CanvasGroup>();
+
+            Image cardImage = card.AddComponent<Image>();
+            cardImage.color = new Color(1f, 1f, 1f, 0.07f);
+
+            Button button = card.AddComponent<Button>();
+            button.transition = Selectable.Transition.None;
+            button.targetGraphic = cardImage;
+            button.onClick.AddListener(() => onClick());
+
+            RowHighlight highlight = CreateRowHighlight(card, cardImage);
+            AttachRowHighlight(card, highlight);
+
+            const float labelHeight = 30f;
+            float imageHeight = Mathf.Max(50f, height - labelHeight - 10f);
+            GameObject imageObj = new("Image");
+            imageObj.transform.SetParent(card.transform, false);
+
+            RectTransform imageRect = imageObj.AddComponent<RectTransform>();
+            imageRect.anchorMin = new Vector2(0.5f, 0.5f);
+            imageRect.anchorMax = new Vector2(0.5f, 0.5f);
+            imageRect.pivot = new Vector2(0.5f, 0.5f);
+            imageRect.anchoredPosition = new Vector2(0f, (height * 0.5f) - (imageHeight * 0.5f) - 4f);
+            imageRect.sizeDelta = new Vector2(width - 12f, imageHeight);
+
+            Image image = imageObj.AddComponent<Image>();
+            image.raycastTarget = false;
+            image.preserveAspect = true;
+
+            Sprite? sprite = LoadBossManipulateIconSprite(imageFile, $"BossManipulate_{label}");
+            if (sprite != null)
+            {
+                image.sprite = sprite;
+                image.color = Color.white;
+            }
+            else
+            {
+                image.color = new Color(1f, 1f, 1f, 0.12f);
+                LogDebug($"QuickMenu: missing Boss Manipulate image {imageFile}");
+            }
+
+            Text nameText = CreateText(card.transform, "Label", label, 17, TextAnchor.MiddleCenter);
+            RectTransform labelRect = nameText.rectTransform;
+            labelRect.anchorMin = new Vector2(0f, 0f);
+            labelRect.anchorMax = new Vector2(1f, 0f);
+            labelRect.pivot = new Vector2(0.5f, 0f);
+            labelRect.anchoredPosition = new Vector2(0f, 2f);
+            labelRect.sizeDelta = new Vector2(0f, labelHeight);
+
+            bossManipulateCards.Add(new BossManipulateCardVisual(group, moduleType));
+        }
+
+        private void CreateBossManipulateResetConfirm(Transform parent)
+        {
+            bossManipulateResetConfirmRoot = new GameObject("BossManipulateResetConfirm");
+            bossManipulateResetConfirmRoot.transform.SetParent(parent, false);
+
+            RectTransform rootRect = bossManipulateResetConfirmRoot.AddComponent<RectTransform>();
+            rootRect.anchorMin = Vector2.zero;
+            rootRect.anchorMax = Vector2.one;
+            rootRect.offsetMin = Vector2.zero;
+            rootRect.offsetMax = Vector2.zero;
+
+            Image dim = bossManipulateResetConfirmRoot.AddComponent<Image>();
+            dim.color = new Color(0f, 0f, 0f, 0.35f);
+
+            CanvasGroup group = bossManipulateResetConfirmRoot.AddComponent<CanvasGroup>();
+            group.interactable = true;
+            group.blocksRaycasts = true;
+
+            GameObject dialogObj = new("Dialog");
+            dialogObj.transform.SetParent(bossManipulateResetConfirmRoot.transform, false);
+            RectTransform dialogRect = dialogObj.AddComponent<RectTransform>();
+            dialogRect.anchorMin = new Vector2(0.5f, 0.5f);
+            dialogRect.anchorMax = new Vector2(0.5f, 0.5f);
+            dialogRect.pivot = new Vector2(0.5f, 0.5f);
+            dialogRect.anchoredPosition = Vector2.zero;
+            dialogRect.sizeDelta = new Vector2(740f, 340f);
+
+            Image dialogImage = dialogObj.AddComponent<Image>();
+            dialogImage.color = OverlayPanelColor;
+
+            Text label = CreateText(dialogObj.transform, "Label", "Do you really want to reset everything?", 24, TextAnchor.MiddleCenter);
+            label.horizontalOverflow = HorizontalWrapMode.Wrap;
+            label.verticalOverflow = VerticalWrapMode.Overflow;
+            RectTransform labelRect = label.rectTransform;
+            labelRect.anchorMin = new Vector2(0.5f, 1f);
+            labelRect.anchorMax = new Vector2(0.5f, 1f);
+            labelRect.pivot = new Vector2(0.5f, 1f);
+            labelRect.anchoredPosition = new Vector2(0f, -28f);
+            labelRect.sizeDelta = new Vector2(680f, 110f);
+
+            CreateButtonRow(dialogObj.transform, "BossManipulateResetYesRow", "Yes", -70f, OnBossManipulateResetConfirmYes);
+            CreateButtonRow(dialogObj.transform, "BossManipulateResetNoRow", "No", -130f, OnBossManipulateResetConfirmNo);
+        }
+
+        private void SetBossManipulateResetConfirmVisible(bool value)
+        {
+            bossManipulateResetConfirmVisible = value;
+            if (bossManipulateResetConfirmRoot != null)
+            {
+                bossManipulateResetConfirmRoot.SetActive(value);
+            }
         }
 
         private void BuildCollectorOverlayUi()
@@ -428,18 +763,6 @@ public sealed partial class QuickMenu : Module
             rowY += CollectorRowSpacing;
             CreateCollectorToggleRow(
                 content,
-                "CollectorHoGOnlyRow",
-                "Settings/CollectorPhases/HoGOnly".Localize(),
-                rowY,
-                () => Modules.CollectorPhases.CollectorPhases.HoGOnly,
-                value => Modules.CollectorPhases.CollectorPhases.HoGOnly = value,
-                out collectorHoGOnlyValue
-            );
-
-            lastY = rowY;
-            rowY += CollectorRowSpacing;
-            CreateCollectorToggleRow(
-                content,
                 "QolCollectorRoarRow",
                 "Modules/CollectorRoarMute".Localize(),
                 rowY,
@@ -471,7 +794,7 @@ public sealed partial class QuickMenu : Module
                 "Settings/CollectorPhases/CollectorImmortal".Localize(),
                 rowY,
                 () => Modules.CollectorPhases.CollectorPhases.CollectorImmortal,
-                value => Modules.CollectorPhases.CollectorPhases.CollectorImmortal = value,
+                SetCollectorImmortalEnabled,
                 out collectorImmortalValue
             );
 
@@ -483,7 +806,7 @@ public sealed partial class QuickMenu : Module
                 "Settings/CollectorPhases/IgnoreInitialJarLimit".Localize(),
                 rowY,
                 () => Modules.CollectorPhases.CollectorPhases.IgnoreInitialJarLimit,
-                value => Modules.CollectorPhases.CollectorPhases.IgnoreInitialJarLimit = value,
+                SetCollectorIgnoreInitialJarLimitEnabled,
                 out ignoreInitialJarLimitValue
             );
 
@@ -495,7 +818,7 @@ public sealed partial class QuickMenu : Module
                 "Settings/CollectorPhases/UseCustomPhase2Threshold".Localize(),
                 rowY,
                 () => Modules.CollectorPhases.CollectorPhases.UseCustomPhase2Threshold,
-                value => Modules.CollectorPhases.CollectorPhases.UseCustomPhase2Threshold = value,
+                SetCollectorUseCustomPhase2ThresholdEnabled,
                 out useCustomPhase2ThresholdValue
             );
 
@@ -507,7 +830,7 @@ public sealed partial class QuickMenu : Module
                 "Settings/CollectorPhases/CustomPhase2Threshold".Localize(),
                 rowY,
                 () => Modules.CollectorPhases.CollectorPhases.CustomPhase2Threshold,
-                value => Modules.CollectorPhases.CollectorPhases.CustomPhase2Threshold = Mathf.Clamp(value, 1, 99999),
+                SetCollectorCustomPhase2Threshold,
                 1,
                 99999,
                 1,
@@ -522,7 +845,7 @@ public sealed partial class QuickMenu : Module
                 "Settings/CollectorPhases/UseMaxHP".Localize(),
                 rowY,
                 () => Modules.CollectorPhases.CollectorPhases.UseMaxHP,
-                value => Modules.CollectorPhases.CollectorPhases.UseMaxHP = value,
+                SetCollectorUseMaxHpEnabled,
                 out useMaxHpValue
             );
 
@@ -534,7 +857,7 @@ public sealed partial class QuickMenu : Module
                 "Settings/CollectorPhases/CollectorMaxHP".Localize(),
                 rowY,
                 () => Modules.CollectorPhases.CollectorPhases.collectorMaxHP,
-                value => Modules.CollectorPhases.CollectorPhases.collectorMaxHP = Math.Max(value, 100),
+                SetCollectorMaxHp,
                 100,
                 99999,
                 1,
@@ -549,7 +872,7 @@ public sealed partial class QuickMenu : Module
                 "Settings/CollectorPhases/BuzzerHP".Localize(),
                 rowY,
                 () => Modules.CollectorPhases.CollectorPhases.buzzerHP,
-                value => Modules.CollectorPhases.CollectorPhases.buzzerHP = Math.Max(value, 1),
+                SetCollectorBuzzerHp,
                 1,
                 9999,
                 1,
@@ -564,7 +887,7 @@ public sealed partial class QuickMenu : Module
                 "Settings/CollectorPhases/SpawnBuzzer".Localize(),
                 rowY,
                 () => Modules.CollectorPhases.CollectorPhases.spawnBuzzer,
-                value => Modules.CollectorPhases.CollectorPhases.spawnBuzzer = value,
+                SetCollectorSpawnBuzzerEnabled,
                 out spawnBuzzerValue
             );
 
@@ -576,7 +899,7 @@ public sealed partial class QuickMenu : Module
                 "Settings/CollectorPhases/RollerHP".Localize(),
                 rowY,
                 () => Modules.CollectorPhases.CollectorPhases.rollerHP,
-                value => Modules.CollectorPhases.CollectorPhases.rollerHP = Math.Max(value, 1),
+                SetCollectorRollerHp,
                 1,
                 9999,
                 1,
@@ -591,7 +914,7 @@ public sealed partial class QuickMenu : Module
                 "Settings/CollectorPhases/SpawnRoller".Localize(),
                 rowY,
                 () => Modules.CollectorPhases.CollectorPhases.spawnRoller,
-                value => Modules.CollectorPhases.CollectorPhases.spawnRoller = value,
+                SetCollectorSpawnRollerEnabled,
                 out spawnRollerValue
             );
 
@@ -603,7 +926,7 @@ public sealed partial class QuickMenu : Module
                 "Settings/CollectorPhases/SpitterHP".Localize(),
                 rowY,
                 () => Modules.CollectorPhases.CollectorPhases.spitterHP,
-                value => Modules.CollectorPhases.CollectorPhases.spitterHP = Math.Max(value, 1),
+                SetCollectorSpitterHp,
                 1,
                 9999,
                 1,
@@ -618,7 +941,7 @@ public sealed partial class QuickMenu : Module
                 "Settings/CollectorPhases/SpawnSpitter".Localize(),
                 rowY,
                 () => Modules.CollectorPhases.CollectorPhases.spawnSpitter,
-                value => Modules.CollectorPhases.CollectorPhases.spawnSpitter = value,
+                SetCollectorSpawnSpitterEnabled,
                 out spawnSpitterValue
             );
 
@@ -630,7 +953,7 @@ public sealed partial class QuickMenu : Module
                 "Settings/CollectorPhases/DisableSummonLimit".Localize(),
                 rowY,
                 () => Modules.CollectorPhases.CollectorPhases.DisableSummonLimit,
-                value => Modules.CollectorPhases.CollectorPhases.DisableSummonLimit = value,
+                SetCollectorDisableSummonLimitEnabled,
                 out disableSummonLimitValue
             );
 
@@ -642,7 +965,7 @@ public sealed partial class QuickMenu : Module
                 "Settings/CollectorPhases/CustomSummonLimit".Localize(),
                 rowY,
                 () => Modules.CollectorPhases.CollectorPhases.CustomSummonLimit,
-                value => Modules.CollectorPhases.CollectorPhases.CustomSummonLimit = Mathf.Clamp(value, 2, 999),
+                SetCollectorCustomSummonLimit,
                 2,
                 999,
                 1,
@@ -1083,16 +1406,29 @@ public sealed partial class QuickMenu : Module
 
             lastY = rowY;
             rowY += RowSpacing;
-            CreateAdjustInputRow(
+            CreateToggleRow(
+                content,
+                "MaskDamageShowUiRow",
+                "Settings/MaskDamage/ShowUI".Localize(),
+                rowY,
+                GetMaskDamageUiVisible,
+                SetMaskDamageUiVisible,
+                out maskDamageShowUiValue
+            );
+            maskDamageShowUiIcon = null;
+
+            lastY = rowY;
+            rowY += RowSpacing;
+            CreateAdjustFloatInputRow(
                 content,
                 "MaskDamageMultiplierRow",
                 "Settings/MaskDamage/Multiplier".Localize(),
                 rowY,
                 MaskDamage.GetMultiplier,
                 MaskDamage.SetMultiplier,
-                1,
-                999,
-                1,
+                0.5f,
+                999f,
+                1f,
                 out maskDamageMultiplierField
             );
 
@@ -1615,6 +1951,19 @@ public sealed partial class QuickMenu : Module
 
             lastY = rowY;
             rowY += BossChallengeRowSpacing;
+            CreateCycleRow(
+                content,
+                "BossChallengeGpzRow",
+                "Modules/ForceGreyPrinceEnterType".Localize(),
+                rowY,
+                BossChallengeGpzOptions,
+                GetBossGpzIndex,
+                ApplyBossGpzOption,
+                out bossGpzValue
+            );
+
+            lastY = rowY;
+            rowY += BossChallengeRowSpacing;
             CreateToggleRow(
                 content,
                 "BossInfiniteGrimmRow",
@@ -1641,48 +1990,12 @@ public sealed partial class QuickMenu : Module
             rowY += BossChallengeRowSpacing;
             CreateToggleRow(
                 content,
-                "BossP5HealthRow",
-                "Modules/P5Health".Localize(),
-                rowY,
-                GetP5HealthEnabled,
-                SetP5HealthEnabled,
-                out bossP5HealthValue
-            );
-
-            lastY = rowY;
-            rowY += BossChallengeRowSpacing;
-            CreateToggleRow(
-                content,
                 "BossSegmentedP5Row",
                 "Modules/SegmentedP5".Localize(),
                 rowY,
                 GetSegmentedP5Enabled,
                 SetSegmentedP5Enabled,
                 out bossSegmentedP5Value
-            );
-
-            lastY = rowY;
-            rowY += BossChallengeRowSpacing;
-            CreateToggleRow(
-                content,
-                "BossHalveAscendedRow",
-                "Modules/HalveDamageHoGAscendedOrAbove".Localize(),
-                rowY,
-                GetHalveAscendedEnabled,
-                SetHalveAscendedEnabled,
-                out bossHalveAscendedValue
-            );
-
-            lastY = rowY;
-            rowY += BossChallengeRowSpacing;
-            CreateToggleRow(
-                content,
-                "BossHalveAttunedRow",
-                "Modules/HalveDamageHoGAttuned".Localize(),
-                rowY,
-                GetHalveAttunedEnabled,
-                SetHalveAttunedEnabled,
-                out bossHalveAttunedValue
             );
 
             lastY = rowY;
@@ -1735,7 +2048,7 @@ public sealed partial class QuickMenu : Module
                 value => Modules.BossChallenge.AddSoul.soulAmount = Math.Max(0, Math.Min(999, value)),
                 0,
                 999,
-                1,
+                11,
                 out bossSoulAmountField
             );
 
@@ -1799,9 +2112,10 @@ public sealed partial class QuickMenu : Module
             titleRect.sizeDelta = new Vector2(RowWidth, 60f);
 
             float panelHeight = PanelHeight;
+            float resetY = GetFixedResetY(panelHeight);
             float backY = GetFixedBackY(panelHeight);
             float topOffset = GetScrollTopOffset(panelHeight, titleRect);
-            float bottomOffset = GetScrollBottomOffset(panelHeight, backY);
+            float bottomOffset = GetScrollBottomOffset(panelHeight, resetY);
             float viewHeight = Mathf.Max(0f, panelHeight - topOffset - bottomOffset);
             RectTransform content = CreateScrollContent(panel.transform, PanelWidth, panelHeight, topOffset, bottomOffset);
             randomPantheonsContent = content;
@@ -1880,6 +2194,7 @@ public sealed partial class QuickMenu : Module
             );
 
             SetScrollContentHeight(content, viewHeight, lastY, RowHeight);
+            CreateButtonRow(panel.transform, "RandomPantheonsResetRow", "Settings/RandomPantheons/Reset".Localize(), resetY, OnRandomPantheonsResetDefaultsClicked);
             CreateButtonRow(panel.transform, "RandomPantheonsBackRow", "Back", backY, OnRandomPantheonsBackClicked);
         }
 
@@ -2837,18 +3152,6 @@ public sealed partial class QuickMenu : Module
             rowY += QolRowSpacing;
             CreateToggleRow(
                 content,
-                "QolHallOfGodsRow",
-                "Settings/HallOfGodsStatues".Localize(),
-                rowY,
-                () => Modules.QoL.SkipCutscenes.HallOfGodsStatues,
-                value => Modules.QoL.SkipCutscenes.HallOfGodsStatues = value,
-                out bossAnimHallOfGodsValue
-            );
-
-            lastY = rowY;
-            rowY += QolRowSpacing;
-            CreateToggleRow(
-                content,
                 "QolUnlockAllModesRow",
                 "Modules/UnlockAllModes".Localize(),
                 rowY,
@@ -3179,6 +3482,18 @@ public sealed partial class QuickMenu : Module
             rowY += RowSpacing;
             CreateToggleRow(
                 content,
+                "BossAnimHallOfGodsRow",
+                "Settings/HallOfGodsStatues".Localize(),
+                rowY,
+                () => Modules.QoL.SkipCutscenes.HallOfGodsStatues,
+                value => Modules.QoL.SkipCutscenes.HallOfGodsStatues = value,
+                out bossAnimHallOfGodsValue
+            );
+
+            lastY = rowY;
+            rowY += RowSpacing;
+            CreateToggleRow(
+                content,
                 "BossAnimAbsoluteRadianceRow",
                 "Settings/AbsoluteRadiance".Localize(),
                 rowY,
@@ -3332,12 +3647,12 @@ public sealed partial class QuickMenu : Module
             rowY += ZoteHelperRowSpacing;
             CreateToggleRow(
                 content,
-                "ZoteHoGOnlyRow",
-                "Settings/ZoteHelper/HoGOnly".Localize(),
+                "ZoteUseCustomBossHpRow",
+                "Settings/ZoteHelper/UseCustomBossHP".Localize(),
                 rowY,
-                () => Modules.BossChallenge.ZoteHelper.ZoteHoGOnly,
-                value => Modules.BossChallenge.ZoteHelper.ZoteHoGOnly = value,
-                out zoteHoGOnlyValue
+                () => Modules.BossChallenge.ZoteHelper.zoteUseCustomBossHp,
+                SetZoteUseCustomBossHpEnabled,
+                out zoteUseCustomBossHpValue
             );
 
             lastY = rowY;
@@ -3393,6 +3708,18 @@ public sealed partial class QuickMenu : Module
 
             lastY = rowY;
             rowY += ZoteHelperRowSpacing;
+            CreateToggleRow(
+                content,
+                "ZoteUseCustomFlyingHpRow",
+                "Settings/ZoteHelper/UseCustomFlyingHP".Localize(),
+                rowY,
+                () => Modules.BossChallenge.ZoteHelper.zoteUseCustomFlyingHp,
+                SetZoteUseCustomFlyingHpEnabled,
+                out zoteUseCustomFlyingHpValue
+            );
+
+            lastY = rowY;
+            rowY += ZoteHelperRowSpacing;
             CreateAdjustInputRow(
                 content,
                 "ZoteFlyingHpRow",
@@ -3404,6 +3731,18 @@ public sealed partial class QuickMenu : Module
                 99,
                 1,
                 out zoteSummonFlyingHpField
+            );
+
+            lastY = rowY;
+            rowY += ZoteHelperRowSpacing;
+            CreateToggleRow(
+                content,
+                "ZoteUseCustomHoppingHpRow",
+                "Settings/ZoteHelper/UseCustomHoppingHP".Localize(),
+                rowY,
+                () => Modules.BossChallenge.ZoteHelper.zoteUseCustomHoppingHp,
+                SetZoteUseCustomHoppingHpEnabled,
+                out zoteUseCustomHoppingHpValue
             );
 
             lastY = rowY;
@@ -3423,13 +3762,25 @@ public sealed partial class QuickMenu : Module
 
             lastY = rowY;
             rowY += ZoteHelperRowSpacing;
+            CreateToggleRow(
+                content,
+                "ZoteUseCustomSummonLimitRow",
+                "Settings/ZoteHelper/UseCustomSummonLimit".Localize(),
+                rowY,
+                () => Modules.BossChallenge.ZoteHelper.zoteUseCustomSummonLimit,
+                SetZoteUseCustomSummonLimitEnabled,
+                out zoteUseCustomSummonLimitValue
+            );
+
+            lastY = rowY;
+            rowY += ZoteHelperRowSpacing;
             CreateAdjustInputRow(
                 content,
                 "ZoteSummonLimitRow",
                 "Settings/ZoteHelper/ZoteSummonLimit".Localize(),
                 rowY,
                 () => Modules.BossChallenge.ZoteHelper.zoteSummonLimit,
-                value => Modules.BossChallenge.ZoteHelper.zoteSummonLimit = Mathf.Clamp(value, 0, 99),
+                SetZoteSummonLimit,
                 0,
                 99,
                 1,
@@ -3438,23 +3789,877 @@ public sealed partial class QuickMenu : Module
 
             lastY = rowY;
             rowY += ZoteHelperRowSpacing;
-            CreateCycleRow(
-                content,
-                "ZoteHelperGpzRow",
-                "Modules/ForceGreyPrinceEnterType".Localize(),
-                rowY,
-                BossChallengeGpzOptions,
-                GetBossGpzIndex,
-                ApplyBossGpzOption,
-                out bossGpzValue
-            );
-
-            lastY = rowY;
-            rowY += ZoteHelperRowSpacing;
 
             SetScrollContentHeight(content, viewHeight, lastY, RowHeight);
             CreateButtonRow(panel.transform, "ZoteHelperResetRow", "Settings/ZoteHelper/Reset".Localize(), resetY, OnZoteHelperResetDefaultsClicked);
             CreateButtonRow(panel.transform, "ZoteHelperBackRow", "Back", backY, OnZoteHelperBackClicked);
+        }
+
+        private void BuildGruzHelperOverlayUi()
+        {
+            gruzHelperRoot = new GameObject("GruzHelperOverlayCanvas");
+            gruzHelperRoot.transform.SetParent(transform, false);
+
+            Canvas canvas = gruzHelperRoot.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = GruzHelperCanvasSortOrder;
+
+            CanvasScaler scaler = gruzHelperRoot.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
+
+            gruzHelperRoot.AddComponent<GraphicRaycaster>();
+
+            CanvasGroup group = gruzHelperRoot.AddComponent<CanvasGroup>();
+            group.interactable = true;
+            group.blocksRaycasts = true;
+
+            GameObject dim = new GameObject("Dim");
+            dim.transform.SetParent(gruzHelperRoot.transform, false);
+            RectTransform dimRect = dim.AddComponent<RectTransform>();
+            dimRect.anchorMin = Vector2.zero;
+            dimRect.anchorMax = Vector2.one;
+            dimRect.offsetMin = Vector2.zero;
+            dimRect.offsetMax = Vector2.zero;
+
+            Image dimImage = dim.AddComponent<Image>();
+            dimImage.color = OverlayDimColor;
+
+            GameObject panel = new GameObject("GruzHelperPanel");
+            panel.transform.SetParent(dim.transform, false);
+            RectTransform panelRect = panel.AddComponent<RectTransform>();
+            panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+            panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+            panelRect.pivot = new Vector2(0.5f, 0.5f);
+            panelRect.anchoredPosition = Vector2.zero;
+            panelRect.sizeDelta = new Vector2(PanelWidth, GruzHelperPanelHeight);
+
+            Image panelImage = panel.AddComponent<Image>();
+            panelImage.color = OverlayPanelColor;
+
+            Text title = CreateText(panel.transform, "Title", "Modules/GruzMotherHelper".Localize(), 52, TextAnchor.MiddleCenter);
+            RectTransform titleRect = title.rectTransform;
+            titleRect.anchorMin = new Vector2(0.5f, 0.5f);
+            titleRect.anchorMax = new Vector2(0.5f, 0.5f);
+            titleRect.pivot = new Vector2(0.5f, 0.5f);
+            titleRect.anchoredPosition = new Vector2(0f, 210f);
+            titleRect.sizeDelta = new Vector2(RowWidth, 60f);
+
+            float panelHeight = GruzHelperPanelHeight;
+            float resetY = GetFixedResetY(panelHeight);
+            float backY = GetFixedBackY(panelHeight);
+            float topOffset = GetScrollTopOffset(panelHeight, titleRect);
+            float bottomOffset = GetScrollBottomOffset(panelHeight, resetY);
+            float viewHeight = Mathf.Max(0f, panelHeight - topOffset - bottomOffset);
+            RectTransform content = CreateScrollContent(panel.transform, PanelWidth, panelHeight, topOffset, bottomOffset);
+            gruzHelperContent = content;
+
+            float rowY = GetRowStartY(panelHeight, RowStartY, topOffset);
+            float lastY = rowY;
+            CreateToggleRowWithIcon(
+                content,
+                "GruzHelperEnableRow",
+                "Settings/GruzMotherHelper/Enable".Localize(),
+                rowY,
+                GetGruzMotherHelperEnabled,
+                SetGruzMotherHelperEnabled,
+                out gruzHelperToggleValue,
+                out gruzHelperToggleIcon
+            );
+
+            lastY = rowY;
+            rowY += GruzHelperRowSpacing;
+            CreateToggleRow(
+                content,
+                "GruzP5HpRow",
+                "Settings/GruzMotherHelper/P5HP".Localize(),
+                rowY,
+                () => Modules.BossChallenge.GruzMotherHelper.gruzP5Hp,
+                SetGruzP5HpEnabled,
+                out gruzP5HpValue
+            );
+
+            lastY = rowY;
+            rowY += GruzHelperRowSpacing;
+            CreateToggleRow(
+                content,
+                "GruzUseMaxHpRow",
+                "Settings/GruzMotherHelper/UseMaxHP".Localize(),
+                rowY,
+                () => Modules.BossChallenge.GruzMotherHelper.gruzUseMaxHp,
+                SetGruzUseMaxHpEnabled,
+                out gruzUseMaxHpValue
+            );
+
+            lastY = rowY;
+            rowY += GruzHelperRowSpacing;
+            CreateAdjustInputRow(
+                content,
+                "GruzMaxHpRow",
+                "Settings/GruzMotherHelper/MaxHP".Localize(),
+                rowY,
+                () => Modules.BossChallenge.GruzMotherHelper.gruzMaxHp,
+                SetGruzMaxHp,
+                1,
+                999999,
+                10,
+                out gruzMaxHpField
+            );
+
+            lastY = rowY;
+            rowY += GruzHelperRowSpacing;
+
+            SetScrollContentHeight(content, viewHeight, lastY, RowHeight);
+            CreateButtonRow(panel.transform, "GruzHelperResetRow", "Settings/GruzMotherHelper/Reset".Localize(), resetY, OnGruzHelperResetDefaultsClicked);
+            CreateButtonRow(panel.transform, "GruzHelperBackRow", "Back", backY, OnGruzHelperBackClicked);
+        }
+
+        private void BuildHornetHelperOverlayUi()
+        {
+            hornetHelperRoot = new GameObject("HornetHelperOverlayCanvas");
+            hornetHelperRoot.transform.SetParent(transform, false);
+
+            Canvas canvas = hornetHelperRoot.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = HornetHelperCanvasSortOrder;
+
+            CanvasScaler scaler = hornetHelperRoot.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
+
+            hornetHelperRoot.AddComponent<GraphicRaycaster>();
+
+            CanvasGroup group = hornetHelperRoot.AddComponent<CanvasGroup>();
+            group.interactable = true;
+            group.blocksRaycasts = true;
+
+            GameObject dim = new GameObject("Dim");
+            dim.transform.SetParent(hornetHelperRoot.transform, false);
+            RectTransform dimRect = dim.AddComponent<RectTransform>();
+            dimRect.anchorMin = Vector2.zero;
+            dimRect.anchorMax = Vector2.one;
+            dimRect.offsetMin = Vector2.zero;
+            dimRect.offsetMax = Vector2.zero;
+
+            Image dimImage = dim.AddComponent<Image>();
+            dimImage.color = OverlayDimColor;
+
+            GameObject panel = new GameObject("HornetHelperPanel");
+            panel.transform.SetParent(dim.transform, false);
+            RectTransform panelRect = panel.AddComponent<RectTransform>();
+            panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+            panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+            panelRect.pivot = new Vector2(0.5f, 0.5f);
+            panelRect.anchoredPosition = Vector2.zero;
+            panelRect.sizeDelta = new Vector2(PanelWidth, HornetHelperPanelHeight);
+
+            Image panelImage = panel.AddComponent<Image>();
+            panelImage.color = OverlayPanelColor;
+
+            Text title = CreateText(panel.transform, "Title", "Modules/HornetProtectorHelper".Localize(), 52, TextAnchor.MiddleCenter);
+            RectTransform titleRect = title.rectTransform;
+            titleRect.anchorMin = new Vector2(0.5f, 0.5f);
+            titleRect.anchorMax = new Vector2(0.5f, 0.5f);
+            titleRect.pivot = new Vector2(0.5f, 0.5f);
+            titleRect.anchoredPosition = new Vector2(0f, 210f);
+            titleRect.sizeDelta = new Vector2(RowWidth, 60f);
+
+            float panelHeight = HornetHelperPanelHeight;
+            float resetY = GetFixedResetY(panelHeight);
+            float backY = GetFixedBackY(panelHeight);
+            float topOffset = GetScrollTopOffset(panelHeight, titleRect);
+            float bottomOffset = GetScrollBottomOffset(panelHeight, resetY);
+            float viewHeight = Mathf.Max(0f, panelHeight - topOffset - bottomOffset);
+            RectTransform content = CreateScrollContent(panel.transform, PanelWidth, panelHeight, topOffset, bottomOffset);
+            hornetHelperContent = content;
+
+            float rowY = GetRowStartY(panelHeight, RowStartY, topOffset);
+            float lastY = rowY;
+            CreateToggleRowWithIcon(
+                content,
+                "HornetHelperEnableRow",
+                "Settings/HornetProtectorHelper/Enable".Localize(),
+                rowY,
+                GetHornetProtectorHelperEnabled,
+                SetHornetProtectorHelperEnabled,
+                out hornetHelperToggleValue,
+                out hornetHelperToggleIcon
+            );
+
+            lastY = rowY;
+            rowY += HornetHelperRowSpacing;
+            CreateToggleRow(
+                content,
+                "HornetP5HpRow",
+                "Settings/HornetProtectorHelper/P5HP".Localize(),
+                rowY,
+                () => Modules.BossChallenge.HornetProtectorHelper.hornetP5Hp,
+                SetHornetP5HpEnabled,
+                out hornetP5HpValue
+            );
+
+            lastY = rowY;
+            rowY += HornetHelperRowSpacing;
+            CreateToggleRow(
+                content,
+                "HornetUseMaxHpRow",
+                "Settings/HornetProtectorHelper/UseMaxHP".Localize(),
+                rowY,
+                () => Modules.BossChallenge.HornetProtectorHelper.hornetUseMaxHp,
+                SetHornetUseMaxHpEnabled,
+                out hornetUseMaxHpValue
+            );
+
+            lastY = rowY;
+            rowY += HornetHelperRowSpacing;
+            CreateAdjustInputRow(
+                content,
+                "HornetMaxHpRow",
+                "Settings/HornetProtectorHelper/MaxHP".Localize(),
+                rowY,
+                () => Modules.BossChallenge.HornetProtectorHelper.hornetMaxHp,
+                SetHornetMaxHp,
+                1,
+                999999,
+                10,
+                out hornetMaxHpField
+            );
+
+            lastY = rowY;
+            rowY += HornetHelperRowSpacing;
+
+            SetScrollContentHeight(content, viewHeight, lastY, RowHeight);
+            CreateButtonRow(panel.transform, "HornetHelperResetRow", "Settings/HornetProtectorHelper/Reset".Localize(), resetY, OnHornetHelperResetDefaultsClicked);
+            CreateButtonRow(panel.transform, "HornetHelperBackRow", "Back", backY, OnHornetHelperBackClicked);
+        }
+
+        private void BuildMawlekHelperOverlayUi()
+        {
+            mawlekHelperRoot = new GameObject("MawlekHelperOverlayCanvas");
+            mawlekHelperRoot.transform.SetParent(transform, false);
+
+            Canvas canvas = mawlekHelperRoot.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = MawlekHelperCanvasSortOrder;
+
+            CanvasScaler scaler = mawlekHelperRoot.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
+
+            mawlekHelperRoot.AddComponent<GraphicRaycaster>();
+
+            CanvasGroup group = mawlekHelperRoot.AddComponent<CanvasGroup>();
+            group.interactable = true;
+            group.blocksRaycasts = true;
+
+            GameObject dim = new GameObject("Dim");
+            dim.transform.SetParent(mawlekHelperRoot.transform, false);
+            RectTransform dimRect = dim.AddComponent<RectTransform>();
+            dimRect.anchorMin = Vector2.zero;
+            dimRect.anchorMax = Vector2.one;
+            dimRect.offsetMin = Vector2.zero;
+            dimRect.offsetMax = Vector2.zero;
+
+            Image dimImage = dim.AddComponent<Image>();
+            dimImage.color = OverlayDimColor;
+
+            GameObject panel = new GameObject("MawlekHelperPanel");
+            panel.transform.SetParent(dim.transform, false);
+            RectTransform panelRect = panel.AddComponent<RectTransform>();
+            panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+            panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+            panelRect.pivot = new Vector2(0.5f, 0.5f);
+            panelRect.anchoredPosition = Vector2.zero;
+            panelRect.sizeDelta = new Vector2(PanelWidth, MawlekHelperPanelHeight);
+
+            Image panelImage = panel.AddComponent<Image>();
+            panelImage.color = OverlayPanelColor;
+
+            Text title = CreateText(panel.transform, "Title", "Modules/BroodingMawlekHelper".Localize(), 52, TextAnchor.MiddleCenter);
+            RectTransform titleRect = title.rectTransform;
+            titleRect.anchorMin = new Vector2(0.5f, 0.5f);
+            titleRect.anchorMax = new Vector2(0.5f, 0.5f);
+            titleRect.pivot = new Vector2(0.5f, 0.5f);
+            titleRect.anchoredPosition = new Vector2(0f, 210f);
+            titleRect.sizeDelta = new Vector2(RowWidth, 60f);
+
+            float panelHeight = MawlekHelperPanelHeight;
+            float resetY = GetFixedResetY(panelHeight);
+            float backY = GetFixedBackY(panelHeight);
+            float topOffset = GetScrollTopOffset(panelHeight, titleRect);
+            float bottomOffset = GetScrollBottomOffset(panelHeight, resetY);
+            float viewHeight = Mathf.Max(0f, panelHeight - topOffset - bottomOffset);
+            RectTransform content = CreateScrollContent(panel.transform, PanelWidth, panelHeight, topOffset, bottomOffset);
+            mawlekHelperContent = content;
+
+            float rowY = GetRowStartY(panelHeight, RowStartY, topOffset);
+            float lastY = rowY;
+            CreateToggleRowWithIcon(
+                content,
+                "MawlekHelperEnableRow",
+                "Settings/BroodingMawlekHelper/Enable".Localize(),
+                rowY,
+                GetBroodingMawlekHelperEnabled,
+                SetBroodingMawlekHelperEnabled,
+                out mawlekHelperToggleValue,
+                out mawlekHelperToggleIcon
+            );
+
+            lastY = rowY;
+            rowY += MawlekHelperRowSpacing;
+            CreateToggleRow(
+                content,
+                "MawlekP5HpRow",
+                "Settings/BroodingMawlekHelper/P5HP".Localize(),
+                rowY,
+                () => Modules.BossChallenge.BroodingMawlekHelper.mawlekP5Hp,
+                SetMawlekP5HpEnabled,
+                out mawlekP5HpValue
+            );
+
+            lastY = rowY;
+            rowY += MawlekHelperRowSpacing;
+            CreateToggleRow(
+                content,
+                "MawlekUseMaxHpRow",
+                "Settings/BroodingMawlekHelper/UseMaxHP".Localize(),
+                rowY,
+                () => Modules.BossChallenge.BroodingMawlekHelper.mawlekUseMaxHp,
+                SetMawlekUseMaxHpEnabled,
+                out mawlekUseMaxHpValue
+            );
+
+            lastY = rowY;
+            rowY += MawlekHelperRowSpacing;
+            CreateAdjustInputRow(
+                content,
+                "MawlekMaxHpRow",
+                "Settings/BroodingMawlekHelper/MaxHP".Localize(),
+                rowY,
+                () => Modules.BossChallenge.BroodingMawlekHelper.mawlekMaxHp,
+                SetMawlekMaxHp,
+                1,
+                999999,
+                10,
+                out mawlekMaxHpField
+            );
+
+            lastY = rowY;
+            rowY += MawlekHelperRowSpacing;
+
+            SetScrollContentHeight(content, viewHeight, lastY, RowHeight);
+            CreateButtonRow(panel.transform, "MawlekHelperResetRow", "Settings/BroodingMawlekHelper/Reset".Localize(), resetY, OnMawlekHelperResetDefaultsClicked);
+            CreateButtonRow(panel.transform, "MawlekHelperBackRow", "Back", backY, OnMawlekHelperBackClicked);
+        }
+
+        private void BuildMassiveMossHelperOverlayUi()
+        {
+            massiveMossHelperRoot = new GameObject("MassiveMossHelperOverlayCanvas");
+            massiveMossHelperRoot.transform.SetParent(transform, false);
+
+            Canvas canvas = massiveMossHelperRoot.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = MassiveMossHelperCanvasSortOrder;
+
+            CanvasScaler scaler = massiveMossHelperRoot.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
+
+            massiveMossHelperRoot.AddComponent<GraphicRaycaster>();
+
+            CanvasGroup group = massiveMossHelperRoot.AddComponent<CanvasGroup>();
+            group.interactable = true;
+            group.blocksRaycasts = true;
+
+            GameObject dim = new GameObject("Dim");
+            dim.transform.SetParent(massiveMossHelperRoot.transform, false);
+            RectTransform dimRect = dim.AddComponent<RectTransform>();
+            dimRect.anchorMin = Vector2.zero;
+            dimRect.anchorMax = Vector2.one;
+            dimRect.offsetMin = Vector2.zero;
+            dimRect.offsetMax = Vector2.zero;
+
+            Image dimImage = dim.AddComponent<Image>();
+            dimImage.color = OverlayDimColor;
+
+            GameObject panel = new GameObject("MassiveMossHelperPanel");
+            panel.transform.SetParent(dim.transform, false);
+            RectTransform panelRect = panel.AddComponent<RectTransform>();
+            panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+            panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+            panelRect.pivot = new Vector2(0.5f, 0.5f);
+            panelRect.anchoredPosition = Vector2.zero;
+            panelRect.sizeDelta = new Vector2(PanelWidth, MassiveMossHelperPanelHeight);
+
+            Image panelImage = panel.AddComponent<Image>();
+            panelImage.color = OverlayPanelColor;
+
+            Text title = CreateText(panel.transform, "Title", "Modules/MassiveMossChargerHelper".Localize(), 52, TextAnchor.MiddleCenter);
+            RectTransform titleRect = title.rectTransform;
+            titleRect.anchorMin = new Vector2(0.5f, 0.5f);
+            titleRect.anchorMax = new Vector2(0.5f, 0.5f);
+            titleRect.pivot = new Vector2(0.5f, 0.5f);
+            titleRect.anchoredPosition = new Vector2(0f, 210f);
+            titleRect.sizeDelta = new Vector2(RowWidth, 60f);
+
+            float panelHeight = MassiveMossHelperPanelHeight;
+            float resetY = GetFixedResetY(panelHeight);
+            float backY = GetFixedBackY(panelHeight);
+            float topOffset = GetScrollTopOffset(panelHeight, titleRect);
+            float bottomOffset = GetScrollBottomOffset(panelHeight, resetY);
+            float viewHeight = Mathf.Max(0f, panelHeight - topOffset - bottomOffset);
+            RectTransform content = CreateScrollContent(panel.transform, PanelWidth, panelHeight, topOffset, bottomOffset);
+            massiveMossHelperContent = content;
+
+            float rowY = GetRowStartY(panelHeight, RowStartY, topOffset);
+            float lastY = rowY;
+            CreateToggleRowWithIcon(
+                content,
+                "MassiveMossHelperEnableRow",
+                "Settings/MassiveMossChargerHelper/Enable".Localize(),
+                rowY,
+                GetMassiveMossChargerHelperEnabled,
+                SetMassiveMossChargerHelperEnabled,
+                out massiveMossHelperToggleValue,
+                out massiveMossHelperToggleIcon
+            );
+
+            lastY = rowY;
+            rowY += MassiveMossHelperRowSpacing;
+            CreateToggleRow(
+                content,
+                "MassiveMossP5HpRow",
+                "Settings/MassiveMossChargerHelper/P5HP".Localize(),
+                rowY,
+                () => Modules.BossChallenge.MassiveMossChargerHelper.massiveMossP5Hp,
+                SetMassiveMossP5HpEnabled,
+                out massiveMossP5HpValue
+            );
+
+            lastY = rowY;
+            rowY += MassiveMossHelperRowSpacing;
+            CreateToggleRow(
+                content,
+                "MassiveMossUseMaxHpRow",
+                "Settings/MassiveMossChargerHelper/UseMaxHP".Localize(),
+                rowY,
+                () => Modules.BossChallenge.MassiveMossChargerHelper.massiveMossUseMaxHp,
+                SetMassiveMossUseMaxHpEnabled,
+                out massiveMossUseMaxHpValue
+            );
+
+            lastY = rowY;
+            rowY += MassiveMossHelperRowSpacing;
+            CreateAdjustInputRow(
+                content,
+                "MassiveMossMaxHpRow",
+                "Settings/MassiveMossChargerHelper/MaxHP".Localize(),
+                rowY,
+                () => Modules.BossChallenge.MassiveMossChargerHelper.massiveMossMaxHp,
+                SetMassiveMossMaxHp,
+                1,
+                999999,
+                10,
+                out massiveMossMaxHpField
+            );
+
+            lastY = rowY;
+            rowY += MassiveMossHelperRowSpacing;
+
+            SetScrollContentHeight(content, viewHeight, lastY, RowHeight);
+            CreateButtonRow(panel.transform, "MassiveMossHelperResetRow", "Settings/MassiveMossChargerHelper/Reset".Localize(), resetY, OnMassiveMossHelperResetDefaultsClicked);
+            CreateButtonRow(panel.transform, "MassiveMossHelperBackRow", "Back", backY, OnMassiveMossHelperBackClicked);
+        }
+
+        private void BuildCrystalGuardianHelperOverlayUi()
+        {
+            crystalGuardianHelperRoot = new GameObject("CrystalGuardianHelperOverlayCanvas");
+            crystalGuardianHelperRoot.transform.SetParent(transform, false);
+
+            Canvas canvas = crystalGuardianHelperRoot.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = CrystalGuardianHelperCanvasSortOrder;
+
+            CanvasScaler scaler = crystalGuardianHelperRoot.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
+
+            crystalGuardianHelperRoot.AddComponent<GraphicRaycaster>();
+
+            CanvasGroup group = crystalGuardianHelperRoot.AddComponent<CanvasGroup>();
+            group.interactable = true;
+            group.blocksRaycasts = true;
+
+            GameObject dim = new GameObject("Dim");
+            dim.transform.SetParent(crystalGuardianHelperRoot.transform, false);
+            RectTransform dimRect = dim.AddComponent<RectTransform>();
+            dimRect.anchorMin = Vector2.zero;
+            dimRect.anchorMax = Vector2.one;
+            dimRect.offsetMin = Vector2.zero;
+            dimRect.offsetMax = Vector2.zero;
+
+            Image dimImage = dim.AddComponent<Image>();
+            dimImage.color = OverlayDimColor;
+
+            GameObject panel = new GameObject("CrystalGuardianHelperPanel");
+            panel.transform.SetParent(dim.transform, false);
+            RectTransform panelRect = panel.AddComponent<RectTransform>();
+            panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+            panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+            panelRect.pivot = new Vector2(0.5f, 0.5f);
+            panelRect.anchoredPosition = Vector2.zero;
+            panelRect.sizeDelta = new Vector2(PanelWidth, CrystalGuardianHelperPanelHeight);
+
+            Image panelImage = panel.AddComponent<Image>();
+            panelImage.color = OverlayPanelColor;
+
+            Text title = CreateText(panel.transform, "Title", "Modules/CrystalGuardianHelper".Localize(), 52, TextAnchor.MiddleCenter);
+            RectTransform titleRect = title.rectTransform;
+            titleRect.anchorMin = new Vector2(0.5f, 0.5f);
+            titleRect.anchorMax = new Vector2(0.5f, 0.5f);
+            titleRect.pivot = new Vector2(0.5f, 0.5f);
+            titleRect.anchoredPosition = new Vector2(0f, 210f);
+            titleRect.sizeDelta = new Vector2(RowWidth, 60f);
+
+            float panelHeight = CrystalGuardianHelperPanelHeight;
+            float resetY = GetFixedResetY(panelHeight);
+            float backY = GetFixedBackY(panelHeight);
+            float topOffset = GetScrollTopOffset(panelHeight, titleRect);
+            float bottomOffset = GetScrollBottomOffset(panelHeight, resetY);
+            float viewHeight = Mathf.Max(0f, panelHeight - topOffset - bottomOffset);
+            RectTransform content = CreateScrollContent(panel.transform, PanelWidth, panelHeight, topOffset, bottomOffset);
+            crystalGuardianHelperContent = content;
+
+            float rowY = GetRowStartY(panelHeight, RowStartY, topOffset);
+            float lastY = rowY;
+            CreateToggleRowWithIcon(
+                content,
+                "CrystalGuardianHelperEnableRow",
+                "Settings/CrystalGuardianHelper/Enable".Localize(),
+                rowY,
+                GetCrystalGuardianHelperEnabled,
+                SetCrystalGuardianHelperEnabled,
+                out crystalGuardianHelperToggleValue,
+                out crystalGuardianHelperToggleIcon
+            );
+
+            lastY = rowY;
+            rowY += CrystalGuardianHelperRowSpacing;
+            CreateToggleRow(
+                content,
+                "CrystalGuardianP5HpRow",
+                "Settings/CrystalGuardianHelper/P5HP".Localize(),
+                rowY,
+                () => Modules.BossChallenge.CrystalGuardianHelper.crystalGuardianP5Hp,
+                SetCrystalGuardianP5HpEnabled,
+                out crystalGuardianP5HpValue
+            );
+
+            lastY = rowY;
+            rowY += CrystalGuardianHelperRowSpacing;
+            CreateToggleRow(
+                content,
+                "CrystalGuardianUseMaxHpRow",
+                "Settings/CrystalGuardianHelper/UseMaxHP".Localize(),
+                rowY,
+                () => Modules.BossChallenge.CrystalGuardianHelper.crystalGuardianUseMaxHp,
+                SetCrystalGuardianUseMaxHpEnabled,
+                out crystalGuardianUseMaxHpValue
+            );
+
+            lastY = rowY;
+            rowY += CrystalGuardianHelperRowSpacing;
+            CreateAdjustInputRow(
+                content,
+                "CrystalGuardianMaxHpRow",
+                "Settings/CrystalGuardianHelper/MaxHP".Localize(),
+                rowY,
+                () => Modules.BossChallenge.CrystalGuardianHelper.crystalGuardianMaxHp,
+                SetCrystalGuardianMaxHp,
+                1,
+                999999,
+                10,
+                out crystalGuardianMaxHpField
+            );
+
+            lastY = rowY;
+            rowY += CrystalGuardianHelperRowSpacing;
+
+            SetScrollContentHeight(content, viewHeight, lastY, RowHeight);
+            CreateButtonRow(panel.transform, "CrystalGuardianHelperResetRow", "Settings/CrystalGuardianHelper/Reset".Localize(), resetY, OnCrystalGuardianHelperResetDefaultsClicked);
+            CreateButtonRow(panel.transform, "CrystalGuardianHelperBackRow", "Back", backY, OnCrystalGuardianHelperBackClicked);
+        }
+
+        private void BuildEnragedGuardianHelperOverlayUi()
+        {
+            enragedGuardianHelperRoot = new GameObject("EnragedGuardianHelperOverlayCanvas");
+            enragedGuardianHelperRoot.transform.SetParent(transform, false);
+
+            Canvas canvas = enragedGuardianHelperRoot.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = EnragedGuardianHelperCanvasSortOrder;
+
+            CanvasScaler scaler = enragedGuardianHelperRoot.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
+
+            enragedGuardianHelperRoot.AddComponent<GraphicRaycaster>();
+
+            CanvasGroup group = enragedGuardianHelperRoot.AddComponent<CanvasGroup>();
+            group.interactable = true;
+            group.blocksRaycasts = true;
+
+            GameObject dim = new GameObject("Dim");
+            dim.transform.SetParent(enragedGuardianHelperRoot.transform, false);
+            RectTransform dimRect = dim.AddComponent<RectTransform>();
+            dimRect.anchorMin = Vector2.zero;
+            dimRect.anchorMax = Vector2.one;
+            dimRect.offsetMin = Vector2.zero;
+            dimRect.offsetMax = Vector2.zero;
+
+            Image dimImage = dim.AddComponent<Image>();
+            dimImage.color = OverlayDimColor;
+
+            GameObject panel = new GameObject("EnragedGuardianHelperPanel");
+            panel.transform.SetParent(dim.transform, false);
+            RectTransform panelRect = panel.AddComponent<RectTransform>();
+            panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+            panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+            panelRect.pivot = new Vector2(0.5f, 0.5f);
+            panelRect.anchoredPosition = Vector2.zero;
+            panelRect.sizeDelta = new Vector2(PanelWidth, EnragedGuardianHelperPanelHeight);
+
+            Image panelImage = panel.AddComponent<Image>();
+            panelImage.color = OverlayPanelColor;
+
+            Text title = CreateText(panel.transform, "Title", "Modules/EnragedGuardianHelper".Localize(), 52, TextAnchor.MiddleCenter);
+            RectTransform titleRect = title.rectTransform;
+            titleRect.anchorMin = new Vector2(0.5f, 0.5f);
+            titleRect.anchorMax = new Vector2(0.5f, 0.5f);
+            titleRect.pivot = new Vector2(0.5f, 0.5f);
+            titleRect.anchoredPosition = new Vector2(0f, 210f);
+            titleRect.sizeDelta = new Vector2(RowWidth, 60f);
+
+            float panelHeight = EnragedGuardianHelperPanelHeight;
+            float resetY = GetFixedResetY(panelHeight);
+            float backY = GetFixedBackY(panelHeight);
+            float topOffset = GetScrollTopOffset(panelHeight, titleRect);
+            float bottomOffset = GetScrollBottomOffset(panelHeight, resetY);
+            float viewHeight = Mathf.Max(0f, panelHeight - topOffset - bottomOffset);
+            RectTransform content = CreateScrollContent(panel.transform, PanelWidth, panelHeight, topOffset, bottomOffset);
+            enragedGuardianHelperContent = content;
+
+            float rowY = GetRowStartY(panelHeight, RowStartY, topOffset);
+            float lastY = rowY;
+            CreateToggleRowWithIcon(
+                content,
+                "EnragedGuardianHelperEnableRow",
+                "Settings/EnragedGuardianHelper/Enable".Localize(),
+                rowY,
+                GetEnragedGuardianHelperEnabled,
+                SetEnragedGuardianHelperEnabled,
+                out enragedGuardianHelperToggleValue,
+                out enragedGuardianHelperToggleIcon
+            );
+
+            lastY = rowY;
+            rowY += EnragedGuardianHelperRowSpacing;
+            CreateToggleRow(
+                content,
+                "EnragedGuardianP5HpRow",
+                "Settings/EnragedGuardianHelper/P5HP".Localize(),
+                rowY,
+                () => Modules.BossChallenge.EnragedGuardianHelper.enragedGuardianP5Hp,
+                SetEnragedGuardianP5HpEnabled,
+                out enragedGuardianP5HpValue
+            );
+
+            lastY = rowY;
+            rowY += EnragedGuardianHelperRowSpacing;
+            CreateToggleRow(
+                content,
+                "EnragedGuardianUseMaxHpRow",
+                "Settings/EnragedGuardianHelper/UseMaxHP".Localize(),
+                rowY,
+                () => Modules.BossChallenge.EnragedGuardianHelper.enragedGuardianUseMaxHp,
+                SetEnragedGuardianUseMaxHpEnabled,
+                out enragedGuardianUseMaxHpValue
+            );
+
+            lastY = rowY;
+            rowY += EnragedGuardianHelperRowSpacing;
+            CreateAdjustInputRow(
+                content,
+                "EnragedGuardianMaxHpRow",
+                "Settings/EnragedGuardianHelper/MaxHP".Localize(),
+                rowY,
+                () => Modules.BossChallenge.EnragedGuardianHelper.enragedGuardianMaxHp,
+                SetEnragedGuardianMaxHp,
+                1,
+                999999,
+                10,
+                out enragedGuardianMaxHpField
+            );
+
+            lastY = rowY;
+            rowY += EnragedGuardianHelperRowSpacing;
+
+            SetScrollContentHeight(content, viewHeight, lastY, RowHeight);
+            CreateButtonRow(panel.transform, "EnragedGuardianHelperResetRow", "Settings/EnragedGuardianHelper/Reset".Localize(), resetY, OnEnragedGuardianHelperResetDefaultsClicked);
+            CreateButtonRow(panel.transform, "EnragedGuardianHelperBackRow", "Back", backY, OnEnragedGuardianHelperBackClicked);
+        }
+
+        private void BuildHornetSentinelHelperOverlayUi()
+        {
+            hornetSentinelHelperRoot = new GameObject("HornetSentinelHelperOverlayCanvas");
+            hornetSentinelHelperRoot.transform.SetParent(transform, false);
+
+            Canvas canvas = hornetSentinelHelperRoot.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = HornetSentinelHelperCanvasSortOrder;
+
+            CanvasScaler scaler = hornetSentinelHelperRoot.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
+
+            hornetSentinelHelperRoot.AddComponent<GraphicRaycaster>();
+
+            CanvasGroup group = hornetSentinelHelperRoot.AddComponent<CanvasGroup>();
+            group.interactable = true;
+            group.blocksRaycasts = true;
+
+            GameObject dim = new GameObject("Dim");
+            dim.transform.SetParent(hornetSentinelHelperRoot.transform, false);
+            RectTransform dimRect = dim.AddComponent<RectTransform>();
+            dimRect.anchorMin = Vector2.zero;
+            dimRect.anchorMax = Vector2.one;
+            dimRect.offsetMin = Vector2.zero;
+            dimRect.offsetMax = Vector2.zero;
+
+            Image dimImage = dim.AddComponent<Image>();
+            dimImage.color = OverlayDimColor;
+
+            GameObject panel = new GameObject("HornetSentinelHelperPanel");
+            panel.transform.SetParent(dim.transform, false);
+            RectTransform panelRect = panel.AddComponent<RectTransform>();
+            panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+            panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+            panelRect.pivot = new Vector2(0.5f, 0.5f);
+            panelRect.anchoredPosition = Vector2.zero;
+            panelRect.sizeDelta = new Vector2(PanelWidth, HornetSentinelHelperPanelHeight);
+
+            Image panelImage = panel.AddComponent<Image>();
+            panelImage.color = OverlayPanelColor;
+
+            Text title = CreateText(panel.transform, "Title", "Modules/HornetSentinelHelper".Localize(), 52, TextAnchor.MiddleCenter);
+            RectTransform titleRect = title.rectTransform;
+            titleRect.anchorMin = new Vector2(0.5f, 0.5f);
+            titleRect.anchorMax = new Vector2(0.5f, 0.5f);
+            titleRect.pivot = new Vector2(0.5f, 0.5f);
+            titleRect.anchoredPosition = new Vector2(0f, 210f);
+            titleRect.sizeDelta = new Vector2(RowWidth, 60f);
+
+            float panelHeight = HornetSentinelHelperPanelHeight;
+            float resetY = GetFixedResetY(panelHeight);
+            float backY = GetFixedBackY(panelHeight);
+            float topOffset = GetScrollTopOffset(panelHeight, titleRect);
+            float bottomOffset = GetScrollBottomOffset(panelHeight, resetY);
+            float viewHeight = Mathf.Max(0f, panelHeight - topOffset - bottomOffset);
+            RectTransform content = CreateScrollContent(panel.transform, PanelWidth, panelHeight, topOffset, bottomOffset);
+            hornetSentinelHelperContent = content;
+
+            float rowY = GetRowStartY(panelHeight, RowStartY, topOffset);
+            float lastY = rowY;
+            CreateToggleRowWithIcon(
+                content,
+                "HornetSentinelHelperEnableRow",
+                "Settings/HornetSentinelHelper/Enable".Localize(),
+                rowY,
+                GetHornetSentinelHelperEnabled,
+                SetHornetSentinelHelperEnabled,
+                out hornetSentinelHelperToggleValue,
+                out hornetSentinelHelperToggleIcon
+            );
+
+            lastY = rowY;
+            rowY += HornetSentinelHelperRowSpacing;
+            CreateToggleRow(
+                content,
+                "HornetSentinelP5HpRow",
+                "Settings/HornetSentinelHelper/P5HP".Localize(),
+                rowY,
+                () => Modules.BossChallenge.HornetSentinelHelper.hornetSentinelP5Hp,
+                SetHornetSentinelP5HpEnabled,
+                out hornetSentinelP5HpValue
+            );
+
+            lastY = rowY;
+            rowY += HornetSentinelHelperRowSpacing;
+            CreateToggleRow(
+                content,
+                "HornetSentinelUseMaxHpRow",
+                "Settings/HornetSentinelHelper/UseMaxHP".Localize(),
+                rowY,
+                () => Modules.BossChallenge.HornetSentinelHelper.hornetSentinelUseMaxHp,
+                SetHornetSentinelUseMaxHpEnabled,
+                out hornetSentinelUseMaxHpValue
+            );
+
+            lastY = rowY;
+            rowY += HornetSentinelHelperRowSpacing;
+            CreateAdjustInputRow(
+                content,
+                "HornetSentinelMaxHpRow",
+                "Settings/HornetSentinelHelper/MaxHP".Localize(),
+                rowY,
+                () => Modules.BossChallenge.HornetSentinelHelper.hornetSentinelMaxHp,
+                SetHornetSentinelMaxHp,
+                1,
+                999999,
+                10,
+                out hornetSentinelMaxHpField
+            );
+
+            lastY = rowY;
+            rowY += HornetSentinelHelperRowSpacing;
+            CreateToggleRow(
+                content,
+                "HornetSentinelUseCustomPhaseRow",
+                "Settings/HornetSentinelHelper/UseCustomPhase".Localize(),
+                rowY,
+                () => Modules.BossChallenge.HornetSentinelHelper.hornetSentinelUseCustomPhase,
+                SetHornetSentinelUseCustomPhaseEnabled,
+                out hornetSentinelUseCustomPhaseValue
+            );
+
+            lastY = rowY;
+            rowY += HornetSentinelHelperRowSpacing;
+            CreateAdjustInputRow(
+                content,
+                "HornetSentinelPhase2HpRow",
+                "Settings/HornetSentinelHelper/Phase2HP".Localize(),
+                rowY,
+                () => Modules.BossChallenge.HornetSentinelHelper.hornetSentinelPhase2Hp,
+                SetHornetSentinelPhase2Hp,
+                1,
+                1200,
+                10,
+                out hornetSentinelPhase2HpField
+            );
+
+            lastY = rowY;
+            rowY += HornetSentinelHelperRowSpacing;
+
+            SetScrollContentHeight(content, viewHeight, lastY, RowHeight);
+            CreateButtonRow(panel.transform, "HornetSentinelHelperResetRow", "Settings/HornetSentinelHelper/Reset".Localize(), resetY, OnHornetSentinelHelperResetDefaultsClicked);
+            CreateButtonRow(panel.transform, "HornetSentinelHelperBackRow", "Back", backY, OnHornetSentinelHelperBackClicked);
         }
     }
 }

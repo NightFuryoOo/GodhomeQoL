@@ -6,19 +6,17 @@ using HutongGames.PlayMaker.Actions;
 using Satchel;
 using Satchel.BetterMenus;
 using Satchel.Futils;
-using SFCore.Utils;
+using GodhomeQoL.Utils;
 
 namespace GodhomeQoL.Modules.CollectorPhases;
 
 public sealed class CollectorPhases : Module
 {
+    private const string HoGWorkshopScene = "GG_Workshop";
     private const int DefaultCollectorHp = 1200;
     private const int DefaultBuzzerHp = 26;
     private const int DefaultRollerHp = 26;
     private const int DefaultSpitterHp = 26;
-    private const string HoGCollectorScene = "GG_Collector_V";
-    private const string HoGWorkshopScene = "GG_Workshop";
-    private static bool hoGEntryAllowed;
 
     [LocalSetting]
     internal static int collectorPhase = 3; // 1: stay in phase 1, 2: stay in phase 2, 3: default
@@ -68,73 +66,64 @@ public sealed class CollectorPhases : Module
     [BoolOption]
     internal static bool spawnSpitter = true;
 
-    [LocalSetting]
-    internal static bool HoGOnly = false;
+    private static bool moduleActive;
+    private static bool hoGEntryAllowed;
+
     public override ToggleableLevel ToggleableLevel => ToggleableLevel.ChangeScene;
 
     private protected override void Load()
     {
+        moduleActive = true;
         On.PlayMakerFSM.OnEnable += FsmChanges;
         On.HealthManager.Awake += OnHealthManagerAwake;
         On.HealthManager.Start += OnHealthManagerStart;
         On.HealthManager.Update += OnHealthManagerUpdate;
-        USceneManager.activeSceneChanged += OnSceneChanged;
+        USceneManager.activeSceneChanged += SceneManager_activeSceneChanged;
         ModHooks.BeforeSceneLoadHook += OnBeforeSceneLoad;
     }
 
     private protected override void Unload()
     {
+        moduleActive = false;
         On.PlayMakerFSM.OnEnable -= FsmChanges;
         On.HealthManager.Awake -= OnHealthManagerAwake;
         On.HealthManager.Start -= OnHealthManagerStart;
         On.HealthManager.Update -= OnHealthManagerUpdate;
-        USceneManager.activeSceneChanged -= OnSceneChanged;
+        USceneManager.activeSceneChanged -= SceneManager_activeSceneChanged;
         ModHooks.BeforeSceneLoadHook -= OnBeforeSceneLoad;
-    }
-
-    private static string OnBeforeSceneLoad(string newSceneName)
-    {
-        UpdateHoGEntryAllowed(USceneManager.GetActiveScene().name, newSceneName);
-
-        return newSceneName;
-    }
-
-    private static void OnSceneChanged(Scene previous, Scene next)
-    {
-        UpdateHoGEntryAllowed(previous.name, next.name);
+        hoGEntryAllowed = false;
     }
 
     private static bool ShouldApplySettings(GameObject? go)
     {
-        if (!HoGOnly)
-        {
-            return true;
-        }
-
         if (go == null)
         {
             return false;
         }
 
-        return hoGEntryAllowed
-            && string.Equals(go.scene.name, HoGCollectorScene, StringComparison.Ordinal);
+        return hoGEntryAllowed && IsCollectorScene(go.scene.name);
+    }
+
+    private static void SceneManager_activeSceneChanged(Scene from, Scene to)
+    {
+        UpdateHoGEntryAllowed(from.name, to.name);
+    }
+
+    private static string OnBeforeSceneLoad(string newSceneName)
+    {
+        UpdateHoGEntryAllowed(USceneManager.GetActiveScene().name, newSceneName);
+        return newSceneName;
     }
 
     private static void UpdateHoGEntryAllowed(string currentScene, string nextScene)
     {
-        if (!HoGOnly)
-        {
-            hoGEntryAllowed = true;
-            return;
-        }
-
-        if (string.Equals(nextScene, HoGCollectorScene, StringComparison.Ordinal))
+        if (IsCollectorScene(nextScene))
         {
             if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
             {
                 hoGEntryAllowed = true;
             }
-            else if (string.Equals(currentScene, HoGCollectorScene, StringComparison.Ordinal) && hoGEntryAllowed)
+            else if (IsCollectorScene(currentScene) && hoGEntryAllowed)
             {
                 hoGEntryAllowed = true;
             }
@@ -142,11 +131,11 @@ public sealed class CollectorPhases : Module
             {
                 hoGEntryAllowed = false;
             }
+
+            return;
         }
-        else
-        {
-            hoGEntryAllowed = false;
-        }
+
+        hoGEntryAllowed = false;
     }
 
     private static void FsmChanges(On.PlayMakerFSM.orig_OnEnable orig, PlayMakerFSM self)
@@ -180,14 +169,14 @@ public sealed class CollectorPhases : Module
         // Stay in phase 1
         if (collectorPhase == 1)
         {
-            fsm.RemoveFsmTransition("Init", "FINISHED");
+            RemoveStateTransitionsByEvent(fsm, "Init", "FINISHED");
             return;
         }
 
         // Force start in phase 2
         if (collectorPhase == 2)
         {
-            fsm.ChangeFsmTransition("Init", "FINISHED", "Phase 2");
+            FsmCompat.ChangeTransition(fsm, "Init", "FINISHED", "Phase 2");
             return;
         }
 
@@ -378,7 +367,7 @@ public sealed class CollectorPhases : Module
         // Immortality toggle
         if (CollectorImmortal)
         {
-            fsm.RemoveFsmGlobalTransition("ZERO HP");
+            FsmCompat.RemoveGlobalTransition(fsm, "ZERO HP");
         }
     }
 
@@ -409,6 +398,104 @@ public sealed class CollectorPhases : Module
     private static bool IsSpitterName(string name) =>
         name.IndexOf("Spitter", StringComparison.OrdinalIgnoreCase) >= 0
         || name.IndexOf("Aspid", StringComparison.OrdinalIgnoreCase) >= 0;
+
+    private static void RemoveStateTransitionsByEvent(PlayMakerFSM fsm, string stateName, string eventName)
+    {
+        FsmState? state = fsm.Fsm.GetState(stateName);
+        if (state?.Transitions == null || state.Transitions.Length == 0)
+        {
+            return;
+        }
+
+        state.Transitions = state.Transitions
+            .Where(transition => transition.EventName != eventName)
+            .ToArray();
+    }
+
+    internal static void ReapplyLiveSettings()
+    {
+        if (!moduleActive || !ModuleManager.TryGetLoadedModule(typeof(CollectorPhases), out _))
+        {
+            return;
+        }
+
+        Scene activeScene = USceneManager.GetActiveScene();
+        if (!activeScene.IsValid() || !activeScene.isLoaded || !IsCollectorScene(activeScene.name))
+        {
+            return;
+        }
+
+        try
+        {
+            foreach (PlayMakerFSM fsm in UObject.FindObjectsOfType<PlayMakerFSM>())
+            {
+                if (fsm == null || fsm.gameObject == null || !ShouldApplySettings(fsm.gameObject))
+                {
+                    continue;
+                }
+
+                if (fsm.gameObject.name == "Jar Collector" && fsm.FsmName == "Control")
+                {
+                    IntCompare? compare = GetFirstActionOfType<IntCompare>(fsm, "Resummon?");
+                    if (compare != null)
+                    {
+                        compare.integer2.Value = IgnoreInitialJarLimit ? 0 : 3;
+                    }
+
+                    SetCollectorSummonHp(fsm);
+                    FilterCollectorSummonPool(fsm);
+                    ApplySummonCounts(fsm);
+                }
+                else
+                {
+                    TryGateSpawnerFSM(fsm.gameObject);
+                }
+            }
+
+            foreach (HealthManager hm in UObject.FindObjectsOfType<HealthManager>())
+            {
+                if (hm != null && IsCollector(hm))
+                {
+                    ApplyCollectorHealth(hm.gameObject, hm);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            LogWarn($"Failed to reapply Collector settings: {e.Message}");
+        }
+    }
+
+    internal static bool IsCollectorPatchingActiveFor(GameObject? target)
+    {
+        if (!ModuleManager.TryGetLoadedModule(typeof(CollectorPhases), out _))
+        {
+            return false;
+        }
+
+        if (!ShouldApplySettings(target))
+        {
+            return false;
+        }
+
+        return collectorPhase != 3
+            || UseCustomPhase2Threshold
+            || UseMaxHP
+            || CollectorImmortal
+            || IgnoreInitialJarLimit
+            || DisableSummonLimit
+            || !spawnBuzzer
+            || !spawnRoller
+            || !spawnSpitter
+            || buzzerHP != DefaultBuzzerHp
+            || rollerHP != DefaultRollerHp
+            || spitterHP != DefaultSpitterHp;
+    }
+
+    internal static bool IsCollectorImmortalityActiveFor(GameObject? target)
+    {
+        return CollectorImmortal && IsCollectorPatchingActiveFor(target);
+    }
 
     private static void ApplyCollectorHealth(GameObject collector, HealthManager? hm = null)
     {
@@ -474,12 +561,6 @@ public sealed class CollectorPhases : Module
                 1f,
                 3f,
                 true
-            ),
-            Blueprints.HorizontalBoolOption(
-                "Settings/CollectorPhases/HoGOnly".Localize(),
-                "",
-                b => HoGOnly = b,
-                () => HoGOnly
             ),
             Blueprints.HorizontalBoolOption(
                 "Settings/CollectorPhases/CollectorImmortal".Localize(),
@@ -631,7 +712,6 @@ public sealed class CollectorPhases : Module
         IgnoreInitialJarLimit = false;
         DisableSummonLimit = false;
         CustomSummonLimit = 20;
-        HoGOnly = true;
     }
 
     private static void ApplySummonCounts(PlayMakerFSM fsm)
@@ -648,7 +728,8 @@ public sealed class CollectorPhases : Module
 
             if (summon != null)
             {
-                foreach (IntCompare cmp in summon.Actions.OfType<IntCompare>())
+                IntCompare? cmp = FindLikelySummonLimitCompare(summon);
+                if (cmp?.integer2 != null)
                 {
                     cmp.integer2.Value = CustomSummonLimit;
                 }
@@ -656,9 +737,10 @@ public sealed class CollectorPhases : Module
 
             if (enemyCount != null)
             {
-                foreach (IntCompare cmp in enemyCount.Actions.OfType<IntCompare>())
+                IntCompare? cmp = FindLikelySummonLimitCompare(enemyCount);
+                if (cmp?.integer2 != null)
                 {
-                    cmp.integer2.Value = CustomSummonLimit;
+                    cmp.integer2.Value = CustomSummonLimit + 3;
                 }
             }
         }
@@ -666,6 +748,35 @@ public sealed class CollectorPhases : Module
         {
             // ignore missing states/actions
         }
+    }
+
+    private static IntCompare? FindLikelySummonLimitCompare(FsmState state)
+    {
+        if (state?.Actions == null)
+        {
+            return null;
+        }
+
+        IntCompare? best = null;
+        int bestValue = int.MinValue;
+
+        foreach (IntCompare cmp in state.Actions.OfType<IntCompare>())
+        {
+            if (cmp?.integer2 == null)
+            {
+                continue;
+            }
+
+            int value = cmp.integer2.Value;
+            if (value > bestValue)
+            {
+                best = cmp;
+                bestValue = value;
+            }
+        }
+
+        // Skip tiny thresholds (jar/boolean guards) when no obvious summon cap compare was found.
+        return bestValue >= 4 ? best : null;
     }
 
     private static void SetCollectorSummonHp(PlayMakerFSM fsm)

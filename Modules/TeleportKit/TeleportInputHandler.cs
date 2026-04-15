@@ -6,6 +6,14 @@ namespace GodhomeQoL.Modules.QoL;
 
 internal sealed class TeleportInputHandler : IDisposable
 {
+    private enum BindResult
+    {
+        None,
+        Applied,
+        Cancelled,
+        Rejected
+    }
+
     private readonly TeleportKit mod;
     private string inputBuffer = string.Empty;
     private int currentPage = 1;
@@ -85,26 +93,34 @@ internal sealed class TeleportInputHandler : IDisposable
             return;
         }
 
-        if (QuickMenu.IsHotkeyInputBlocked())
+        bool ownsTeleportInput = ShowMenu || IsRebindingMenuKey || IsRebindingSaveKey || IsRebindingTeleportKey;
+        if (!ownsTeleportInput && (QuickMenu.IsHotkeyInputBlocked() || QuickMenu.IsAnyUiVisible()))
         {
             return;
         }
 
-        if (Input.GetKey(KeyCode.LeftControl) && Input.GetKeyDown(mod.MenuKey))
+        if (ownsTeleportInput && QuickMenu.IsAnyUiVisible())
+        {
+            return;
+        }
+
+        bool ctrlHeld = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+
+        if (ctrlHeld && Input.GetKeyDown(mod.MenuKey))
         {
             IsRebindingMenuKey = true;
             mod.Log.Write("Started rebinding menu hotkey");
             return;
         }
 
-        if (Input.GetKey(KeyCode.LeftControl) && Input.GetKeyDown(mod.SaveTeleportKey))
+        if (ctrlHeld && Input.GetKeyDown(mod.SaveTeleportKey))
         {
             IsRebindingSaveKey = true;
             mod.Log.Write("Started rebinding save teleport key");
             return;
         }
 
-        if (Input.GetKey(KeyCode.LeftControl) && Input.GetKeyDown(mod.TeleportKey))
+        if (ctrlHeld && Input.GetKeyDown(mod.TeleportKey))
         {
             IsRebindingTeleportKey = true;
             mod.Log.Write("Started rebinding teleport key");
@@ -154,47 +170,59 @@ internal sealed class TeleportInputHandler : IDisposable
     {
         if (IsRebindingMenuKey)
         {
-            if (TryBindKey(key => TeleportKit.MenuHotkey = key, () => IsRebindingMenuKey = false))
+            BindResult result = TryBindKey(
+                TeleportKit.HotkeySlot.Menu,
+                () => IsRebindingMenuKey = false
+            );
+
+            if (result == BindResult.Applied)
             {
                 mod.Log.Write($"Menu hotkey rebound to: {mod.MenuKey}");
             }
-            return true;
+
+            return result != BindResult.None;
         }
 
         if (IsRebindingSaveKey)
         {
-            if (TryBindKey(
-                key => TeleportKit.SaveTeleportHotkey = key,
+            BindResult result = TryBindKey(
+                TeleportKit.HotkeySlot.SaveTeleport,
                 () => IsRebindingSaveKey = false,
                 key => key != KeyCode.LeftControl && key != KeyCode.RightControl
-            ))
+            );
+
+            if (result == BindResult.Applied)
             {
                 mod.Log.Write($"Save teleport key rebound to: {mod.SaveTeleportKey}");
             }
-            return true;
+
+            return result != BindResult.None;
         }
 
         if (IsRebindingTeleportKey)
         {
-            if (TryBindKey(
-                key => TeleportKit.TeleportHotkey = key,
+            BindResult result = TryBindKey(
+                TeleportKit.HotkeySlot.Teleport,
                 () => IsRebindingTeleportKey = false,
                 key => key != KeyCode.LeftControl && key != KeyCode.RightControl
-            ))
+            );
+
+            if (result == BindResult.Applied)
             {
                 mod.Log.Write($"Teleport key rebound to: {mod.TeleportKey}");
             }
-            return true;
+
+            return result != BindResult.None;
         }
 
         return false;
     }
 
-    private bool TryBindKey(Action<KeyCode> setter, Action onDone, Func<KeyCode, bool>? predicate = null)
+    private BindResult TryBindKey(TeleportKit.HotkeySlot slot, Action onDone, Func<KeyCode, bool>? predicate = null)
     {
         if (!Input.anyKeyDown)
         {
-            return false;
+            return BindResult.None;
         }
 
         foreach (KeyCode keyCode in Enum.GetValues(typeof(KeyCode)))
@@ -204,17 +232,34 @@ internal sealed class TeleportInputHandler : IDisposable
                 continue;
             }
 
+            if (keyCode >= KeyCode.Mouse0 && keyCode <= KeyCode.Mouse6)
+            {
+                continue;
+            }
+
+            if (keyCode == KeyCode.Escape)
+            {
+                onDone.Invoke();
+                mod.Log.Write("TeleportKit hotkey rebind cancelled");
+                return BindResult.Cancelled;
+            }
+
             if (predicate != null && !predicate.Invoke(keyCode))
             {
                 continue;
             }
 
-            setter.Invoke(keyCode);
+            if (!TeleportKit.TryAssignHotkey(slot, keyCode, out string failureReason))
+            {
+                mod.Log.Write($"TeleportKit hotkey rebind rejected: {keyCode} {failureReason}");
+                return BindResult.Rejected;
+            }
+
             onDone.Invoke();
-            return true;
+            return BindResult.Applied;
         }
 
-        return false;
+        return BindResult.None;
     }
 
     private void HandleMenuNavigation()

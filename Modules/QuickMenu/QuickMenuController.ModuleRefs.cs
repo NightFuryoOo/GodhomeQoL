@@ -115,6 +115,76 @@ public sealed partial class QuickMenu : Module
             return zoteHelperModule;
         }
 
+        private Module? GetGruzMotherHelperModule()
+        {
+            if (gruzMotherHelperModule == null)
+            {
+                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.GruzMotherHelper), out gruzMotherHelperModule);
+            }
+
+            return gruzMotherHelperModule;
+        }
+
+        private Module? GetHornetProtectorHelperModule()
+        {
+            if (hornetProtectorHelperModule == null)
+            {
+                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.HornetProtectorHelper), out hornetProtectorHelperModule);
+            }
+
+            return hornetProtectorHelperModule;
+        }
+
+        private Module? GetBroodingMawlekHelperModule()
+        {
+            if (broodingMawlekHelperModule == null)
+            {
+                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.BroodingMawlekHelper), out broodingMawlekHelperModule);
+            }
+
+            return broodingMawlekHelperModule;
+        }
+
+        private Module? GetMassiveMossChargerHelperModule()
+        {
+            if (massiveMossChargerHelperModule == null)
+            {
+                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.MassiveMossChargerHelper), out massiveMossChargerHelperModule);
+            }
+
+            return massiveMossChargerHelperModule;
+        }
+
+        private Module? GetCrystalGuardianHelperModule()
+        {
+            if (crystalGuardianHelperModule == null)
+            {
+                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.CrystalGuardianHelper), out crystalGuardianHelperModule);
+            }
+
+            return crystalGuardianHelperModule;
+        }
+
+        private Module? GetEnragedGuardianHelperModule()
+        {
+            if (enragedGuardianHelperModule == null)
+            {
+                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.EnragedGuardianHelper), out enragedGuardianHelperModule);
+            }
+
+            return enragedGuardianHelperModule;
+        }
+
+        private Module? GetHornetSentinelHelperModule()
+        {
+            if (hornetSentinelHelperModule == null)
+            {
+                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.HornetSentinelHelper), out hornetSentinelHelperModule);
+            }
+
+            return hornetSentinelHelperModule;
+        }
+
         private Module? GetInfiniteChallengeModule()
         {
             if (infiniteChallengeModule == null)
@@ -195,16 +265,6 @@ public sealed partial class QuickMenu : Module
             return forceArriveAnimationModule;
         }
 
-        private Module? GetP5HealthModule()
-        {
-            if (p5HealthModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.P5Health), out p5HealthModule);
-            }
-
-            return p5HealthModule;
-        }
-
         private Module? GetSegmentedP5Module()
         {
             if (segmentedP5Module == null)
@@ -213,26 +273,6 @@ public sealed partial class QuickMenu : Module
             }
 
             return segmentedP5Module;
-        }
-
-        private Module? GetHalveAscendedModule()
-        {
-            if (halveAscendedModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.HalveDamageHoGAscendedOrAbove), out halveAscendedModule);
-            }
-
-            return halveAscendedModule;
-        }
-
-        private Module? GetHalveAttunedModule()
-        {
-            if (halveAttunedModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.HalveDamageHoGAttuned), out halveAttunedModule);
-            }
-
-            return halveAttunedModule;
         }
 
         private Module? GetAddLifebloodModule()

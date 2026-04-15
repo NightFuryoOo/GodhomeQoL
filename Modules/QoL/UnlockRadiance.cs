@@ -21,7 +21,17 @@ public sealed class UnlockRadiance : Module
         if (!PlayerDataR.unlockedBossScenes.Contains(SceneName))
         {
             PlayerDataR.unlockedBossScenes.Add(SceneName);
-            Ref.SD.persistentBoolItems.Set("GG_Workshop", "Radiance Statue Cage", true);
+
+            List<PersistentBoolData>? items = Ref.SD?.persistentBoolItems;
+            if (items != null)
+            {
+                items.Set("GG_Workshop", "Radiance Statue Cage", true);
+            }
+            else
+            {
+                LogDebug("UnlockRadiance: persistentBoolItems not available yet, skipping statue cage activation");
+            }
+
             LogDebug("Radiance unlocked");
         }
     }

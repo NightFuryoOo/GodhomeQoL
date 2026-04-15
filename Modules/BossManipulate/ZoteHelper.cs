@@ -11,13 +11,21 @@ public sealed class ZoteHelper : Module
     private const string GreyPrinceName = "Grey Prince";
     private const string ZotelingPrefix = "Zoteling";
     private const string PatchFlag = "GodhomeQoL_ZoteHelper_Patched";
+    private const int DefaultBossHp = 1400;
+    private const int DefaultSummonFlyingHp = 20;
+    private const int DefaultSummonHoppingHp = 20;
+    private const int DefaultSummonLimit = 3;
     private const int MinBossHp = 100;
     private const int MaxBossHp = 999999;
     private const int MinSummonHp = 0;
     private const int MaxSummonHp = 99;
 
     [LocalSetting]
-    internal static int zoteBossHp = 1400;
+    internal static int zoteBossHp = DefaultBossHp;
+
+    [LocalSetting]
+    [BoolOption]
+    internal static bool zoteUseCustomBossHp = true;
 
     [LocalSetting]
     internal static bool zoteImmortal = false;
@@ -29,13 +37,25 @@ public sealed class ZoteHelper : Module
     internal static bool zoteSpawnHopping = true;
 
     [LocalSetting]
-    internal static int zoteSummonFlyingHp = 20;
+    internal static int zoteSummonFlyingHp = DefaultSummonFlyingHp;
 
     [LocalSetting]
-    internal static int zoteSummonHoppingHp = 20;
+    [BoolOption]
+    internal static bool zoteUseCustomFlyingHp = true;
 
     [LocalSetting]
-    internal static int zoteSummonLimit = 3;
+    internal static int zoteSummonHoppingHp = DefaultSummonHoppingHp;
+
+    [LocalSetting]
+    [BoolOption]
+    internal static bool zoteUseCustomHoppingHp = true;
+
+    [LocalSetting]
+    internal static int zoteSummonLimit = DefaultSummonLimit;
+
+    [LocalSetting]
+    [BoolOption]
+    internal static bool zoteUseCustomSummonLimit = false;
 
     [LocalSetting]
     internal static bool ZoteHoGOnly = true;
@@ -51,6 +71,7 @@ public sealed class ZoteHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        ZoteHoGOnly = true;
         activeZotelings.Clear();
         On.PlayMakerFSM.OnEnable += PlayMakerFSM_OnEnable;
         On.HealthManager.Update += OnHealthManagerUpdate;
@@ -86,6 +107,11 @@ public sealed class ZoteHelper : Module
             return;
         }
 
+        if (!zoteUseCustomBossHp)
+        {
+            return;
+        }
+
         ApplyBossHealth(greyPrince);
     }
 
@@ -96,7 +122,7 @@ public sealed class ZoteHelper : Module
             return;
         }
 
-        if (ZoteHoGOnly && !hoGEntryAllowed)
+        if (!hoGEntryAllowed)
         {
             return;
         }
@@ -119,7 +145,7 @@ public sealed class ZoteHelper : Module
         UpdateHoGEntryAllowed(from.name, to.name);
 
         activeZotelings.Clear();
-        if (!ZoteHoGOnly || hoGEntryAllowed)
+        if (hoGEntryAllowed)
         {
             ApplyBossHealthIfPresent();
         }
@@ -134,11 +160,6 @@ public sealed class ZoteHelper : Module
 
     private static bool ShouldApplySettings(GameObject? go)
     {
-        if (!ZoteHoGOnly)
-        {
-            return true;
-        }
-
         if (go == null)
         {
             return false;
@@ -150,12 +171,6 @@ public sealed class ZoteHelper : Module
 
     private static void UpdateHoGEntryAllowed(string currentScene, string nextScene)
     {
-        if (!ZoteHoGOnly)
-        {
-            hoGEntryAllowed = true;
-            return;
-        }
-
         if (string.Equals(nextScene, ZoteScene, StringComparison.Ordinal))
         {
             if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
@@ -222,6 +237,11 @@ public sealed class ZoteHelper : Module
                 }
 
                 PruneZotelings();
+                if (!zoteUseCustomSummonLimit)
+                {
+                    return;
+                }
+
                 if (activeZotelings.Count >= Math.Max(0, zoteSummonLimit))
                 {
                     fsm.SendEvent("CANCEL");
@@ -334,17 +354,24 @@ public sealed class ZoteHelper : Module
             return;
         }
 
-        int targetHp = ClampSummonHp(GetZotelingHp(zoteling));
+        int? desiredHp = GetCustomZotelingHp(zoteling);
+        if (!desiredHp.HasValue)
+        {
+            return;
+        }
+
+        int targetHp = ClampSummonHp(desiredHp.Value);
         hm.hp = targetHp;
         TrySetMaxHp(hm, targetHp);
     }
 
-    private static int GetZotelingHp(GameObject zoteling)
+    private static int? GetCustomZotelingHp(GameObject zoteling)
     {
         return GetZotelingType(zoteling) switch
         {
-            ZotelingType.Flying => zoteSummonFlyingHp,
-            _ => zoteSummonHoppingHp
+            ZotelingType.Flying when zoteUseCustomFlyingHp => zoteSummonFlyingHp,
+            ZotelingType.Hopping when zoteUseCustomHoppingHp => zoteSummonHoppingHp,
+            _ => null
         };
     }
 
@@ -533,10 +560,17 @@ public sealed class ZoteHelper : Module
             return;
         }
 
-        int targetHp = ClampBossHp(zoteBossHp);
+        int targetHp = GetImmortalBossTargetHp(self);
         if (self.hp != targetHp)
         {
-            ApplyBossHealth(self.gameObject, self, targetHp);
+            if (zoteUseCustomBossHp)
+            {
+                ApplyBossHealth(self.gameObject, self, targetHp);
+            }
+            else
+            {
+                self.hp = targetHp;
+            }
         }
     }
 
@@ -641,6 +675,11 @@ public sealed class ZoteHelper : Module
 
     private static void ApplyBossHealth(GameObject greyPrince, HealthManager? hm = null, int? overrideHp = null)
     {
+        if (!zoteUseCustomBossHp && !overrideHp.HasValue)
+        {
+            return;
+        }
+
         int targetHp = ClampBossHp(overrideHp ?? zoteBossHp);
         greyPrince.manageHealth(targetHp);
 
@@ -688,6 +727,61 @@ public sealed class ZoteHelper : Module
 
         return hm.gameObject.scene.name == ZoteScene
             && hm.gameObject.name == GreyPrinceName;
+    }
+
+    private static int GetImmortalBossTargetHp(HealthManager hm)
+    {
+        if (zoteUseCustomBossHp)
+        {
+            return ClampBossHp(zoteBossHp);
+        }
+
+        try
+        {
+            int maxHp = ReflectionHelper.GetField<HealthManager, int>(hm, "maxHP");
+            if (maxHp > 0)
+            {
+                return ClampBossHp(maxHp);
+            }
+        }
+        catch
+        {
+            // Fallback to current hp when maxHP is unavailable.
+        }
+
+        return ClampBossHp(hm.hp > 0 ? hm.hp : DefaultBossHp);
+    }
+
+    internal static void ReapplyLiveSettings()
+    {
+        if (!moduleActive)
+        {
+            return;
+        }
+
+        ApplyBossHealthIfPresent();
+        ApplyZotelingHealthIfPresent();
+    }
+
+    internal static bool IsGreyPrinceImmortalityActiveFor(GameObject? target = null)
+    {
+        if (!zoteImmortal)
+        {
+            return false;
+        }
+
+        if (!ModuleManager.TryGetLoadedModule(typeof(ZoteHelper), out _))
+        {
+            return false;
+        }
+
+        if (target != null)
+        {
+            return string.Equals(target.name, GreyPrinceName, StringComparison.Ordinal)
+                && ShouldApplySettings(target);
+        }
+
+        return hoGEntryAllowed;
     }
 
     private static FsmGameObject GetFsmGameObjectVariable(PlayMakerFSM fsm, string name)

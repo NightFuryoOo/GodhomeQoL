@@ -23,7 +23,15 @@ public sealed partial class QuickMenu : Module
             UpdateSpeedValueText(speed);
             if (speedSlider != null)
             {
-                speedSlider.value = Mathf.Clamp(speed, speedSlider.minValue, speedSlider.maxValue);
+                suppressFastSuperDashSpeedCallback = true;
+                try
+                {
+                    speedSlider.value = Mathf.Clamp(speed, speedSlider.minValue, speedSlider.maxValue);
+                }
+                finally
+                {
+                    suppressFastSuperDashSpeedCallback = false;
+                }
             }
 
             UpdateFastSuperDashInteractivity();
@@ -34,7 +42,6 @@ public sealed partial class QuickMenu : Module
             Module? module = GetCollectorPhasesModule();
             UpdateToggleValue(collectorModuleToggleValue, module?.Enabled ?? false);
             UpdateToggleIcon(collectorModuleToggleIcon, module?.Enabled ?? false);
-            UpdateToggleValue(collectorHoGOnlyValue, Modules.CollectorPhases.CollectorPhases.HoGOnly);
             UpdateToggleValue(qolCollectorRoarValue, GetCollectorRoarEnabled());
             UpdateToggleValue(collectorImmortalValue, Modules.CollectorPhases.CollectorPhases.CollectorImmortal);
             UpdateToggleValue(ignoreInitialJarLimitValue, Modules.CollectorPhases.CollectorPhases.IgnoreInitialJarLimit);
@@ -112,9 +119,12 @@ public sealed partial class QuickMenu : Module
         private void RefreshMaskDamageUi()
         {
             bool enabled = GetMaskDamageEnabled();
+            bool showUi = GetMaskDamageUiVisible();
             UpdateToggleValue(maskDamageToggleValue, enabled);
             UpdateToggleIcon(maskDamageToggleIcon, enabled);
-            UpdateIntInputValue(maskDamageMultiplierField, MaskDamage.GetMultiplier());
+            UpdateToggleValue(maskDamageShowUiValue, showUi);
+            UpdateToggleIcon(maskDamageShowUiIcon, showUi);
+            UpdateFloatInputValue(maskDamageMultiplierField, MaskDamage.GetMultiplier());
             UpdateKeybindValue(maskDamageToggleUiKeyValue, GetMaskDamageToggleUiKeyLabel());
 
             UpdateMaskDamageInteractivity();
@@ -172,10 +182,7 @@ public sealed partial class QuickMenu : Module
             UpdateToggleValue(bossForceArriveValue, GetForceArriveAnimationEnabled());
             UpdateToggleValue(bossInfiniteGrimmValue, GetInfiniteGrimmPufferfishEnabled());
             UpdateToggleValue(bossInfiniteRadianceValue, GetInfiniteRadianceClimbingEnabled());
-            UpdateToggleValue(bossP5HealthValue, GetP5HealthEnabled());
             UpdateToggleValue(bossSegmentedP5Value, GetSegmentedP5Enabled());
-            UpdateToggleValue(bossHalveAscendedValue, GetHalveAscendedEnabled());
-            UpdateToggleValue(bossHalveAttunedValue, GetHalveAttunedEnabled());
             UpdateToggleValue(bossAddLifebloodValue, GetAddLifebloodEnabled());
             UpdateToggleValue(bossAddSoulValue, GetAddSoulEnabled());
 
@@ -201,16 +208,24 @@ public sealed partial class QuickMenu : Module
             UpdateRandomPantheonsInteractivity();
         }
 
-        private void RefreshTrueBossRushUi()
+	        private void RefreshTrueBossRushUi()
+	        {
+	            UpdateToggleValue(trueBossRushToggleValue, GetTrueBossRushMasterEnabled());
+	            UpdateToggleIcon(trueBossRushToggleIcon, GetTrueBossRushMasterEnabled());
+	            UpdateToggleValue(trueBossRushP1Value, GetTrueBossRushP1Enabled());
+	            UpdateToggleValue(trueBossRushP2Value, GetTrueBossRushP2Enabled());
+	            UpdateToggleValue(trueBossRushP3Value, GetTrueBossRushP3Enabled());
+	            UpdateToggleValue(trueBossRushP4Value, GetTrueBossRushP4Enabled());
+	            UpdateToggleValue(trueBossRushP5Value, GetTrueBossRushP5Enabled());
+	            UpdateTrueBossRushInteractivity();
+	        }
+
+        internal void RefreshPantheonCompatibilityUiFromExternal()
         {
-            UpdateToggleValue(trueBossRushToggleValue, GetTrueBossRushMasterEnabled());
-            UpdateToggleIcon(trueBossRushToggleIcon, GetTrueBossRushMasterEnabled());
-            UpdateToggleValue(trueBossRushP1Value, GetTrueBossRushP1Enabled());
-            UpdateToggleValue(trueBossRushP2Value, GetTrueBossRushP2Enabled());
-            UpdateToggleValue(trueBossRushP3Value, GetTrueBossRushP3Enabled());
-            UpdateToggleValue(trueBossRushP4Value, GetTrueBossRushP4Enabled());
-            UpdateToggleValue(trueBossRushP5Value, GetTrueBossRushP5Enabled());
-            UpdateTrueBossRushInteractivity();
+            RefreshRandomPantheonsUi();
+            RefreshTrueBossRushUi();
+            RefreshBossChallengeUi();
+            UpdateQuickMenuEntryStateColors();
         }
 
         private void RefreshCheatsUi()
@@ -238,7 +253,6 @@ public sealed partial class QuickMenu : Module
             UpdateToggleValue(bossAnimFastDreamWarpValue, GetFastDreamWarpEnabled());
             UpdateKeybindValue(fastDreamWarpKeyValue, GetFastDreamWarpBindingLabel());
             UpdateToggleValue(bossAnimShortDeathValue, GetShortDeathAnimationEnabled());
-            UpdateToggleValue(bossAnimHallOfGodsValue, Modules.QoL.SkipCutscenes.HallOfGodsStatues);
             UpdateToggleValue(qolUnlockAllModesValue, GetUnlockAllModesEnabled());
             UpdateToggleValue(qolUnlockPantheonsValue, GetUnlockPantheonsEnabled());
             UpdateToggleValue(qolUnlockRadianceValue, GetUnlockRadianceEnabled());
@@ -267,6 +281,7 @@ public sealed partial class QuickMenu : Module
         {
             UpdateToggleValue(bossAnimEnableValue, GetBossAnimationMasterEnabled());
             UpdateToggleIcon(bossAnimEnableIcon, GetBossAnimationMasterEnabled());
+            UpdateToggleValue(bossAnimHallOfGodsValue, Modules.QoL.SkipCutscenes.HallOfGodsStatues);
             UpdateToggleValue(bossAnimAbsoluteRadianceValue, Modules.QoL.SkipCutscenes.AbsoluteRadiance);
             UpdateToggleValue(bossAnimPureVesselValue, Modules.QoL.SkipCutscenes.PureVesselRoar);
             UpdateToggleValue(bossAnimGrimmNightmareValue, Modules.QoL.SkipCutscenes.GrimmNightmare);
@@ -281,13 +296,16 @@ public sealed partial class QuickMenu : Module
             Module? module = GetZoteHelperModule();
             UpdateToggleValue(zoteHelperToggleValue, module?.Enabled ?? false);
             UpdateToggleIcon(zoteHelperToggleIcon, module?.Enabled ?? false);
-            UpdateToggleValue(zoteHoGOnlyValue, Modules.BossChallenge.ZoteHelper.ZoteHoGOnly);
+            UpdateToggleValue(zoteUseCustomBossHpValue, Modules.BossChallenge.ZoteHelper.zoteUseCustomBossHp);
             UpdateIntInputValue(zoteBossHpField, Modules.BossChallenge.ZoteHelper.zoteBossHp);
             UpdateToggleValue(zoteImmortalValue, Modules.BossChallenge.ZoteHelper.zoteImmortal);
             UpdateToggleValue(zoteSpawnFlyingValue, Modules.BossChallenge.ZoteHelper.zoteSpawnFlying);
             UpdateToggleValue(zoteSpawnHoppingValue, Modules.BossChallenge.ZoteHelper.zoteSpawnHopping);
+            UpdateToggleValue(zoteUseCustomFlyingHpValue, Modules.BossChallenge.ZoteHelper.zoteUseCustomFlyingHp);
             UpdateIntInputValue(zoteSummonFlyingHpField, Modules.BossChallenge.ZoteHelper.zoteSummonFlyingHp);
+            UpdateToggleValue(zoteUseCustomHoppingHpValue, Modules.BossChallenge.ZoteHelper.zoteUseCustomHoppingHp);
             UpdateIntInputValue(zoteSummonHoppingHpField, Modules.BossChallenge.ZoteHelper.zoteSummonHoppingHp);
+            UpdateToggleValue(zoteUseCustomSummonLimitValue, Modules.BossChallenge.ZoteHelper.zoteUseCustomSummonLimit);
             UpdateIntInputValue(zoteSummonLimitField, Modules.BossChallenge.ZoteHelper.zoteSummonLimit);
 
             if (bossGpzValue != null)
@@ -296,6 +314,92 @@ public sealed partial class QuickMenu : Module
             }
 
             UpdateZoteHelperInteractivity();
+        }
+
+        private void RefreshGruzHelperUi()
+        {
+            Module? module = GetGruzMotherHelperModule();
+            UpdateToggleValue(gruzHelperToggleValue, module?.Enabled ?? false);
+            UpdateToggleIcon(gruzHelperToggleIcon, module?.Enabled ?? false);
+            UpdateToggleValue(gruzP5HpValue, Modules.BossChallenge.GruzMotherHelper.gruzP5Hp);
+            UpdateToggleValue(gruzUseMaxHpValue, Modules.BossChallenge.GruzMotherHelper.gruzUseMaxHp);
+            UpdateIntInputValue(gruzMaxHpField, Modules.BossChallenge.GruzMotherHelper.gruzMaxHp);
+
+            UpdateGruzHelperInteractivity();
+        }
+
+        private void RefreshHornetHelperUi()
+        {
+            Module? module = GetHornetProtectorHelperModule();
+            UpdateToggleValue(hornetHelperToggleValue, module?.Enabled ?? false);
+            UpdateToggleIcon(hornetHelperToggleIcon, module?.Enabled ?? false);
+            UpdateToggleValue(hornetP5HpValue, Modules.BossChallenge.HornetProtectorHelper.hornetP5Hp);
+            UpdateToggleValue(hornetUseMaxHpValue, Modules.BossChallenge.HornetProtectorHelper.hornetUseMaxHp);
+            UpdateIntInputValue(hornetMaxHpField, Modules.BossChallenge.HornetProtectorHelper.hornetMaxHp);
+
+            UpdateHornetHelperInteractivity();
+        }
+
+        private void RefreshMawlekHelperUi()
+        {
+            Module? module = GetBroodingMawlekHelperModule();
+            UpdateToggleValue(mawlekHelperToggleValue, module?.Enabled ?? false);
+            UpdateToggleIcon(mawlekHelperToggleIcon, module?.Enabled ?? false);
+            UpdateToggleValue(mawlekP5HpValue, Modules.BossChallenge.BroodingMawlekHelper.mawlekP5Hp);
+            UpdateToggleValue(mawlekUseMaxHpValue, Modules.BossChallenge.BroodingMawlekHelper.mawlekUseMaxHp);
+            UpdateIntInputValue(mawlekMaxHpField, Modules.BossChallenge.BroodingMawlekHelper.mawlekMaxHp);
+
+            UpdateMawlekHelperInteractivity();
+        }
+
+        private void RefreshMassiveMossHelperUi()
+        {
+            Module? module = GetMassiveMossChargerHelperModule();
+            UpdateToggleValue(massiveMossHelperToggleValue, module?.Enabled ?? false);
+            UpdateToggleIcon(massiveMossHelperToggleIcon, module?.Enabled ?? false);
+            UpdateToggleValue(massiveMossP5HpValue, Modules.BossChallenge.MassiveMossChargerHelper.massiveMossP5Hp);
+            UpdateToggleValue(massiveMossUseMaxHpValue, Modules.BossChallenge.MassiveMossChargerHelper.massiveMossUseMaxHp);
+            UpdateIntInputValue(massiveMossMaxHpField, Modules.BossChallenge.MassiveMossChargerHelper.massiveMossMaxHp);
+
+            UpdateMassiveMossHelperInteractivity();
+        }
+
+        private void RefreshCrystalGuardianHelperUi()
+        {
+            Module? module = GetCrystalGuardianHelperModule();
+            UpdateToggleValue(crystalGuardianHelperToggleValue, module?.Enabled ?? false);
+            UpdateToggleIcon(crystalGuardianHelperToggleIcon, module?.Enabled ?? false);
+            UpdateToggleValue(crystalGuardianP5HpValue, Modules.BossChallenge.CrystalGuardianHelper.crystalGuardianP5Hp);
+            UpdateToggleValue(crystalGuardianUseMaxHpValue, Modules.BossChallenge.CrystalGuardianHelper.crystalGuardianUseMaxHp);
+            UpdateIntInputValue(crystalGuardianMaxHpField, Modules.BossChallenge.CrystalGuardianHelper.crystalGuardianMaxHp);
+
+            UpdateCrystalGuardianHelperInteractivity();
+        }
+
+        private void RefreshEnragedGuardianHelperUi()
+        {
+            Module? module = GetEnragedGuardianHelperModule();
+            UpdateToggleValue(enragedGuardianHelperToggleValue, module?.Enabled ?? false);
+            UpdateToggleIcon(enragedGuardianHelperToggleIcon, module?.Enabled ?? false);
+            UpdateToggleValue(enragedGuardianP5HpValue, Modules.BossChallenge.EnragedGuardianHelper.enragedGuardianP5Hp);
+            UpdateToggleValue(enragedGuardianUseMaxHpValue, Modules.BossChallenge.EnragedGuardianHelper.enragedGuardianUseMaxHp);
+            UpdateIntInputValue(enragedGuardianMaxHpField, Modules.BossChallenge.EnragedGuardianHelper.enragedGuardianMaxHp);
+
+            UpdateEnragedGuardianHelperInteractivity();
+        }
+
+        private void RefreshHornetSentinelHelperUi()
+        {
+            Module? module = GetHornetSentinelHelperModule();
+            UpdateToggleValue(hornetSentinelHelperToggleValue, module?.Enabled ?? false);
+            UpdateToggleIcon(hornetSentinelHelperToggleIcon, module?.Enabled ?? false);
+            UpdateToggleValue(hornetSentinelP5HpValue, Modules.BossChallenge.HornetSentinelHelper.hornetSentinelP5Hp);
+            UpdateToggleValue(hornetSentinelUseMaxHpValue, Modules.BossChallenge.HornetSentinelHelper.hornetSentinelUseMaxHp);
+            UpdateIntInputValue(hornetSentinelMaxHpField, Modules.BossChallenge.HornetSentinelHelper.hornetSentinelMaxHp);
+            UpdateToggleValue(hornetSentinelUseCustomPhaseValue, Modules.BossChallenge.HornetSentinelHelper.hornetSentinelUseCustomPhase);
+            UpdateIntInputValue(hornetSentinelPhase2HpField, Modules.BossChallenge.HornetSentinelHelper.hornetSentinelPhase2Hp);
+
+            UpdateHornetSentinelHelperInteractivity();
         }
 
         private void RefreshQuickMenuSettingsUi()

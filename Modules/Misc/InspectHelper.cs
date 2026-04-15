@@ -2,9 +2,13 @@
 
 internal sealed class InspectHelper : Module {
 	public override bool Hidden => true;
+	public override bool AlwaysEnabled => true;
 
 	private protected override void Load() =>
 		ModHooks.FinishedLoadingModsHook += CreateGameObject;
+
+	private protected override void Unload() =>
+		ModHooks.FinishedLoadingModsHook -= CreateGameObject;
 
 	private static void CreateGameObject() {
 		if (ModHooks.GetMod("Unity Explorer", true) == null) {
@@ -54,8 +58,20 @@ internal sealed class InspectHelper : Module {
 
 			if (count > 1) {
 				bool flag = false;
-				Ref.GM.OnFinishedEnteringScene += () => flag = true;
-				yield return new WaitUntil(() => flag);
+				GameManager? manager = GameManager.instance;
+				if (manager == null)
+				{
+					yield break;
+				}
+
+				void HandleSceneEntered()
+				{
+					flag = true;
+				}
+
+				manager.OnFinishedEnteringScene += HandleSceneEntered;
+				yield return new WaitUntil(() => flag || GameManager.instance == null);
+				manager.OnFinishedEnteringScene -= HandleSceneEntered;
 
 				_ = GlobalCoroutineExecutor.Start(SkipBossCoroutine(count - 1));
 			}

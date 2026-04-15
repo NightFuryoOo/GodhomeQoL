@@ -1,4 +1,3 @@
-using SFCore.Utils;
 using GodhomeQoL.Modules.Tools;
 
 namespace GodhomeQoL.Modules.BossChallenge;
@@ -8,6 +7,7 @@ public sealed class AlwaysFurious : Module
     private int? savedHealth;
     private int? savedMaxHealth;
     private int? savedMaxHealthBase;
+    private bool wasFuryEquippedOnLastCharmUpdate;
     private static bool charmUpdateInProgress;
     private static bool heroRefreshPending;
     private static bool hudRefreshPending;
@@ -35,8 +35,18 @@ public sealed class AlwaysFurious : Module
         On.PlayMakerFSM.OnEnable += OnFsmEnable;
         On.HutongGames.PlayMaker.Actions.PlayerDataBoolTest.OnEnter += OnPlayerDataBoolTestAction;
         On.HeroController.CharmUpdate += OnCharmUpdate;
+        wasFuryEquippedOnLastCharmUpdate = IsFuryEquipped();
         TryModifyExistingFsm();
-        TryApplyForcedHealth();
+        if (IsFuryEquipped())
+        {
+            TryApplyForcedHealth();
+        }
+        else
+        {
+            TryRestoreForcedHealth(allowDeferredWhenUnsafe: true, ignoreSafetyChecks: true);
+            TryForceDisableFuryEffectIfUnequipped();
+        }
+
         QuickMenu.RefreshQuickMenuEntryColors();
     }
 
@@ -46,7 +56,18 @@ public sealed class AlwaysFurious : Module
         On.HutongGames.PlayMaker.Actions.PlayerDataBoolTest.OnEnter -= OnPlayerDataBoolTestAction;
         On.HeroController.CharmUpdate -= OnCharmUpdate;
         RestoreModifiedFsms();
-        TryRestoreForcedHealth();
+        bool restoredImmediately = TryRestoreForcedHealth(allowDeferredWhenUnsafe: true, ignoreSafetyChecks: true);
+        TryForceDisableFuryEffectIfUnequipped();
+        if (restoredImmediately)
+        {
+            TryRefreshHeroHealth(ignoreSafetyChecks: true);
+            TryRefreshHudMasks(ignoreSafetyChecks: true);
+        }
+
+        wasFuryEquippedOnLastCharmUpdate = false;
+        pendingApply = false;
+        CancelPendingRefresh();
+        GearSwitcher.ReapplyLastPresetStats();
         QuickMenu.RefreshQuickMenuEntryColors();
     }
 
@@ -88,7 +109,15 @@ public sealed class AlwaysFurious : Module
         if (self.gameObject.name == "Charm Effects" && self.FsmName == "Fury")
         {
             TryModifyFuryFsm(self);
-            TryApplyForcedHealth();
+            if (IsFuryEquipped())
+            {
+                TryApplyForcedHealth();
+            }
+            else
+            {
+                TryRestoreForcedHealth();
+                TryForceDisableFuryEffectIfUnequipped();
+            }
         }
     }
 
@@ -104,30 +133,36 @@ public sealed class AlwaysFurious : Module
         try
         {
             orig(self);
+
+            if (!Loaded)
+            {
+                return;
+            }
+
+            bool furyEquipped = IsFuryEquipped();
+            if (furyEquipped)
+            {
+                TryModifyExistingFsm(forceEnable: !wasFuryEquippedOnLastCharmUpdate);
+                TryApplyForcedHealth();
+            }
+            else
+            {
+                TryRestoreForcedHealth();
+                TryForceDisableFuryEffectIfUnequipped();
+            }
+
+            wasFuryEquippedOnLastCharmUpdate = furyEquipped;
         }
         finally
         {
             charmUpdateInProgress = false;
         }
-
-        if (!Loaded)
-        {
-            return;
-        }
-
-        if (IsFuryEquipped())
-        {
-            TryModifyExistingFsm();
-            TryApplyForcedHealth();
-        }
-        else
-        {
-            TryRestoreForcedHealth();
-        }
     }
 
-    private void TryModifyExistingFsm()
+    private void TryModifyExistingFsm(bool forceEnable = false)
     {
+        CleanupSnapshotCache();
+
         GameObject? charmEffects = GameObject.Find("Charm Effects");
         if (charmEffects == null)
         {
@@ -140,21 +175,25 @@ public sealed class AlwaysFurious : Module
             return;
         }
 
-        TryModifyFuryFsm(fsm);
+        TryModifyFuryFsm(fsm, forceEnable);
     }
 
-    private static void TryModifyFuryFsm(PlayMakerFSM fsm)
+    private static void TryModifyFuryFsm(PlayMakerFSM fsm, bool forceEnable = false)
     {
         FuryFsmSnapshot snapshot = GetOrCreateSnapshot(fsm);
         if (snapshot.Modified)
         {
-            TryForceEnable(fsm);
+            if (forceEnable)
+            {
+                TryForceEnable(fsm);
+            }
+
             return;
         }
 
         if (!snapshot.HadEquipGlobalTransition)
         {
-            fsm.AddFsmGlobalTransitions("CHARM EQUIP CHECK", "Check HP");
+            FsmCompat.AddGlobalTransition(fsm, "CHARM EQUIP CHECK", "Check HP");
         }
 
         TrySetTransition(fsm, "Init", "FINISHED", "Check HP");
@@ -168,6 +207,8 @@ public sealed class AlwaysFurious : Module
 
     private static FuryFsmSnapshot GetOrCreateSnapshot(PlayMakerFSM fsm)
     {
+        CleanupSnapshotCache();
+
         int id = fsm.GetInstanceID();
         if (FurySnapshots.TryGetValue(id, out FuryFsmSnapshot? snapshot))
         {
@@ -188,6 +229,17 @@ public sealed class AlwaysFurious : Module
 
         FurySnapshots[id] = snapshot;
         return snapshot;
+    }
+
+    private static void CleanupSnapshotCache()
+    {
+        foreach ((int id, FuryFsmSnapshot snapshot) in FurySnapshots.ToArray())
+        {
+            if (snapshot.Fsm == null)
+            {
+                FurySnapshots.Remove(id);
+            }
+        }
     }
 
     private static void RestoreModifiedFsms()
@@ -219,6 +271,8 @@ public sealed class AlwaysFurious : Module
             TryForceRecheck(fsm);
             snapshot.Modified = false;
         }
+
+        CleanupSnapshotCache();
     }
 
     private static bool HasGlobalTransition(PlayMakerFSM fsm, string eventName)
@@ -262,7 +316,7 @@ public sealed class AlwaysFurious : Module
 
         try
         {
-            fsm.ChangeFsmTransition(stateName, eventName, targetState);
+            FsmCompat.ChangeTransition(fsm, stateName, eventName, targetState);
         }
         catch
         {
@@ -274,7 +328,7 @@ public sealed class AlwaysFurious : Module
     {
         try
         {
-            fsm.RemoveFsmGlobalTransition(eventName);
+            FsmCompat.RemoveGlobalTransition(fsm, eventName);
         }
         catch
         {
@@ -300,6 +354,43 @@ public sealed class AlwaysFurious : Module
             if (fsm.Fsm.GetState("Check HP") != null)
             {
                 fsm.Fsm.SetState("Check HP");
+            }
+        }
+        catch
+        {
+            // ignore state issues
+        }
+    }
+
+    private static void TryForceDisableFuryEffectIfUnequipped()
+    {
+        if (IsFuryEquipped())
+        {
+            return;
+        }
+
+        try
+        {
+            GameObject? charmEffects = GameObject.Find("Charm Effects");
+            PlayMakerFSM? fsm = charmEffects?.LocateMyFSM("Fury");
+            if (fsm != null)
+            {
+                if (fsm.Fsm.GetState("Deactivate") != null)
+                {
+                    fsm.Fsm.SetState("Deactivate");
+                }
+                else if (fsm.Fsm.GetState("Check HP") != null)
+                {
+                    fsm.Fsm.SetState("Check HP");
+                }
+            }
+
+            PlayMakerFSM.BroadcastEvent("CHARM INDICATOR CHECK");
+
+            HeroController? hero = HeroController.instance;
+            if (hero != null && !charmUpdateInProgress && !GearSwitcher.IsApplyingPreset)
+            {
+                hero.CharmUpdate();
             }
         }
         catch
@@ -376,37 +467,50 @@ public sealed class AlwaysFurious : Module
         }
     }
 
-    private void TryRestoreForcedHealth()
+    private bool TryRestoreForcedHealth(bool allowDeferredWhenUnsafe = true, bool ignoreSafetyChecks = false)
     {
-        if (GearSwitcher.IsApplyingPreset)
-        {
-            RequestRestoreWhenSafe();
-            return;
-        }
-
         if (!savedHealth.HasValue && !savedMaxHealth.HasValue && !savedMaxHealthBase.HasValue)
         {
-            return;
+            pendingRestore = false;
+            return true;
         }
 
-        if (!IsSafeToAdjustHealth())
+        if (!ignoreSafetyChecks && GearSwitcher.IsApplyingPreset)
         {
-            RequestRestoreWhenSafe();
-            return;
+            if (allowDeferredWhenUnsafe)
+            {
+                RequestRestoreWhenSafe();
+            }
+
+            return false;
+        }
+
+        if (!ignoreSafetyChecks && !IsSafeToAdjustHealth())
+        {
+            if (allowDeferredWhenUnsafe)
+            {
+                RequestRestoreWhenSafe();
+            }
+
+            return false;
         }
 
         PlayerData? pd = PlayerData.instance;
         if (pd == null)
         {
-            savedHealth = null;
-            savedMaxHealth = null;
-            savedMaxHealthBase = null;
-            return;
+            if (allowDeferredWhenUnsafe)
+            {
+                RequestRestoreWhenSafe();
+            }
+
+            return false;
         }
 
         int targetMaxBase = Math.Max(1, savedMaxHealthBase ?? pd.maxHealthBase);
         int targetMax = Math.Max(1, savedMaxHealth ?? pd.maxHealth);
-        SetMaxHealth(targetMax, targetMaxBase);
+
+        bool requestRefresh = Loaded && Enabled;
+        SetMaxHealth(targetMax, targetMaxBase, requestRefresh);
 
         int targetHealth = savedHealth ?? pd.health;
         targetHealth = Math.Max(1, Math.Min(targetHealth, targetMax));
@@ -414,7 +518,16 @@ public sealed class AlwaysFurious : Module
         savedHealth = null;
         savedMaxHealth = null;
         savedMaxHealthBase = null;
-        SetNormalHealth(targetHealth);
+        pendingRestore = false;
+        SetNormalHealth(targetHealth, requestRefresh);
+
+        if (!requestRefresh)
+        {
+            TryRefreshHeroHealth(ignoreSafetyChecks: true);
+            TryRefreshHudMasks(ignoreSafetyChecks: true);
+        }
+
+        return true;
     }
 
     private static void TryForceEnable(PlayMakerFSM fsm)
@@ -432,7 +545,7 @@ public sealed class AlwaysFurious : Module
             }
 
             HeroController? hero = HeroController.instance;
-            if (hero != null && !charmUpdateInProgress)
+            if (hero != null && !charmUpdateInProgress && !GearSwitcher.IsApplyingPreset)
             {
                 hero.CharmUpdate();
             }
@@ -457,13 +570,16 @@ public sealed class AlwaysFurious : Module
         }
     }
 
-    private static void SetNormalHealth(int value)
+    private static void SetNormalHealth(int value, bool requestRefresh = true)
     {
         PlayerDataR.health = value;
-        RequestHeroRefresh();
+        if (requestRefresh)
+        {
+            RequestHeroRefresh();
+        }
     }
 
-    private static void SetMaxHealth(int maxHealth, int maxHealthBase)
+    private static void SetMaxHealth(int maxHealth, int maxHealthBase, bool requestRefresh = true)
     {
         PlayerData? pd = PlayerData.instance;
         if (pd == null)
@@ -473,8 +589,11 @@ public sealed class AlwaysFurious : Module
 
         pd.maxHealth = maxHealth;
         pd.maxHealthBase = maxHealthBase;
-        RequestHeroRefresh();
-        RequestHudRefresh();
+        if (requestRefresh)
+        {
+            RequestHeroRefresh();
+            RequestHudRefresh();
+        }
     }
 
     private static void RequestHeroRefresh()
@@ -498,6 +617,13 @@ public sealed class AlwaysFurious : Module
 
         refreshCoroutineRunning = true;
         _ = GlobalCoroutineExecutor.Start(RefreshWhenSafe());
+    }
+
+    private static void CancelPendingRefresh()
+    {
+        heroRefreshPending = false;
+        hudRefreshPending = false;
+        refreshCoroutineRunning = false;
     }
 
     private static IEnumerator RefreshWhenSafe()
@@ -525,11 +651,11 @@ public sealed class AlwaysFurious : Module
         refreshCoroutineRunning = false;
     }
 
-    private static void TryRefreshHudMasks()
+    private static void TryRefreshHudMasks(bool ignoreSafetyChecks = false)
     {
         try
         {
-            if (!IsSafeToAdjustHealth())
+            if (!ignoreSafetyChecks && !IsSafeToAdjustHealth())
             {
                 return;
             }
@@ -555,11 +681,11 @@ public sealed class AlwaysFurious : Module
         }
     }
 
-    private static void TryRefreshHeroHealth()
+    private static void TryRefreshHeroHealth(bool ignoreSafetyChecks = false)
     {
         try
         {
-            if (!IsSafeToAdjustHealth())
+            if (!ignoreSafetyChecks && !IsSafeToAdjustHealth())
             {
                 return;
             }
@@ -666,6 +792,8 @@ public sealed class AlwaysFurious : Module
                     if (!alwaysFurious.Loaded || !IsFuryEquipped())
                     {
                         pendingApply = false;
+                        alwaysFurious.TryRestoreForcedHealth();
+                        TryForceDisableFuryEffectIfUnequipped();
                     }
                     else
                     {
@@ -693,20 +821,44 @@ public sealed class AlwaysFurious : Module
             return;
         }
 
-        if (!module.Enabled)
+        if (!module.Enabled || !IsFuryEquipped())
         {
             alwaysFurious.TryRestoreForcedHealth();
+            TryForceDisableFuryEffectIfUnequipped();
             return;
         }
 
-        if (IsFuryEquipped())
+        alwaysFurious.ForceReapplyFromCurrent();
+    }
+
+    internal static bool IsGearSwitcherHealthLockActive()
+    {
+        if (!ModuleManager.TryGetModule(typeof(AlwaysFurious), out Module? module))
         {
-            alwaysFurious.ForceReapplyFromCurrent();
+            return false;
         }
-        else
+
+        if (module is not AlwaysFurious || !module.Enabled || !module.Loaded)
         {
-            RequestRestoreWhenSafe();
+            return false;
         }
+
+        return IsFuryEquipped();
+    }
+
+    internal static bool IsHealthLockActive()
+    {
+        if (!ModuleManager.TryGetModule(typeof(AlwaysFurious), out Module? module))
+        {
+            return false;
+        }
+
+        if (module is not AlwaysFurious || !module.Enabled || !module.Loaded)
+        {
+            return false;
+        }
+
+        return IsFuryEquipped();
     }
 
     private void ForceReapplyFromCurrent()

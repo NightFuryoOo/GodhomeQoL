@@ -167,8 +167,30 @@ public sealed partial class QuickMenu : Module
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetGruzHelperVisible(false);
+            SetHornetHelperVisible(false);
+            SetMawlekHelperVisible(false);
+            SetMassiveMossHelperVisible(false);
+            SetCrystalGuardianHelperVisible(false);
+            SetEnragedGuardianHelperVisible(false);
+            SetHornetSentinelHelperVisible(false);
+            SetAllAdditionalGhostHelpersVisible(false);
+            SetBossManipulateVisible(false);
+            SetBossManipulateOtherRoomsVisible(false);
+            SetGruzMotherP1HelperVisible(false);
+            SetVengeflyKingP1HelperVisible(false);
+            SetBroodingMawlekP1HelperVisible(false);
+            SetNoskP2HelperVisible(false);
+            SetUumuuP3HelperVisible(false);
+            SetSoulWarriorP1HelperVisible(false);
+            SetNoEyesP4HelperVisible(false);
+            SetMarmuP2HelperVisible(false);
+            SetXeroP2HelperVisible(false);
+            SetMarkothP4HelperVisible(false);
+            SetGorbP1HelperVisible(false);
             SetQuickSettingsVisible(true);
             SetQuickVisible(false);
         }
     }
 }
+

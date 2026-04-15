@@ -5,7 +5,7 @@ namespace GodhomeQoL.Modules.QoL
 {
 
     [UsedImplicitly]
-    public class SkipCutscenes : Module
+    public sealed class SkipCutscenes : Module
     {
         #region Settings
 
@@ -42,6 +42,7 @@ namespace GodhomeQoL.Modules.QoL
         #endregion
         public override bool DefaultEnabled => true;
         public override bool Hidden => true;
+        public override bool AlwaysEnabled => true;
 
         public override ToggleableLevel ToggleableLevel => ToggleableLevel.ChangeScene;
 
@@ -68,20 +69,37 @@ namespace GodhomeQoL.Modules.QoL
             "gg zemer",
             "gg isma"
         };
+        private static readonly HashSet<string> BossAnimationSceneNames = new(StringComparer.Ordinal)
+        {
+            "GG_Radiance",
+            "GG_Hollow_Knight",
+            "GG_Grimm_Nightmare",
+            "GG_Grey_Prince_Zote",
+            "GG_Collector",
+            "GG_Collector_V",
+            "GG_Mage_Knight",
+            "GG_Mage_Knight_V"
+        };
 
         private static bool suppressAutoSkipForTransition;
         private static bool timeScaleOverrideActive;
-        private static float previousTimeScale;
+        private static int timeScaleOverrideHandle;
+        private static int timeScaleOverrideGeneration;
+        private const int StatuePatchMaxRetryFrames = 45;
+        private const float StatueApproachMaxWait = 0.06f;
+        private const float StatueDreamBoxDownMaxWait = 0.08f;
 
         private protected override void Load()
         {
+            timeScaleOverrideGeneration++;
+            suppressAutoSkipForTransition = false;
+            timeScaleOverrideActive = false;
+            timeScaleOverrideHandle = 0;
             On.CinematicSequence.Begin += CinematicBegin;
             On.FadeSequence.Begin += FadeBegin;
             On.AnimatorSequence.Begin += AnimatorBegin;
             On.InputHandler.SetSkipMode += OnSetSkip;
             On.GameManager.BeginSceneTransitionRoutine += OnBeginSceneTransition;
-            On.HutongGames.PlayMaker.Actions.EaseColor.OnEnter += FastEaseColor;
-            On.GameManager.FadeSceneInWithDelay += NoFade;
             On.GGCheckIfBossScene.OnEnter += MageLordPhaseTransitionSkip;
             UnityEngine.SceneManagement.SceneManager.activeSceneChanged += FsmSkips;
         }
@@ -93,44 +111,71 @@ namespace GodhomeQoL.Modules.QoL
             On.AnimatorSequence.Begin -= AnimatorBegin;
             On.InputHandler.SetSkipMode -= OnSetSkip;
             On.GameManager.BeginSceneTransitionRoutine -= OnBeginSceneTransition;
-            On.HutongGames.PlayMaker.Actions.EaseColor.OnEnter -= FastEaseColor;
-            On.GameManager.FadeSceneInWithDelay -= NoFade;
             On.GGCheckIfBossScene.OnEnter -= MageLordPhaseTransitionSkip;
             UnityEngine.SceneManagement.SceneManager.activeSceneChanged -= FsmSkips;
+
+            suppressAutoSkipForTransition = false;
+            timeScaleOverrideGeneration++;
+            if (timeScaleOverrideActive && timeScaleOverrideHandle != 0)
+            {
+                global::GodhomeQoL.Modules.Tools.SpeedChanger.EndTimeScaleOverride(timeScaleOverrideHandle);
+            }
+
+            timeScaleOverrideActive = false;
+            timeScaleOverrideHandle = 0;
         }
-
-        private static IEnumerator NoFade(On.GameManager.orig_FadeSceneInWithDelay orig, GameManager self, float delay) =>
-            orig(self, delay);
-
-        private static void FastEaseColor(On.HutongGames.PlayMaker.Actions.EaseColor.orig_OnEnter orig, EaseColor self) =>
-            orig(self);
 
         private static void MageLordPhaseTransitionSkip(On.GGCheckIfBossScene.orig_OnEnter orig, GGCheckIfBossScene self)
         {
+            Fsm? fsm = self.Fsm;
+            GameObject? owner = self.Owner;
+            FsmState? activeState = self.Fsm?.ActiveState;
+            var activeActions = activeState?.Actions;
+            string activeStateName = fsm?.ActiveStateName ?? string.Empty;
             if (
                 !SoulMasterPhaseTransitionSkip
-                || !self.Owner.transform.name.Contains("Corpse Mage")
-                || !self.Fsm.ActiveStateName.Contains("Quick Death?")
-                || self.Fsm.ActiveState.Actions[1] is not PlayerDataBoolTest p
+                || owner == null
+                || fsm == null
+                || owner.name.IndexOf("Corpse Mage", StringComparison.Ordinal) < 0
+                || activeStateName.IndexOf("Quick Death?", StringComparison.Ordinal) < 0
+                || activeActions == null
+                || activeActions.Length <= 1
+                || activeActions[1] is not PlayerDataBoolTest p
             )
             {
                 orig(self);
                 return;
             }
 
-            self.Fsm.Event(p.isTrue);
+            fsm.Event(p.isTrue);
         }
 
         private static void FsmSkips(Scene arg0, Scene arg1)
         {
+            if (!IsAnyBossSkipEnabled())
+            {
+                return;
+            }
+
             var hc = HeroController.instance;
 
             if (hc == null) return;
 
             foreach (var (check, coro) in FSM_SKIPS)
             {
-                if (check())
+                if (!check())
+                {
+                    continue;
+                }
+
+                try
+                {
                     hc.StartCoroutine(coro(arg1));
+                }
+                catch (Exception ex)
+                {
+                    LogDebug($"SkipCutscenes: failed to start skip coroutine for scene '{arg1.name}' - {ex.Message}");
+                }
             }
         }
 
@@ -138,12 +183,81 @@ namespace GodhomeQoL.Modules.QoL
         {
             if (arg1.name != "GG_Workshop") yield break;
 
-            foreach (PlayMakerFSM fsm in UObject.FindObjectsOfType<PlayMakerFSM>().Where(x => x.FsmName == "GG Boss UI"))
+            bool patchedAtLeastOne = false;
+            int retries = 0;
+            while (retries < StatuePatchMaxRetryFrames)
             {
-                fsm.GetState("On Left").ChangeTransition("FINISHED", "Dream Box Down");
-                fsm.GetState("On Right").ChangeTransition("FINISHED", "Dream Box Down");
-                fsm.GetState("Dream Box Down").InsertAction(0, fsm.GetAction<SetPlayerDataString>("Impact"));
+                PlayMakerFSM[] statueUiFsms = UObject.FindObjectsOfType<PlayMakerFSM>()
+                    .Where(x => x.FsmName == "GG Boss UI")
+                    .ToArray();
+
+                if (statueUiFsms.Length > 0)
+                {
+                    foreach (PlayMakerFSM fsm in statueUiFsms)
+                    {
+                        patchedAtLeastOne |= TryPatchStatueUiFsm(fsm);
+                    }
+
+                    if (patchedAtLeastOne)
+                    {
+                        yield break;
+                    }
+                }
+
+                retries++;
+                yield return null;
             }
+
+            if (!patchedAtLeastOne)
+            {
+                LogDebug("SkipCutscenes: statue UI skip patch was not applied because GG Boss UI FSM was not ready in time");
+            }
+        }
+
+        private static bool TryPatchStatueUiFsm(PlayMakerFSM fsm)
+        {
+            try
+            {
+                FsmState? onLeft = fsm.Fsm.GetState("On Left");
+                FsmState? onRight = fsm.Fsm.GetState("On Right");
+                FsmState? dreamBoxDown = fsm.Fsm.GetState("Dream Box Down");
+                if (onLeft == null || onRight == null || dreamBoxDown == null)
+                {
+                    return false;
+                }
+
+                // Keep vanilla transition flow for statue UI to avoid first-open race,
+                // and only clamp waits to make entry faster.
+                _ = ClampStateWaits(onLeft, StatueApproachMaxWait);
+                _ = ClampStateWaits(onRight, StatueApproachMaxWait);
+                _ = ClampStateWaits(dreamBoxDown, StatueDreamBoxDownMaxWait);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogDebug($"SkipCutscenes: statue skip patch failed - {ex.Message}");
+                return false;
+            }
+        }
+
+        private static bool ClampStateWaits(FsmState state, float maxWait)
+        {
+            if (state.Actions == null || state.Actions.Length == 0)
+            {
+                return false;
+            }
+
+            bool changed = false;
+            foreach (Wait wait in state.Actions.OfType<Wait>())
+            {
+                if (wait.time.Value > maxWait)
+                {
+                    wait.time.Value = maxWait;
+                    changed = true;
+                }
+            }
+
+            return changed;
         }
 
         private static IEnumerator HKPrimeSkip(Scene arg1)
@@ -152,13 +266,24 @@ namespace GodhomeQoL.Modules.QoL
 
             yield return null;
 
-            PlayMakerFSM control = GameObject.Find("HK Prime").LocateMyFSM("Control");
+            GameObject? hkPrime = GameObject.Find("HK Prime");
+            PlayMakerFSM? control = hkPrime?.LocateMyFSM("Control");
+            if (control == null)
+            {
+                yield break;
+            }
 
-            control.GetState("Init").ChangeTransition("FINISHED", "Intro Roar");
-
-            control.GetAction<Wait>("Intro 2").time = 0.01f;
-            control.GetAction<Wait>("Intro 1").time = 0.01f;
-            control.GetAction<Wait>("Intro Roar").time = 1f;
+            try
+            {
+                control.Fsm.GetState("Init")?.ChangeTransition("FINISHED", "Intro Roar");
+                TrySetWaitTime(control, "Intro 2", 0.01f);
+                TrySetWaitTime(control, "Intro 1", 0.01f);
+                TrySetWaitTime(control, "Intro Roar", 1f);
+            }
+            catch (Exception ex)
+            {
+                LogDebug($"SkipCutscenes: HK Prime skip patch failed - {ex.Message}");
+            }
         }
         private static IEnumerator GrimmNightmareSkip(Scene arg1)
         {
@@ -166,27 +291,28 @@ namespace GodhomeQoL.Modules.QoL
 
             yield return null;
 
-            PlayMakerFSM control = GameObject.Find("Grimm Control").LocateMyFSM("Control");
+            GameObject? grimmControl = GameObject.Find("Grimm Control");
+            PlayMakerFSM? control = grimmControl?.LocateMyFSM("Control");
 
             if (control != null)
             {
-                control.GetState("Pause").GetAction<Wait>().time.Value = 0.5f;
-                control.GetState("Pan Over").GetAction<Wait>().time.Value = 0.5f;
-                control.GetState("Eye 1").GetAction<Wait>().time.Value = 0.1f;
-                control.GetState("Eye 2").GetAction<Wait>().time.Value = 0.1f;
-                control.GetState("Pan Over 2").GetAction<Wait>().time.Value = 0.1f;
-                control.GetState("Eye 3").GetAction<Wait>().time.Value = 0.1f;
-                control.GetState("Eye 4").GetAction<Wait>().time.Value = 0.1f;
-                control.GetState("Silhouette").GetAction<Wait>().time.Value = 0.1f;
-                control.GetState("Silhouette 2").GetAction<Wait>().time.Value = 0.1f;
-                control.GetState("Title Up").GetAction<Wait>().time.Value = 0.1f;
-                control.GetState("Title Up 2").GetAction<Wait>().time.Value = 0.1f;
-                control.GetState("Defeated Pause").GetAction<Wait>().time.Value = 0.1f;
-                control.GetState("Defeated Start").GetAction<Wait>().time.Value = 0.1f;
-                control.GetState("Explode Start").GetAction<Wait>().time.Value = 0.1f;
-                control.GetState("Silhouette Up").GetAction<Wait>().time.Value = 0.1f;
-                control.GetState("Ash Away").GetAction<Wait>().time.Value = 0.1f;
-                control.GetState("Fade").GetAction<Wait>().time.Value = 0.1f;
+                TrySetStateWaitValue(control, "Pause", 0.5f);
+                TrySetStateWaitValue(control, "Pan Over", 0.5f);
+                TrySetStateWaitValue(control, "Eye 1", 0.1f);
+                TrySetStateWaitValue(control, "Eye 2", 0.1f);
+                TrySetStateWaitValue(control, "Pan Over 2", 0.1f);
+                TrySetStateWaitValue(control, "Eye 3", 0.1f);
+                TrySetStateWaitValue(control, "Eye 4", 0.1f);
+                TrySetStateWaitValue(control, "Silhouette", 0.1f);
+                TrySetStateWaitValue(control, "Silhouette 2", 0.1f);
+                TrySetStateWaitValue(control, "Title Up", 0.1f);
+                TrySetStateWaitValue(control, "Title Up 2", 0.1f);
+                TrySetStateWaitValue(control, "Defeated Pause", 0.1f);
+                TrySetStateWaitValue(control, "Defeated Start", 0.1f);
+                TrySetStateWaitValue(control, "Explode Start", 0.1f);
+                TrySetStateWaitValue(control, "Silhouette Up", 0.1f);
+                TrySetStateWaitValue(control, "Ash Away", 0.1f);
+                TrySetStateWaitValue(control, "Fade", 0.1f);
 
             }
 
@@ -198,13 +324,48 @@ namespace GodhomeQoL.Modules.QoL
 
             yield return null;
 
-            PlayMakerFSM control = GameObject.Find("Jar Collector").LocateMyFSM("Control");
+            GameObject? jarCollector = GameObject.Find("Jar Collector");
+            PlayMakerFSM? control = jarCollector?.LocateMyFSM("Control");
+            bool collectorPhasesPatchingActive = IsCollectorPhasesPatchingActive(jarCollector);
 
             if (control != null)
             {
-                control.GetState("Roar").GetAction<Wait>().time.Value = 0.5f;
-                control.GetState("Roar").RemoveAction(6);
-                control.GetState("Roar").RemoveAction(7);
+                FsmState? roar = control.Fsm.GetState("Roar");
+                if (roar == null)
+                {
+                    yield break;
+                }
+
+                Wait? roarWait = roar.Actions?.OfType<Wait>().FirstOrDefault();
+                if (roarWait != null)
+                {
+                    roarWait.time.Value = 0.5f;
+                }
+
+                if (!collectorPhasesPatchingActive)
+                {
+                    TrimCollectorRoarActions(roar);
+                }
+            }
+        }
+
+        private static bool IsCollectorPhasesPatchingActive(GameObject? collector) =>
+            global::GodhomeQoL.Modules.CollectorPhases.CollectorPhases.IsCollectorPatchingActiveFor(collector);
+
+        private static void TrimCollectorRoarActions(FsmState roar)
+        {
+            if (roar.Actions == null)
+            {
+                return;
+            }
+
+            // Keep old aggressive roar-trim behavior only when CollectorHelper is not actively patching this run.
+            for (int i = 7; i >= 6; i--)
+            {
+                if (i >= 0 && i < roar.Actions.Length)
+                {
+                    roar.RemoveAction(i);
+                }
             }
         }
 
@@ -214,26 +375,27 @@ namespace GodhomeQoL.Modules.QoL
 
             yield return null;
 
-            PlayMakerFSM control = GameObject.Find("Grey Prince Title").LocateMyFSM("Control");
+            GameObject? title = GameObject.Find("Grey Prince Title");
+            PlayMakerFSM? control = title?.LocateMyFSM("Control");
 
             if (control != null)
             {
-                control.GetState("Get Level").GetAction<Wait>().time.Value = 0.1f;
-                control.GetState("Main Title Pause").GetAction<Wait>().time.Value = 0.1f;
-                control.GetState("Main Title").GetAction<Wait>().time.Value = 0.5f;
-                control.GetState("Extra 1").GetAction<Wait>().time.Value = 0.01f;
-                control.GetState("Extra 2").GetAction<Wait>().time.Value = 0.01f;
-                control.GetState("Extra 3").GetAction<Wait>().time.Value = 0.01f;
-                control.GetState("Extra 4").GetAction<Wait>().time.Value = 0.01f;
-                control.GetState("Extra 5").GetAction<Wait>().time.Value = 0.01f;
-                control.GetState("Extra 6").GetAction<Wait>().time.Value = 0.01f;
-                control.GetState("Extra 7").GetAction<Wait>().time.Value = 0.01f;
-                control.GetState("Extra 8").GetAction<Wait>().time.Value = 0.01f;
-                control.GetState("Extra 9").GetAction<Wait>().time.Value = 0.01f;
-                control.GetState("Extra 10").GetAction<Wait>().time.Value = 0.01f;
-                control.GetState("Extra 11").GetAction<Wait>().time.Value = 0.01f;
-                control.GetState("Extra 12").GetAction<Wait>().time.Value = 0.01f;
-                control.GetState("Extra 13").GetAction<Wait>().time.Value = 0.01f;
+                TrySetStateWaitValue(control, "Get Level", 0.1f);
+                TrySetStateWaitValue(control, "Main Title Pause", 0.1f);
+                TrySetStateWaitValue(control, "Main Title", 0.5f);
+                TrySetStateWaitValue(control, "Extra 1", 0.01f);
+                TrySetStateWaitValue(control, "Extra 2", 0.01f);
+                TrySetStateWaitValue(control, "Extra 3", 0.01f);
+                TrySetStateWaitValue(control, "Extra 4", 0.01f);
+                TrySetStateWaitValue(control, "Extra 5", 0.01f);
+                TrySetStateWaitValue(control, "Extra 6", 0.01f);
+                TrySetStateWaitValue(control, "Extra 7", 0.01f);
+                TrySetStateWaitValue(control, "Extra 8", 0.01f);
+                TrySetStateWaitValue(control, "Extra 9", 0.01f);
+                TrySetStateWaitValue(control, "Extra 10", 0.01f);
+                TrySetStateWaitValue(control, "Extra 11", 0.01f);
+                TrySetStateWaitValue(control, "Extra 12", 0.01f);
+                TrySetStateWaitValue(control, "Extra 13", 0.01f);
             }
         }
 
@@ -244,19 +406,32 @@ namespace GodhomeQoL.Modules.QoL
             yield return null;
             try
             {
-                PlayMakerFSM control = GameObject.Find("Boss Control").LocateMyFSM("Control");
+                GameObject? bossControl = GameObject.Find("Boss Control");
+                PlayMakerFSM? control = bossControl?.LocateMyFSM("Control");
+                if (control == null)
+                {
+                    yield break;
+                }
 
                 UObject.Destroy(GameObject.Find("Sun"));
                 UObject.Destroy(GameObject.Find("feather_particles"));
 
-                FsmState setup = Vasi.FsmUtil.GetState(control, "Setup");
+                FsmState? setup = control.Fsm.GetState("Setup");
+                if (setup == null)
+                {
+                    yield break;
+                }
 
-                setup.GetAction<Wait>().time = 1.5f;
+                Wait? setupWait = setup.Actions?.OfType<Wait>().FirstOrDefault();
+                if (setupWait != null)
+                {
+                    setupWait.time = 1.5f;
+                }
+
                 setup.RemoveAction<SetPlayerDataBool>();
-                //Vasi.FsmUtil.RemoveAction(setup, 3);
                 setup.ChangeTransition("FINISHED", "Appear Boom");
 
-                control.GetAction<Wait>("Title Up").time = 1f;
+                TrySetWaitTime(control, "Title Up", 1f);
 
             }
             catch (Exception ex)
@@ -274,7 +449,8 @@ namespace GodhomeQoL.Modules.QoL
             if (suppress)
             {
                 suppressAutoSkipForTransition = true;
-                _ = GlobalCoroutineExecutor.Start(SuppressTimeScaleDuringReturn(info));
+                int generation = timeScaleOverrideGeneration;
+                _ = GlobalCoroutineExecutor.Start(SuppressTimeScaleDuringReturn(info, generation));
             }
 
             try
@@ -294,11 +470,24 @@ namespace GodhomeQoL.Modules.QoL
         }
 
         private static bool ShouldSuppressAutoSkip(GameManager.SceneLoadInfo info) =>
-            BossSequenceController.IsInSequence
+            AutoSkipCinematics
+            && BossSequenceController.IsInSequence
             && !string.IsNullOrEmpty(info.SceneName)
             && GodhomeHubScenes.Contains(info.SceneName);
 
-        private static bool IsPantheonLikeScene()
+        private static bool IsMenuSkipSettingsEnabled() =>
+            AutoSkipCinematics || AllowSkippingNonskippable || SkipCutscenesWithoutPrompt;
+
+        private static bool IsAnyBossSkipEnabled() =>
+            AbsoluteRadiance
+            || HallOfGodsStatues
+            || PureVesselRoar
+            || GrimmNightmare
+            || GreyPrinceZote
+            || Collector
+            || SoulMasterPhaseTransitionSkip;
+
+        private static bool IsBossOrPantheonScene()
         {
             if (BossSequenceController.IsInSequence)
             {
@@ -311,11 +500,27 @@ namespace GodhomeQoL.Modules.QoL
                 return false;
             }
 
-            return PantheonLikeScenes.Contains(sceneName);
+            if (sceneName.StartsWith("GG_Collector", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return PantheonLikeScenes.Contains(sceneName)
+                || BossAnimationSceneNames.Contains(sceneName);
         }
 
-        private static IEnumerator SuppressTimeScaleDuringReturn(GameManager.SceneLoadInfo info)
+        private static bool ShouldAutoSkipCinematicsNow() =>
+            AutoSkipCinematics
+            && !suppressAutoSkipForTransition
+            && !IsBossOrPantheonScene();
+
+        private static IEnumerator SuppressTimeScaleDuringReturn(GameManager.SceneLoadInfo info, int generation)
         {
+            if (generation != timeScaleOverrideGeneration)
+            {
+                yield break;
+            }
+
             if (timeScaleOverrideActive)
             {
                 yield break;
@@ -326,26 +531,75 @@ namespace GodhomeQoL.Modules.QoL
                 yield break;
             }
 
-            if (!global::GodhomeQoL.Modules.Tools.SpeedChanger.TryBeginTimeScaleOverride(1f, out previousTimeScale))
+            if (global::GodhomeQoL.Modules.Tools.SpeedChanger.HasManagedTimeScaleControl)
+            {
+                yield break;
+            }
+
+            if (Math.Abs(Time.timeScale - 1f) < 0.001f)
+            {
+                yield break;
+            }
+
+            if (!global::GodhomeQoL.Modules.Tools.SpeedChanger.TryBeginTimeScaleOverride(1f, out int handle))
             {
                 yield break;
             }
 
             timeScaleOverrideActive = true;
+            timeScaleOverrideHandle = handle;
             try
             {
                 yield return new UnityEngine.WaitForSecondsRealtime(3f);
             }
             finally
             {
-                global::GodhomeQoL.Modules.Tools.SpeedChanger.EndTimeScaleOverride(previousTimeScale);
-                timeScaleOverrideActive = false;
+                if (generation == timeScaleOverrideGeneration
+                    && timeScaleOverrideActive
+                    && timeScaleOverrideHandle == handle)
+                {
+                    global::GodhomeQoL.Modules.Tools.SpeedChanger.EndTimeScaleOverride(handle);
+                    timeScaleOverrideHandle = 0;
+                    timeScaleOverrideActive = false;
+                }
+            }
+        }
+
+        private static void TrySetWaitTime(PlayMakerFSM fsm, string stateName, float value)
+        {
+            try
+            {
+                Wait? wait = fsm.GetAction<Wait>(stateName);
+                if (wait != null)
+                {
+                    wait.time = value;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogDebug($"SkipCutscenes: failed to set Wait time in state '{stateName}' - {ex.Message}");
+            }
+        }
+
+        private static void TrySetStateWaitValue(PlayMakerFSM fsm, string stateName, float value)
+        {
+            try
+            {
+                Wait? wait = fsm.Fsm.GetState(stateName)?.Actions?.OfType<Wait>().FirstOrDefault();
+                if (wait != null)
+                {
+                    wait.time.Value = value;
+                }
+            }
+            catch (Exception ex)
+            {
+                LogDebug($"SkipCutscenes: failed to set Wait.Value in state '{stateName}' - {ex.Message}");
             }
         }
 
         private static void OnSetSkip(On.InputHandler.orig_SetSkipMode orig, InputHandler self, SkipPromptMode newmode)
         {
-            if (suppressAutoSkipForTransition)
+            if (suppressAutoSkipForTransition || !IsMenuSkipSettingsEnabled() || IsBossOrPantheonScene())
             {
                 orig(self, newmode);
                 return;
@@ -365,7 +619,7 @@ namespace GodhomeQoL.Modules.QoL
 
         private static void AnimatorBegin(On.AnimatorSequence.orig_Begin orig, AnimatorSequence self)
         {
-            if (AutoSkipCinematics && !IsPantheonLikeScene() && !suppressAutoSkipForTransition)
+            if (ShouldAutoSkipCinematicsNow())
                 self.Skip();
             else
                 orig(self);
@@ -373,7 +627,7 @@ namespace GodhomeQoL.Modules.QoL
 
         private static void FadeBegin(On.FadeSequence.orig_Begin orig, FadeSequence self)
         {
-            if (AutoSkipCinematics && !IsPantheonLikeScene() && !suppressAutoSkipForTransition)
+            if (ShouldAutoSkipCinematicsNow())
                 self.Skip();
             else
                 orig(self);
@@ -381,7 +635,7 @@ namespace GodhomeQoL.Modules.QoL
 
         private static void CinematicBegin(On.CinematicSequence.orig_Begin orig, CinematicSequence self)
         {
-            if (AutoSkipCinematics && !IsPantheonLikeScene() && !suppressAutoSkipForTransition)
+            if (ShouldAutoSkipCinematicsNow())
                 self.Skip();
             else
                 orig(self);

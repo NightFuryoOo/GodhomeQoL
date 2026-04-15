@@ -431,137 +431,8 @@ public sealed partial class QuickMenu : Module
             return entry;
         }
 
-        private static void TryAddCollectorIcons(Transform parent, Text text, string id)
-        {
-            if (!string.Equals(id, "CollectorPhases", StringComparison.Ordinal))
-            {
-                return;
-            }
-
-            collectorIconLeftSprite ??= LoadCollectorIconSprite("25px-The_Collector_Icon RIGHT.png", "CollectorIconLeft");
-            collectorIconRightSprite ??= LoadCollectorIconSprite("25px-The_Collector_Icon LEFT.png", "CollectorIconRight");
-
-            if (collectorIconLeftSprite == null && collectorIconRightSprite == null)
-            {
-                return;
-            }
-
-            float offset = CalculateQuickMenuIconOffset(text, QuickCollectorIconSize, QuickButtonWidth);
-
-            if (collectorIconLeftSprite != null)
-            {
-                CreateQuickMenuIcon(parent, "CollectorIconLeft", collectorIconLeftSprite, -offset, QuickCollectorIconSize);
-            }
-
-            if (collectorIconRightSprite != null)
-            {
-                CreateQuickMenuIcon(parent, "CollectorIconRight", collectorIconRightSprite, offset, QuickCollectorIconSize);
-            }
-        }
-
-        private static void TryAddZoteIcons(Transform parent, Text text, string id)
-        {
-            if (!string.Equals(id, "ZoteHelper", StringComparison.Ordinal))
-            {
-                return;
-            }
-
-            zoteIconLeftSprite ??= LoadCollectorIconSprite("32px-Grey_Prince_Zote_Circle LEFT.png", "ZoteIconLeft");
-            zoteIconRightSprite ??= LoadCollectorIconSprite("32px-Grey_Prince_Zote_Circle RIGHT.png", "ZoteIconRight");
-
-            if (zoteIconLeftSprite == null && zoteIconRightSprite == null)
-            {
-                return;
-            }
-
-            float offset = CalculateQuickMenuIconOffset(text, QuickZoteIconSize, QuickButtonWidth);
-
-            if (zoteIconLeftSprite != null)
-            {
-                CreateQuickMenuIcon(parent, "ZoteIconLeft", zoteIconLeftSprite, -offset, QuickZoteIconSize);
-            }
-
-            if (zoteIconRightSprite != null)
-            {
-                CreateQuickMenuIcon(parent, "ZoteIconRight", zoteIconRightSprite, offset, QuickZoteIconSize);
-            }
-        }
-
-        private static void TryAddZoteTitleIcons(Text title)
-        {
-            if (title == null)
-            {
-                return;
-            }
-
-            zoteIconLeftSprite ??= LoadCollectorIconSprite("32px-Grey_Prince_Zote_Circle LEFT.png", "ZoteTitleIconLeft");
-            zoteIconRightSprite ??= LoadCollectorIconSprite("32px-Grey_Prince_Zote_Circle RIGHT.png", "ZoteTitleIconRight");
-
-            if (zoteIconLeftSprite == null && zoteIconRightSprite == null)
-            {
-                return;
-            }
-
-            float offset = CalculateQuickMenuIconOffset(title, QuickZoteIconSize, RowWidth);
-
-            if (zoteIconLeftSprite != null)
-            {
-                CreateQuickMenuIcon(title.transform, "ZoteTitleIconLeft", zoteIconLeftSprite, -offset, QuickZoteIconSize);
-            }
-
-            if (zoteIconRightSprite != null)
-            {
-                CreateQuickMenuIcon(title.transform, "ZoteTitleIconRight", zoteIconRightSprite, offset, QuickZoteIconSize);
-            }
-        }
-
-        private static float CalculateQuickMenuIconOffset(Text text, float iconSize, float rowWidth)
-        {
-            float textWidth = text.preferredWidth;
-            if (textWidth <= 1f)
-            {
-                textWidth = text.text.Length * text.fontSize * 0.5f;
-            }
-
-            float halfTextWidth = textWidth * 0.5f;
-            float maxOffset = rowWidth * 0.5f - iconSize * 0.5f - QuickCollectorIconPadding;
-            float desiredOffset = halfTextWidth + iconSize * 0.5f + QuickCollectorIconPadding;
-            float offset = Mathf.Min(desiredOffset, maxOffset);
-            if (offset < iconSize * 0.5f)
-            {
-                offset = iconSize * 0.5f;
-            }
-
-            return offset;
-        }
-
-        private static void UpdateQuickMenuIconOffsets(Transform parent, Text text, float iconSize, string leftName, string rightName, float rowWidth)
-        {
-            float offset = CalculateQuickMenuIconOffset(text, iconSize, rowWidth);
-
-            Transform? left = parent.Find(leftName);
-            if (left != null && left.TryGetComponent(out RectTransform leftRect))
-            {
-                leftRect.anchoredPosition = new Vector2(-offset, 0f);
-            }
-
-            Transform? right = parent.Find(rightName);
-            if (right != null && right.TryGetComponent(out RectTransform rightRect))
-            {
-                rightRect.anchoredPosition = new Vector2(offset, 0f);
-            }
-        }
-
         private void UpdateQuickMenuEntryIcons(QuickMenuEntry entry)
         {
-            if (entry.Id == "CollectorPhases")
-            {
-                UpdateQuickMenuIconOffsets(entry.Button.transform, entry.Label, QuickCollectorIconSize, "CollectorIconLeft", "CollectorIconRight", QuickButtonWidth);
-            }
-            else if (entry.Id == "ZoteHelper")
-            {
-                UpdateQuickMenuIconOffsets(entry.Button.transform, entry.Label, QuickZoteIconSize, "ZoteIconLeft", "ZoteIconRight", QuickButtonWidth);
-            }
         }
 
         private void UpdateQuickMenuEntryColor(string id, bool enabled)
@@ -597,6 +468,34 @@ public sealed partial class QuickMenu : Module
             }
         }
 
+        private static bool IsBossManipulateModuleEnabled(Type moduleType)
+        {
+            if (ModuleManager.TryGetModule(moduleType, out Module? module))
+            {
+                return module?.Enabled ?? false;
+            }
+
+            return false;
+        }
+
+        private void RefreshBossManipulateCardVisuals()
+        {
+            foreach (BossManipulateCardVisual card in bossManipulateCards)
+            {
+                if (card.Group == null)
+                {
+                    continue;
+                }
+
+                card.Group.alpha = IsBossManipulateModuleEnabled(card.ModuleType) ? 1f : BossManipulateCardDisabledAlpha;
+            }
+        }
+
+        private void RefreshBossManipulateGlobalUi()
+        {
+            UpdateToggleValue(bossManipulateGlobalP5Value, GetBossManipulateGlobalP5Enabled());
+        }
+
         private void UpdateQuickMenuEntryStateColors()
         {
             UpdateQuickMenuEntryColor("FastSuperDash", GetModuleEnabled());
@@ -609,15 +508,16 @@ public sealed partial class QuickMenu : Module
             UpdateQuickMenuEntryColor("FreezeHitboxes", GetFreezeHitboxesEnabled());
             UpdateQuickMenuEntryColor("AlwaysFurious", GetAlwaysFuriousEnabled());
             UpdateQuickMenuEntryColor("GearSwitcher", GetGearSwitcherEnabled());
-            UpdateQuickMenuEntryColor("ZoteHelper", GetZoteHelperEnabled());
-            UpdateQuickMenuEntryColor("CollectorPhases", GetCollectorPhasesEnabled());
             UpdateQuickMenuEntryColor("BossChallenge", GetBossChallengeMasterEnabled());
+            UpdateQuickMenuEntryColor("BossManipulate", GetCollectorPhasesEnabled() || GetZoteHelperEnabled() || GetGruzMotherHelperEnabled() || GetHornetProtectorHelperEnabled() || GetBroodingMawlekHelperEnabled() || GetMassiveMossChargerHelperEnabled() || GetCrystalGuardianHelperEnabled() || GetEnragedGuardianHelperEnabled() || GetHornetSentinelHelperEnabled() || GetAdditionalGhostHelpersEnabled() || GetGruzMotherP1HelperEnabled() || GetVengeflyKingP1HelperEnabled() || GetBroodingMawlekP1HelperEnabled() || GetNoskP2HelperEnabled() || GetUumuuP3HelperEnabled() || GetSoulWarriorP1HelperEnabled() || GetNoEyesP4HelperEnabled() || GetMarmuP2HelperEnabled() || GetXeroP2HelperEnabled() || GetMarkothP4HelperEnabled() || GetGorbP1HelperEnabled());
             UpdateQuickMenuEntryColor("RandomPantheons", GetRandomPantheonsMasterEnabled());
-            UpdateQuickMenuEntryColor("TrueBossRush", GetTrueBossRushMasterEnabled());
+            UpdateQuickMenuEntryColor("TrueBossRush", GetTrueBossRushMasterEnabled() && GetTrueBossRushEnabled());
             UpdateQuickMenuEntryColor("Cheats", GetCheatsMasterEnabled());
             UpdateQuickMenuEntryColor("QualityOfLife", GetQolMasterEnabled());
             UpdateQuickMenuEntryColor("BossAnimationSkipping", GetBossAnimationMasterEnabled());
             UpdateQuickMenuEntryColor("MenuAnimationSkipping", GetMenuAnimationMasterEnabled());
+            RefreshBossManipulateCardVisuals();
+            RefreshBossManipulateGlobalUi();
         }
 
         internal void RefreshQuickMenuEntryColors()

@@ -15,7 +15,6 @@ public sealed partial class QuickMenu : Module
             return new List<QuickMenuItemDefinition>
             {
                 new("FastSuperDash", "Modules/FastSuperDash".Localize(), OnQuickFastSuperDashClicked),
-                new("CollectorPhases", "Modules/CollectorPhases".Localize(), OnQuickCollectorPhasesClicked),
                 new("FastReload", "Modules/FastReload".Localize(), OnQuickFastReloadClicked),
                 new("DreamshieldSettings", "DreamshieldSettings".Localize(), OnQuickDreamshieldClicked),
                 new("ShowHPOnDeath", "ShowHPOnDeath".Localize(), OnQuickShowHpOnDeathClicked),
@@ -24,12 +23,12 @@ public sealed partial class QuickMenu : Module
                 new("SpeedChanger", "SpeedChanger".Localize(), OnQuickSpeedChangerClicked),
                 new("TeleportKit", "TeleportKit".Localize(), OnQuickTeleportKitClicked),
                 new("BossChallenge", "Categories/BossChallenge".Localize(), OnQuickBossChallengeClicked),
+                new("BossManipulate", "Categories/BossManipulate".Localize(), OnQuickBossManipulateClicked),
                 new("RandomPantheons", "Modules/RandomPantheons".Localize(), OnQuickRandomPantheonsClicked),
                 new("TrueBossRush", "Modules/TrueBossRush".Localize(), OnQuickTrueBossRushClicked),
                 new("Cheats", "Modules/Cheats".Localize(), OnQuickCheatsClicked),
                 new("AlwaysFurious", "Modules/AlwaysFurious".Localize(), OnQuickAlwaysFuriousClicked),
                 new("GearSwitcher", "Modules/GearSwitcher".Localize(), OnQuickGearSwitcherClicked),
-                new("ZoteHelper", "Modules/ZoteHelper".Localize(), OnQuickZoteHelperClicked),
                 new("QualityOfLife", "Categories/QoL".Localize(), OnQuickQolClicked),
                 new("BossAnimationSkipping", "Categories/BossAnimationSkipping".Localize(), OnQuickBossAnimationClicked),
                 new("MenuAnimationSkipping", "Categories/MenuAnimationSkipping".Localize(), OnQuickMenuAnimationClicked),
@@ -76,7 +75,9 @@ public sealed partial class QuickMenu : Module
 
         private bool IsQuickMenuItemVisible(string id)
         {
-            if (string.Equals(id, "Settings", StringComparison.Ordinal))
+            if (string.Equals(id, "Settings", StringComparison.Ordinal)
+                || string.Equals(id, "FreeMenu", StringComparison.Ordinal)
+                || string.Equals(id, "RenameMode", StringComparison.Ordinal))
             {
                 return true;
             }
@@ -87,7 +88,9 @@ public sealed partial class QuickMenu : Module
 
         private void SetQuickMenuItemVisible(string id, bool value)
         {
-            if (string.Equals(id, "Settings", StringComparison.Ordinal))
+            if (string.Equals(id, "Settings", StringComparison.Ordinal)
+                || string.Equals(id, "FreeMenu", StringComparison.Ordinal)
+                || string.Equals(id, "RenameMode", StringComparison.Ordinal))
             {
                 return;
             }
@@ -102,12 +105,6 @@ public sealed partial class QuickMenu : Module
         {
             switch (id)
             {
-                case "ZoteHelper":
-                    SetZoteHelperEnabled(false);
-                    break;
-                case "CollectorPhases":
-                    SetCollectorPhasesEnabled(false);
-                    break;
                 case "FastSuperDash":
                     SetModuleEnabled(false);
                     break;
@@ -141,8 +138,20 @@ public sealed partial class QuickMenu : Module
                 case "BossChallenge":
                     SetBossChallengeMasterEnabled(false);
                     break;
+                case "BossManipulate":
+                    SetCollectorPhasesEnabled(false);
+                    SetZoteHelperEnabled(false);
+                    SetGruzMotherHelperEnabled(false);
+                    SetHornetProtectorHelperEnabled(false);
+                    SetBroodingMawlekHelperEnabled(false);
+                    SetMassiveMossChargerHelperEnabled(false);
+                    SetCrystalGuardianHelperEnabled(false);
+                    SetEnragedGuardianHelperEnabled(false);
+                    SetHornetSentinelHelperEnabled(false);
+                    SetAdditionalGhostHelpersEnabled(false);
+                    break;
                 case "RandomPantheons":
-                    SetRandomPantheonsEnabled(false);
+                    SetRandomPantheonsMasterEnabled(false);
                     break;
                 case "TrueBossRush":
                     SetTrueBossRushMasterEnabled(false);

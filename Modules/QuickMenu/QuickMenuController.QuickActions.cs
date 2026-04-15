@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,32 +30,17 @@ public sealed partial class QuickMenu : Module
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetGruzHelperVisible(false);
+            SetHornetHelperVisible(false);
+            SetMawlekHelperVisible(false);
+            SetMassiveMossHelperVisible(false);
+            SetCrystalGuardianHelperVisible(false);
+            SetEnragedGuardianHelperVisible(false);
+            SetHornetSentinelHelperVisible(false);
+            SetAllAdditionalGhostHelpersVisible(false);
+            SetBossManipulateVisible(false);
             SetCheatsVisible(false);
             SetOverlayVisible(true);
-            SetQuickVisible(false);
-        }
-
-        private void OnQuickCollectorPhasesClicked()
-        {
-            returnToQuickOnClose = true;
-            SetOverlayVisible(false);
-            SetFastReloadVisible(false);
-            SetDreamshieldVisible(false);
-            SetShowHpOnDeathVisible(false);
-            SetMaskDamageVisible(false);
-            SetFreezeHitboxesVisible(false);
-            SetSpeedChangerVisible(false);
-            SetTeleportKitVisible(false);
-            SetBossChallengeVisible(false);
-            SetTrueBossRushVisible(false);
-            SetAlwaysFuriousVisible(false);
-            SetGearSwitcherVisible(false);
-            SetQolVisible(false);
-            SetMenuAnimationVisible(false);
-            SetBossAnimationVisible(false);
-            SetZoteHelperVisible(false);
-            SetCheatsVisible(false);
-            SetCollectorVisible(true);
             SetQuickVisible(false);
         }
 
@@ -78,6 +63,15 @@ public sealed partial class QuickMenu : Module
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetGruzHelperVisible(false);
+            SetHornetHelperVisible(false);
+            SetMawlekHelperVisible(false);
+            SetMassiveMossHelperVisible(false);
+            SetCrystalGuardianHelperVisible(false);
+            SetEnragedGuardianHelperVisible(false);
+            SetHornetSentinelHelperVisible(false);
+            SetAllAdditionalGhostHelpersVisible(false);
+            SetBossManipulateVisible(false);
             SetCheatsVisible(false);
             SetFastReloadVisible(true);
             SetQuickVisible(false);
@@ -102,6 +96,15 @@ public sealed partial class QuickMenu : Module
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetGruzHelperVisible(false);
+            SetHornetHelperVisible(false);
+            SetMawlekHelperVisible(false);
+            SetMassiveMossHelperVisible(false);
+            SetCrystalGuardianHelperVisible(false);
+            SetEnragedGuardianHelperVisible(false);
+            SetHornetSentinelHelperVisible(false);
+            SetAllAdditionalGhostHelpersVisible(false);
+            SetBossManipulateVisible(false);
             SetCheatsVisible(false);
             SetDreamshieldVisible(true);
             SetQuickVisible(false);
@@ -126,6 +129,15 @@ public sealed partial class QuickMenu : Module
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetGruzHelperVisible(false);
+            SetHornetHelperVisible(false);
+            SetMawlekHelperVisible(false);
+            SetMassiveMossHelperVisible(false);
+            SetCrystalGuardianHelperVisible(false);
+            SetEnragedGuardianHelperVisible(false);
+            SetHornetSentinelHelperVisible(false);
+            SetAllAdditionalGhostHelpersVisible(false);
+            SetBossManipulateVisible(false);
             SetCheatsVisible(false);
             SetShowHpOnDeathVisible(true);
             SetQuickVisible(false);
@@ -151,6 +163,15 @@ public sealed partial class QuickMenu : Module
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetGruzHelperVisible(false);
+            SetHornetHelperVisible(false);
+            SetMawlekHelperVisible(false);
+            SetMassiveMossHelperVisible(false);
+            SetCrystalGuardianHelperVisible(false);
+            SetEnragedGuardianHelperVisible(false);
+            SetHornetSentinelHelperVisible(false);
+            SetAllAdditionalGhostHelpersVisible(false);
+            SetBossManipulateVisible(false);
             SetCheatsVisible(false);
             SetMaskDamageVisible(true);
             SetQuickVisible(false);
@@ -176,6 +197,15 @@ public sealed partial class QuickMenu : Module
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetGruzHelperVisible(false);
+            SetHornetHelperVisible(false);
+            SetMawlekHelperVisible(false);
+            SetMassiveMossHelperVisible(false);
+            SetCrystalGuardianHelperVisible(false);
+            SetEnragedGuardianHelperVisible(false);
+            SetHornetSentinelHelperVisible(false);
+            SetAllAdditionalGhostHelpersVisible(false);
+            SetBossManipulateVisible(false);
             SetCheatsVisible(false);
             SetFreezeHitboxesVisible(true);
             SetQuickVisible(false);
@@ -200,6 +230,15 @@ public sealed partial class QuickMenu : Module
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetGruzHelperVisible(false);
+            SetHornetHelperVisible(false);
+            SetMawlekHelperVisible(false);
+            SetMassiveMossHelperVisible(false);
+            SetCrystalGuardianHelperVisible(false);
+            SetEnragedGuardianHelperVisible(false);
+            SetHornetSentinelHelperVisible(false);
+            SetAllAdditionalGhostHelpersVisible(false);
+            SetBossManipulateVisible(false);
             SetCheatsVisible(false);
             SetSpeedChangerVisible(true);
             SetQuickVisible(false);
@@ -224,6 +263,15 @@ public sealed partial class QuickMenu : Module
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetGruzHelperVisible(false);
+            SetHornetHelperVisible(false);
+            SetMawlekHelperVisible(false);
+            SetMassiveMossHelperVisible(false);
+            SetCrystalGuardianHelperVisible(false);
+            SetEnragedGuardianHelperVisible(false);
+            SetHornetSentinelHelperVisible(false);
+            SetAllAdditionalGhostHelpersVisible(false);
+            SetBossManipulateVisible(false);
             SetCheatsVisible(false);
             SetTeleportKitVisible(true);
             SetQuickVisible(false);
@@ -247,9 +295,55 @@ public sealed partial class QuickMenu : Module
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetGruzHelperVisible(false);
+            SetHornetHelperVisible(false);
+            SetMawlekHelperVisible(false);
+            SetMassiveMossHelperVisible(false);
+            SetCrystalGuardianHelperVisible(false);
+            SetEnragedGuardianHelperVisible(false);
+            SetHornetSentinelHelperVisible(false);
+            SetAllAdditionalGhostHelpersVisible(false);
+            SetBossManipulateVisible(false);
             SetCheatsVisible(false);
             SetRandomPantheonsVisible(false);
             SetBossChallengeVisible(true);
+            SetQuickVisible(false);
+        }
+
+        private void OnQuickBossManipulateClicked()
+        {
+            returnToQuickOnClose = true;
+            returnToBossManipulateOnClose = false;
+            SetOverlayVisible(false);
+            SetCollectorVisible(false);
+            SetFastReloadVisible(false);
+            SetDreamshieldVisible(false);
+            SetShowHpOnDeathVisible(false);
+            SetMaskDamageVisible(false);
+            SetFreezeHitboxesVisible(false);
+            SetSpeedChangerVisible(false);
+            SetTeleportKitVisible(false);
+            SetBossChallengeVisible(false);
+            SetTrueBossRushVisible(false);
+            SetRandomPantheonsVisible(false);
+            SetAlwaysFuriousVisible(false);
+            SetGearSwitcherVisible(false);
+            SetGearSwitcherCharmCostVisible(false);
+            SetGearSwitcherPresetVisible(false);
+            SetQolVisible(false);
+            SetMenuAnimationVisible(false);
+            SetBossAnimationVisible(false);
+            SetZoteHelperVisible(false);
+            SetGruzHelperVisible(false);
+            SetHornetHelperVisible(false);
+            SetMawlekHelperVisible(false);
+            SetMassiveMossHelperVisible(false);
+            SetCrystalGuardianHelperVisible(false);
+            SetEnragedGuardianHelperVisible(false);
+            SetHornetSentinelHelperVisible(false);
+            SetAllAdditionalGhostHelpersVisible(false);
+            SetBossManipulateVisible(true);
+            SetCheatsVisible(false);
             SetQuickVisible(false);
         }
 
@@ -273,6 +367,15 @@ public sealed partial class QuickMenu : Module
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetGruzHelperVisible(false);
+            SetHornetHelperVisible(false);
+            SetMawlekHelperVisible(false);
+            SetMassiveMossHelperVisible(false);
+            SetCrystalGuardianHelperVisible(false);
+            SetEnragedGuardianHelperVisible(false);
+            SetHornetSentinelHelperVisible(false);
+            SetAllAdditionalGhostHelpersVisible(false);
+            SetBossManipulateVisible(false);
             SetCheatsVisible(false);
             SetRandomPantheonsVisible(true);
             SetQuickVisible(false);
@@ -298,6 +401,15 @@ public sealed partial class QuickMenu : Module
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetGruzHelperVisible(false);
+            SetHornetHelperVisible(false);
+            SetMawlekHelperVisible(false);
+            SetMassiveMossHelperVisible(false);
+            SetCrystalGuardianHelperVisible(false);
+            SetEnragedGuardianHelperVisible(false);
+            SetHornetSentinelHelperVisible(false);
+            SetAllAdditionalGhostHelpersVisible(false);
+            SetBossManipulateVisible(false);
             SetCheatsVisible(false);
             SetRandomPantheonsVisible(false);
             SetTrueBossRushVisible(true);
@@ -325,6 +437,15 @@ public sealed partial class QuickMenu : Module
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetGruzHelperVisible(false);
+            SetHornetHelperVisible(false);
+            SetMawlekHelperVisible(false);
+            SetMassiveMossHelperVisible(false);
+            SetCrystalGuardianHelperVisible(false);
+            SetEnragedGuardianHelperVisible(false);
+            SetHornetSentinelHelperVisible(false);
+            SetAllAdditionalGhostHelpersVisible(false);
+            SetBossManipulateVisible(false);
             SetCheatsVisible(true);
             SetQuickVisible(false);
         }
@@ -350,6 +471,15 @@ public sealed partial class QuickMenu : Module
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetGruzHelperVisible(false);
+            SetHornetHelperVisible(false);
+            SetMawlekHelperVisible(false);
+            SetMassiveMossHelperVisible(false);
+            SetCrystalGuardianHelperVisible(false);
+            SetEnragedGuardianHelperVisible(false);
+            SetHornetSentinelHelperVisible(false);
+            SetAllAdditionalGhostHelpersVisible(false);
+            SetBossManipulateVisible(false);
             SetCheatsVisible(false);
             SetQuickVisible(false);
         }
@@ -375,32 +505,17 @@ public sealed partial class QuickMenu : Module
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetGruzHelperVisible(false);
+            SetHornetHelperVisible(false);
+            SetMawlekHelperVisible(false);
+            SetMassiveMossHelperVisible(false);
+            SetCrystalGuardianHelperVisible(false);
+            SetEnragedGuardianHelperVisible(false);
+            SetHornetSentinelHelperVisible(false);
+            SetAllAdditionalGhostHelpersVisible(false);
+            SetBossManipulateVisible(false);
             SetCheatsVisible(false);
             SetGearSwitcherVisible(true);
-            SetQuickVisible(false);
-        }
-
-        private void OnQuickZoteHelperClicked()
-        {
-            returnToQuickOnClose = true;
-            SetOverlayVisible(false);
-            SetCollectorVisible(false);
-            SetFastReloadVisible(false);
-            SetDreamshieldVisible(false);
-            SetShowHpOnDeathVisible(false);
-            SetMaskDamageVisible(false);
-            SetFreezeHitboxesVisible(false);
-            SetSpeedChangerVisible(false);
-            SetTeleportKitVisible(false);
-            SetBossChallengeVisible(false);
-            SetTrueBossRushVisible(false);
-            SetAlwaysFuriousVisible(false);
-            SetGearSwitcherVisible(false);
-            SetQolVisible(false);
-            SetMenuAnimationVisible(false);
-            SetBossAnimationVisible(false);
-            SetCheatsVisible(false);
-            SetZoteHelperVisible(true);
             SetQuickVisible(false);
         }
 
@@ -424,6 +539,15 @@ public sealed partial class QuickMenu : Module
             SetQolVisible(false);
             SetMenuAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetGruzHelperVisible(false);
+            SetHornetHelperVisible(false);
+            SetMawlekHelperVisible(false);
+            SetMassiveMossHelperVisible(false);
+            SetCrystalGuardianHelperVisible(false);
+            SetEnragedGuardianHelperVisible(false);
+            SetHornetSentinelHelperVisible(false);
+            SetAllAdditionalGhostHelpersVisible(false);
+            SetBossManipulateVisible(false);
             SetCheatsVisible(false);
             SetBossAnimationVisible(true);
             SetQuickVisible(false);
@@ -449,6 +573,15 @@ public sealed partial class QuickMenu : Module
             SetQolVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetGruzHelperVisible(false);
+            SetHornetHelperVisible(false);
+            SetMawlekHelperVisible(false);
+            SetMassiveMossHelperVisible(false);
+            SetCrystalGuardianHelperVisible(false);
+            SetEnragedGuardianHelperVisible(false);
+            SetHornetSentinelHelperVisible(false);
+            SetAllAdditionalGhostHelpersVisible(false);
+            SetBossManipulateVisible(false);
             SetCheatsVisible(false);
             SetMenuAnimationVisible(true);
             SetQuickVisible(false);
@@ -473,6 +606,15 @@ public sealed partial class QuickMenu : Module
             SetMenuAnimationVisible(false);
             SetBossAnimationVisible(false);
             SetZoteHelperVisible(false);
+            SetGruzHelperVisible(false);
+            SetHornetHelperVisible(false);
+            SetMawlekHelperVisible(false);
+            SetMassiveMossHelperVisible(false);
+            SetCrystalGuardianHelperVisible(false);
+            SetEnragedGuardianHelperVisible(false);
+            SetHornetSentinelHelperVisible(false);
+            SetAllAdditionalGhostHelpersVisible(false);
+            SetBossManipulateVisible(false);
             SetCheatsVisible(false);
             returnToQolOnClose = false;
             SetQolVisible(true);
@@ -480,5 +622,12 @@ public sealed partial class QuickMenu : Module
         }
     }
 }
+
+
+
+
+
+
+
 
 

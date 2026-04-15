@@ -1,4 +1,5 @@
 ﻿using Satchel.BetterMenus;
+using GodhomeQoL.Modules.BossChallenge;
 using GodhomeQoL.Modules.QoL;
 using GodhomeQoL.Modules.Tools;
 
@@ -6,30 +7,27 @@ namespace GodhomeQoL.Modules;
 
 public sealed class FastReload : Module {
     private const string WorkshopScene = "GG_Workshop";
-
-    private static readonly Vector2[] teleportPoints = [
-        new(11f, 36.4f),
-        new(207f, 6.4f)
-    ];
-
-    [GlobalSetting]
-    public static int teleportKeyCode = (int)KeyCode.None;
+    private const string AtriumScene = "GG_Atrium";
+    private const string AtriumRoofScene = "GG_Atrium_Roof";
+    private const string SpaScene = "GG_Spa";
+    private const string SetupEventUnavailableUserMessage = "Please re-enter the boss fight or die on it so that the mod works.";
+    private const float SetupEventUnavailableMessageCooldownSeconds = 2f;
 
     [GlobalSetting]
     public static int reloadKeyCode = (int)KeyCode.None;
 
-    private static MenuButton? teleportButton;
     private static MenuButton? reloadButton;
 
-    private static bool waitingForTeleportRebind;
     private static bool waitingForReloadRebind;
 
-    private static KeyCode teleportPrevKey;
     private static KeyCode reloadPrevKey;
 
     private static RebindListener? listener;
-    private static int teleportIndex;
-    private static BossSceneController.SetupEventDelegate? storedSetupEvent;
+
+    private static bool suppressReloadUntilKeyRelease;
+
+    private static bool wasQuickMenuUiVisible;
+    private static float nextSetupEventUnavailableMessageAt;
 
     public override bool DefaultEnabled => false;
 
@@ -37,18 +35,21 @@ public sealed class FastReload : Module {
 
     private protected override void Load() {
         ModHooks.HeroUpdateHook += OnHeroUpdate;
+        On.GameManager.BeginSceneTransition += CaptureSetupEventForTargetScene;
         On.BossSceneController.Awake += CaptureSetupEvent;
         EnsureListener();
     }
 
     private protected override void Unload() {
         ModHooks.HeroUpdateHook -= OnHeroUpdate;
+        On.GameManager.BeginSceneTransition -= CaptureSetupEventForTargetScene;
         On.BossSceneController.Awake -= CaptureSetupEvent;
         DisposeListener();
 
-        waitingForTeleportRebind = false;
         waitingForReloadRebind = false;
-        storedSetupEvent = null;
+        suppressReloadUntilKeyRelease = false;
+        wasQuickMenuUiVisible = false;
+        nextSetupEventUnavailableMessageAt = 0f;
     }
 
     private static void OnHeroUpdate() {
@@ -56,7 +57,26 @@ public sealed class FastReload : Module {
             return;
         }
 
-        if (waitingForReloadRebind || waitingForTeleportRebind) {
+        bool quickMenuUiVisible = QuickMenu.IsAnyUiVisible();
+        KeyCode reloadKey = ReloadKey;
+        if (reloadKey == KeyCode.None) {
+            suppressReloadUntilKeyRelease = false;
+            wasQuickMenuUiVisible = quickMenuUiVisible;
+            return;
+        }
+
+        if (quickMenuUiVisible || (wasQuickMenuUiVisible && Input.GetKey(reloadKey))) {
+            if (Input.GetKey(reloadKey)) {
+                suppressReloadUntilKeyRelease = true;
+            }
+        }
+        wasQuickMenuUiVisible = quickMenuUiVisible;
+
+        if (quickMenuUiVisible) {
+            return;
+        }
+
+        if (waitingForReloadRebind) {
             return;
         }
 
@@ -64,8 +84,15 @@ public sealed class FastReload : Module {
             return;
         }
 
-        if (ReloadKey != KeyCode.None
-            && Input.GetKeyUp(ReloadKey)
+        if (suppressReloadUntilKeyRelease) {
+            if (!Input.GetKey(reloadKey)) {
+                suppressReloadUntilKeyRelease = false;
+            }
+
+            return;
+        }
+
+        if (Input.GetKeyUp(reloadKey)
             && BossSceneController.IsBossScene
             && !BossSequenceController.IsInSequence
             && Ref.GM.sceneName.StartsWith("GG_", StringComparison.Ordinal)
@@ -74,12 +101,6 @@ public sealed class FastReload : Module {
             _ = Ref.HC.StartCoroutine(ReloadCurrentBoss());
         }
 
-        if (TeleportKey != KeyCode.None
-            && Input.GetKeyDown(TeleportKey)
-            && Ref.GM.sceneName == WorkshopScene
-            && Ref.HC.acceptingInput) {
-            TeleportAroundWorkshop();
-        }
     }
 
     private static IEnumerator ReloadCurrentBoss() {
@@ -101,9 +122,15 @@ public sealed class FastReload : Module {
             yield break;
         }
 
-        // If the module is enabled mid-fight, Awake has already run and we may
-        // not have captured the setup event yet. Capture it lazily before reload.
-        if (!EnsureSetupEventCaptured()) {
+        // If module was enabled mid-fight, capture lazily and then restore
+        // scene-specific setup event before forcing the reload transition.
+        BossFightRestartCompatibility.RecordCurrentSetupEvent(scene);
+        if (!BossFightRestartCompatibility.TryApplySetupEventForScene(scene)) {
+            if (Time.unscaledTime >= nextSetupEventUnavailableMessageAt) {
+                nextSetupEventUnavailableMessageAt = Time.unscaledTime + SetupEventUnavailableMessageCooldownSeconds;
+                QuickMenu.ShowStatusMessageFromExternal(SetupEventUnavailableUserMessage);
+            }
+
             LogError("FastReload: setup event is not available; aborting reload.");
             yield break;
         }
@@ -113,55 +140,25 @@ public sealed class FastReload : Module {
         Ref.HC.EnterWithoutInput(true);
         Ref.HC.AcceptInput();
 
-        if (storedSetupEvent != null) {
-            BossSceneController.SetupEvent = storedSetupEvent;
-        }
-
         if (ModuleManager.TryGetLoadedModule<CarefreeMelodyReset>(out _)) {
             CarefreeMelodyReset.TryResetNow(ignoreBossScene: true);
         }
 
-        Ref.GM.BeginSceneTransition(new GameManager.SceneLoadInfo {
-            SceneName = scene,
-            EntryGateName = "door_dreamEnter",
-            EntryDelay = 0f,
-            Visualization = GameManager.SceneLoadVisualizations.GodsAndGlory,
-            PreventCameraFadeOut = true
-        });
+        using (BossFightRestartCompatibility.EnterFastReloadTransitionScope()) {
+            Ref.GM.BeginSceneTransition(new GameManager.SceneLoadInfo {
+                SceneName = scene,
+                EntryGateName = "door_dreamEnter",
+                EntryDelay = 0f,
+                Visualization = GameManager.SceneLoadVisualizations.GodsAndGlory,
+                PreventCameraFadeOut = true
+            });
+        }
 
         LogDebug($"FastReload: reloading {scene}");
     }
 
-    private static bool EnsureSetupEventCaptured() {
-        if (storedSetupEvent != null) {
-            return true;
-        }
-
-        try {
-            if (BossSceneController.SetupEvent != null) {
-                storedSetupEvent = BossSceneController.SetupEvent;
-                LogDebug("FastReload: captured setup event lazily.");
-            }
-        }
-        catch (Exception e) {
-            LogError($"FastReload: failed to capture setup event: {e.Message}");
-        }
-
-        return storedSetupEvent != null;
-    }
-
-    private static void TeleportAroundWorkshop() {
-        teleportIndex = (teleportIndex + 1) % teleportPoints.Length;
-
-        Ref.HC.transform.SetPosition2D(teleportPoints[teleportIndex]);
-        Ref.HC.SetHazardRespawn(Ref.HC.transform.position, true);
-
-        LogDebug($"FastReload: teleported to point {teleportIndex}");
-    }
-
     #region Key handling
 
-    private static KeyCode TeleportKey => (KeyCode)teleportKeyCode;
     private static KeyCode ReloadKey => (KeyCode)reloadKeyCode;
 
     private static void EnsureListener() {
@@ -182,12 +179,32 @@ public sealed class FastReload : Module {
         listener = null;
     }
 
-    private static void CaptureSetupEvent(On.BossSceneController.orig_Awake orig, BossSceneController self) {
-        if (!BossSequenceController.IsInSequence) {
-            storedSetupEvent = BossSceneController.SetupEvent;
+    private static void CaptureSetupEventForTargetScene(On.GameManager.orig_BeginSceneTransition orig, GameManager self, GameManager.SceneLoadInfo info) {
+        string? targetScene = info.SceneName;
+        if (IsReloadCandidateScene(targetScene)) {
+            // Capture setup event against the intended target scene before transition consumes it.
+            BossFightRestartCompatibility.RecordCurrentSetupEvent(targetScene);
         }
 
+        orig(self, info);
+    }
+
+    private static void CaptureSetupEvent(On.BossSceneController.orig_Awake orig, BossSceneController self) {
+        BossFightRestartCompatibility.RecordCurrentSetupEvent();
         orig(self);
+        BossFightRestartCompatibility.RecordCurrentSetupEvent();
+    }
+
+    private static bool IsReloadCandidateScene(string? sceneName) {
+        if (sceneName == null || sceneName.Length == 0) {
+            return false;
+        }
+
+        return sceneName.StartsWith("GG_", StringComparison.Ordinal)
+            && sceneName != WorkshopScene
+            && sceneName != AtriumScene
+            && sceneName != AtriumRoofScene
+            && sceneName != SpaScene;
     }
 
     private sealed class RebindListener : MonoBehaviour {
@@ -196,7 +213,6 @@ public sealed class FastReload : Module {
                 return;
             }
 
-            HandleTeleportRebind();
             HandleReloadRebind();
         }
     }
@@ -209,24 +225,10 @@ public sealed class FastReload : Module {
             false
         );
 
-    internal static MenuButton TeleportBindButton() =>
-        teleportButton = new MenuButton(
-            FormatButtonName("Settings/teleportHoGKey".Localize(), TeleportKey),
-            "Settings/FastReload/TeleportDesc".Localize(),
-            _ => StartTeleportRebind(),
-            false
-        );
-
     private static void StartReloadRebind() {
         waitingForReloadRebind = true;
         reloadPrevKey = ReloadKey;
         UpdateReloadButton("Settings/FastReload/SetKey".Localize());
-    }
-
-    private static void StartTeleportRebind() {
-        waitingForTeleportRebind = true;
-        teleportPrevKey = TeleportKey;
-        UpdateTeleportButton("Settings/FastReload/SetKey".Localize());
     }
 
     private static void HandleReloadRebind() {
@@ -245,7 +247,18 @@ public sealed class FastReload : Module {
                 return;
             }
 
-            reloadKeyCode = key == reloadPrevKey || IsKeyInUse(key, "reload")
+            if (key != reloadPrevKey
+                && QuickMenu.TryGetHotkeyConflictOwnersExceptSelf(
+                    key,
+                    "Settings/reloadBossKey".Localize(),
+                    out string conflictOwners))
+            {
+                LogWarn($"FastReload hotkey {FormatKeyLabel(key)} is already used by: {conflictOwners}");
+                UpdateReloadButton("Settings/FastReload/SetKey".Localize());
+                return;
+            }
+
+            reloadKeyCode = key == reloadPrevKey
                 ? (int)KeyCode.None
                 : (int)key;
 
@@ -256,42 +269,6 @@ public sealed class FastReload : Module {
         }
     }
 
-    private static void HandleTeleportRebind() {
-        if (!waitingForTeleportRebind) {
-            return;
-        }
-
-        foreach (KeyCode key in Enum.GetValues(typeof(KeyCode))) {
-            if (!Input.GetKeyDown(key)) {
-                continue;
-            }
-
-            if (key == KeyCode.Escape) {
-                waitingForTeleportRebind = false;
-                UpdateTeleportButton(FormatKeyLabel(TeleportKey));
-                return;
-            }
-
-            teleportKeyCode = key == teleportPrevKey || IsKeyInUse(key, "teleport")
-                ? (int)KeyCode.None
-                : (int)key;
-
-            waitingForTeleportRebind = false;
-            UpdateTeleportButton(FormatKeyLabel(TeleportKey));
-            GodhomeQoL.MarkMenuDirty();
-            return;
-        }
-    }
-
-    private static bool IsKeyInUse(KeyCode key, string except) {
-        bool inTeleport = !string.Equals(except, "teleport", StringComparison.OrdinalIgnoreCase)
-            && TeleportKey == key;
-        bool inReload = !string.Equals(except, "reload", StringComparison.OrdinalIgnoreCase)
-            && ReloadKey == key;
-
-        return inTeleport || inReload;
-    }
-
     private static void UpdateReloadButton(string value) {
         if (reloadButton == null) {
             return;
@@ -299,15 +276,6 @@ public sealed class FastReload : Module {
 
         reloadButton.Name = FormatButtonName("Settings/reloadBossKey".Localize(), value);
         reloadButton.Update();
-    }
-
-    private static void UpdateTeleportButton(string value) {
-        if (teleportButton == null) {
-            return;
-        }
-
-        teleportButton.Name = FormatButtonName("Settings/teleportHoGKey".Localize(), value);
-        teleportButton.Update();
     }
 
     private static string FormatButtonName(string title, string value) => $"{title}: {value}";

@@ -1,4 +1,5 @@
 ﻿using Osmi.FsmActions;
+using GodhomeQoL.Modules.BossChallenge;
 using GodhomeQoL.Modules.Tools;
 using Satchel;
 using Satchel.Futils;
@@ -6,10 +7,18 @@ using Satchel.Futils;
 namespace GodhomeQoL.Modules.QoL;
 
 public sealed class ShortDeathAnimation : Module {
+	private sealed class DeathFsmSnapshot {
+		public PlayMakerFSM? Fsm { get; init; }
+		public Dictionary<string, FsmStateAction[]> OriginalStateActionsByName { get; } = new(StringComparer.Ordinal);
+		public bool Patched { get; set; }
+	}
+
 	public override bool DefaultEnabled => true;
 
+	private static readonly Dictionary<int, DeathFsmSnapshot> deathSnapshots = new();
 	private static bool timeScaleOverrideInFlight;
-	private static float previousTimeScale;
+	private static int timeScaleOverrideHandle;
+	private static int timeScaleOverrideGeneration;
 	private static readonly HashSet<string> PantheonLikeScenes = new(StringComparer.OrdinalIgnoreCase) {
 		"gg dryya",
 		"gg hegemol",
@@ -17,9 +26,17 @@ public sealed class ShortDeathAnimation : Module {
 		"gg isma"
 	};
 
-	public ShortDeathAnimation() {
+	private protected override void Load() {
+		timeScaleOverrideGeneration++;
 		On.HeroController.Start += ModifyHeroDeathFSM;
-		ModHooks.TakeHealthHook += NormalizeOnFatalDamage;
+		On.HeroController.Die += OnHeroDie;
+	}
+
+	private protected override void Unload() {
+		On.HeroController.Start -= ModifyHeroDeathFSM;
+		On.HeroController.Die -= OnHeroDie;
+		RestoreModifiedFsms();
+		CancelPendingTimeScaleNormalization();
 	}
 
 	private void ModifyHeroDeathFSM(On.HeroController.orig_Start orig, HeroController self) {
@@ -35,31 +52,14 @@ public sealed class ShortDeathAnimation : Module {
 		LogDebug("Hero Death FSM modified");
 	}
 
-	private int NormalizeOnFatalDamage(int damage) {
-		if (!Loaded) {
-			return damage;
+	private static IEnumerator OnHeroDie(On.HeroController.orig_Die orig, HeroController self) {
+		BeginTimeScaleNormalization();
+		ClearBossReturnFlags();
+
+		IEnumerator origEnum = orig(self);
+		while (origEnum.MoveNext()) {
+			yield return origEnum.Current;
 		}
-
-		if (ShouldNormalizeOnDamage(damage)) {
-			BeginTimeScaleNormalization();
-			ClearBossReturnFlags();
-		}
-
-		return damage;
-	}
-
-	private static bool ShouldNormalizeOnDamage(int damage) {
-		if (damage <= 0) {
-			return false;
-		}
-
-		PlayerData pd = PlayerData.instance;
-		if (pd == null) {
-			return false;
-		}
-
-		int totalHealth = pd.health + pd.healthBlue;
-		return totalHealth - damage <= 0;
 	}
 
 	private static void ClearBossReturnFlags() {
@@ -68,14 +68,16 @@ public sealed class ShortDeathAnimation : Module {
 		}
 
 		try {
-			StaticVariableList.SetValue("finishedBossReturning", false);
+			if (!InfiniteChallenge.OwnsFinishedBossReturningFlag()) {
+				StaticVariableList.SetValue("finishedBossReturning", false);
+			}
 		}
 		catch {
 			// ignore if variable missing
 		}
 
 		try {
-			PlayMakerFSM? fsm = Ref.HC?.gameObject?.LocateMyFSM("Dream Return");
+			PlayMakerFSM? fsm = HeroController.instance?.gameObject?.LocateMyFSM("Dream Return");
 			if (fsm == null) {
 				return;
 			}
@@ -91,6 +93,15 @@ public sealed class ShortDeathAnimation : Module {
 	}
 
 	private void ModifyHeroDeathFSM(PlayMakerFSM fsm) {
+		DeathFsmSnapshot snapshot = GetOrCreateSnapshot(fsm);
+		if (snapshot.Patched) {
+			return;
+		}
+
+		CaptureStateActions(snapshot, fsm, "Init");
+		CaptureStateActions(snapshot, fsm, "Start");
+		CaptureStateActions(snapshot, fsm, "Bursting");
+
 		TryInsertTimeNormalization(fsm);
 
 		fsm.AddAction("Bursting",
@@ -99,6 +110,8 @@ public sealed class ShortDeathAnimation : Module {
 				trueEvent = FsmEvent.Finished
 			}
 		);
+
+		snapshot.Patched = true;
 	}
 
 	private static bool IsPantheonLikeScene() {
@@ -106,7 +119,8 @@ public sealed class ShortDeathAnimation : Module {
 			return true;
 		}
 
-		string sceneName = Ref.GM?.sceneName ?? GameManager.instance?.GetSceneNameString() ?? string.Empty;
+		GameManager? manager = GameManager.instance;
+		string sceneName = manager?.sceneName ?? manager?.GetSceneNameString() ?? string.Empty;
 		if (sceneName.Length == 0) {
 			return false;
 		}
@@ -137,6 +151,10 @@ public sealed class ShortDeathAnimation : Module {
 	}
 
 	private static void BeginTimeScaleNormalization() {
+		if (FreezeHitboxes.ShouldBlockDeathTimeScaleNormalization()) {
+			return;
+		}
+
 		if (timeScaleOverrideInFlight) {
 			return;
 		}
@@ -145,34 +163,37 @@ public sealed class ShortDeathAnimation : Module {
 			return;
 		}
 
-		if (!SpeedChanger.TryBeginTimeScaleOverride(1f, out previousTimeScale)) {
+		if (!SpeedChanger.TryBeginTimeScaleOverride(1f, out int handle)) {
 			return;
 		}
 
 		timeScaleOverrideInFlight = true;
-		_ = GlobalCoroutineExecutor.Start(RestoreTimeScaleAfterDeath());
+		timeScaleOverrideHandle = handle;
+		int generation = timeScaleOverrideGeneration;
+		_ = GlobalCoroutineExecutor.Start(RestoreTimeScaleAfterDeath(generation, handle));
 	}
 
-	private static IEnumerator RestoreTimeScaleAfterDeath() {
+	private static IEnumerator RestoreTimeScaleAfterDeath(int generation, int handle) {
 		try {
 			yield return null;
-			yield return new UnityEngine.WaitUntil(() => Ref.GM != null);
+			yield return new UnityEngine.WaitUntil(() => GameManager.instance != null);
 
 			float elapsed = 0f;
 			const float timeout = 20f;
 
 			while (elapsed < timeout) {
-				if (Ref.GM == null) {
+				GameManager? manager = GameManager.instance;
+				if (manager == null) {
 					break;
 				}
 
-				if (Ref.GM.IsInSceneTransition) {
+				if (manager.IsInSceneTransition) {
 					elapsed += Time.unscaledDeltaTime;
 					yield return null;
 					continue;
 				}
 
-				if (Ref.GM.gameState == GameState.PLAYING && !IsDeathAnimationActive()) {
+				if (manager.gameState == GameState.PLAYING && !IsDeathAnimationActive()) {
 					break;
 				}
 
@@ -180,19 +201,108 @@ public sealed class ShortDeathAnimation : Module {
 				yield return null;
 			}
 
-			SpeedChanger.EndTimeScaleOverride(previousTimeScale);
+			if (generation == timeScaleOverrideGeneration
+				&& timeScaleOverrideInFlight
+				&& timeScaleOverrideHandle == handle) {
+				SpeedChanger.EndTimeScaleOverride(handle);
+				timeScaleOverrideHandle = 0;
+			}
 		}
 		finally {
-			timeScaleOverrideInFlight = false;
+			if (generation == timeScaleOverrideGeneration && timeScaleOverrideHandle == handle) {
+				timeScaleOverrideInFlight = false;
+			}
+		}
+	}
+
+	private static void CancelPendingTimeScaleNormalization() {
+		timeScaleOverrideGeneration++;
+		if (timeScaleOverrideInFlight && timeScaleOverrideHandle != 0) {
+			SpeedChanger.EndTimeScaleOverride(timeScaleOverrideHandle);
+		}
+
+		timeScaleOverrideHandle = 0;
+		timeScaleOverrideInFlight = false;
+	}
+
+	private static DeathFsmSnapshot GetOrCreateSnapshot(PlayMakerFSM fsm) {
+		CleanupSnapshotCache();
+
+		int id = fsm.GetInstanceID();
+		if (deathSnapshots.TryGetValue(id, out DeathFsmSnapshot? snapshot)) {
+			return snapshot;
+		}
+
+		snapshot = new DeathFsmSnapshot {
+			Fsm = fsm
+		};
+		deathSnapshots[id] = snapshot;
+		return snapshot;
+	}
+
+	private static void CaptureStateActions(DeathFsmSnapshot snapshot, PlayMakerFSM fsm, string stateName) {
+		if (snapshot.OriginalStateActionsByName.ContainsKey(stateName)) {
+			return;
+		}
+
+		FsmState? state = fsm.Fsm.GetState(stateName);
+		if (state == null) {
+			return;
+		}
+
+		FsmStateAction[] actions = state.Actions ?? Array.Empty<FsmStateAction>();
+		snapshot.OriginalStateActionsByName[stateName] = (FsmStateAction[])actions.Clone();
+	}
+
+	private static void RestoreModifiedFsms() {
+		foreach ((int id, DeathFsmSnapshot snapshot) in deathSnapshots.ToArray()) {
+			RestoreSnapshot(snapshot);
+			if (snapshot.Fsm == null) {
+				deathSnapshots.Remove(id);
+			}
+		}
+
+		deathSnapshots.Clear();
+	}
+
+	private static void RestoreSnapshot(DeathFsmSnapshot snapshot) {
+		PlayMakerFSM? fsm = snapshot.Fsm;
+		if (fsm == null) {
+			return;
+		}
+
+		try {
+			foreach ((string stateName, FsmStateAction[] originalActions) in snapshot.OriginalStateActionsByName) {
+				FsmState? state = fsm.Fsm.GetState(stateName);
+				if (state == null) {
+					continue;
+				}
+
+				state.Actions = (FsmStateAction[])originalActions.Clone();
+			}
+		}
+		catch {
+			// ignore restore failures for already-destroyed FSMs
+		}
+
+		snapshot.Patched = false;
+	}
+
+	private static void CleanupSnapshotCache() {
+		foreach ((int id, DeathFsmSnapshot snapshot) in deathSnapshots.ToArray()) {
+			if (snapshot.Fsm == null) {
+				deathSnapshots.Remove(id);
+			}
 		}
 	}
 
 	private static bool IsDeathAnimationActive() {
-		if (Ref.HC == null) {
+		HeroController? hero = HeroController.instance;
+		if (hero == null) {
 			return false;
 		}
 
-		GameObject deathPrefab = Ref.HC.heroDeathPrefab;
+		GameObject deathPrefab = hero.heroDeathPrefab;
 		return deathPrefab != null && deathPrefab.activeSelf;
 	}
 }

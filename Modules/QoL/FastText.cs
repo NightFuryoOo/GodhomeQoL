@@ -17,7 +17,12 @@ public sealed class FastText : Module
 
     private static void OnNextChar(On.DialogueBox.orig_ShowNextChar orig, DialogueBox self)
     {
-        TextMeshPro text = Mirror.GetField<DialogueBox, TextMeshPro>(self, "textMesh");
+        TextMeshPro? text = ReflectionHelper.GetField<DialogueBox, TextMeshPro>(self, "textMesh");
+        if (text == null)
+        {
+            orig(self);
+            return;
+        }
 
         int pageIndex = Mathf.Clamp(self.currentPage - 1, 0, text.textInfo.pageCount - 1);
         text.maxVisibleCharacters = text.textInfo.pageInfo[pageIndex].lastCharacterIndex + 1;

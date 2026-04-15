@@ -15,11 +15,19 @@ public sealed class TrueBossRush : Module
     [GlobalSetting] public static bool TrueBossRushPantheon4Enabled = false;
     [GlobalSetting] public static bool TrueBossRushPantheon5Enabled = false;
 
+    internal static bool AnyPantheonEnabled =>
+        TrueBossRushPantheon1Enabled
+        || TrueBossRushPantheon2Enabled
+        || TrueBossRushPantheon3Enabled
+        || TrueBossRushPantheon4Enabled
+        || TrueBossRushPantheon5Enabled;
+
     public override bool DefaultEnabled => false;
     public override bool Hidden => true;
 
     private static readonly Dictionary<BossSequence, BossScene[]> OriginalSequences = new();
     private static readonly Dictionary<BossSequence, List<BossSequenceDoor>> SequenceDoors = new();
+    private static readonly FieldInfo BossScenesField = typeof(BossSequence).GetField("bossScenes", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!;
 
     private static readonly HashSet<string> BenchScenes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -53,6 +61,13 @@ public sealed class TrueBossRush : Module
 
     private protected override void Load()
     {
+        ClearSequenceCaches();
+        if (AnyPantheonEnabled)
+        {
+            _ = PantheonSequenceCompatibility.DisableRandomPantheons();
+            _ = PantheonSequenceCompatibility.DisableSegmentedP5();
+        }
+
         Instance = this;
         On.BossSequenceDoor.Start += CacheSequenceDoor;
         On.BossSequenceController.SetupNewSequence += ApplySequenceToStart;
@@ -69,16 +84,84 @@ public sealed class TrueBossRush : Module
         On.BossSequenceDoor.Start -= CacheSequenceDoor;
         On.BossSequenceController.SetupNewSequence -= ApplySequenceToStart;
         USceneManager.activeSceneChanged -= OnSceneChange;
+        RestoreCachedSequences();
+        ClearSequenceCaches();
+    }
+
+    private static void ClearSequenceCaches()
+    {
+        OriginalSequences.Clear();
+        SequenceDoors.Clear();
+    }
+
+    private static void PruneSequenceCaches()
+    {
+        foreach (BossSequence sequence in OriginalSequences.Keys.ToArray())
+        {
+            if (sequence == null)
+            {
+                // Unity fake-null for destroyed objects; keep a non-null ref for dictionary removal.
+                if (sequence is not null)
+                {
+                    _ = OriginalSequences.Remove(sequence);
+                }
+            }
+        }
+
+        foreach ((BossSequence sequence, List<BossSequenceDoor> doors) in SequenceDoors.ToArray())
+        {
+            if (sequence == null)
+            {
+                // Unity fake-null for destroyed objects; keep a non-null ref for dictionary removal.
+                if (sequence is not null)
+                {
+                    _ = SequenceDoors.Remove(sequence);
+                }
+                continue;
+            }
+
+            doors.RemoveAll(door => door == null);
+            if (doors.Count == 0)
+            {
+                _ = SequenceDoors.Remove(sequence);
+            }
+        }
+    }
+
+    private static void RestoreCachedSequences()
+    {
+        PruneSequenceCaches();
+
+        foreach ((BossSequence sequence, BossScene[] original) in OriginalSequences.ToArray())
+        {
+            if (sequence == null || original == null || original.Length == 0)
+            {
+                continue;
+            }
+
+            try
+            {
+                if (SetBossScenes(sequence, original.ToArray()))
+                {
+                    SyncFirstScene(sequence);
+                }
+            }
+            catch
+            {
+                // Ignore restore failures for unloaded/changed sequences.
+            }
+        }
     }
 
     private void OnSceneChange(Scene prev, Scene next)
     {
-        if (Ref.GM == null || !VanishedHud.Contains(prev.name))
+        GameManager? manager = GameManager.instance;
+        if (manager == null || !VanishedHud.Contains(prev.name))
         {
             return;
         }
 
-        Ref.GM.StartCoroutine(EnsureHudVisible());
+        manager.StartCoroutine(EnsureHudVisible());
     }
 
     private static IEnumerator EnsureHudVisible()
@@ -120,6 +203,16 @@ public sealed class TrueBossRush : Module
     {
         orig(sequence, bindings, playerData);
 
+        if (PantheonSequenceCompatibility.ShouldSkipTrueBossRush())
+        {
+            return;
+        }
+
+        if (!AnyPantheonEnabled)
+        {
+            return;
+        }
+
         try
         {
             ApplySequence(sequence);
@@ -137,7 +230,7 @@ public sealed class TrueBossRush : Module
             return;
         }
 
-        ref BossScene[] bossScenes = ref Mirror.GetFieldRef<BossSequence, BossScene[]>(sequence, "bossScenes");
+        BossScene[]? bossScenes = GetBossScenes(sequence);
         if (bossScenes == null || bossScenes.Length <= 1)
         {
             return;
@@ -149,7 +242,7 @@ public sealed class TrueBossRush : Module
 
         if (!IsPantheonEnabled(pantheon))
         {
-            if (TryRestoreOriginalSequence(sequence, ref bossScenes))
+            if (TryRestoreOriginalSequence(sequence, out BossScene[] restored) && SetBossScenes(sequence, restored))
             {
                 SyncFirstScene(sequence);
             }
@@ -162,8 +255,10 @@ public sealed class TrueBossRush : Module
             return;
         }
 
-        bossScenes = rebuilt.ToArray();
-        SyncFirstScene(sequence);
+        if (SetBossScenes(sequence, rebuilt.ToArray()))
+        {
+            SyncFirstScene(sequence);
+        }
     }
 
     private static bool TryBuildSequence(List<BossScene> scenes, out List<BossScene> result)
@@ -197,12 +292,13 @@ public sealed class TrueBossRush : Module
             return;
         }
 
+        PruneSequenceCaches();
         BossSequence[] sequences = SequenceDoors.Keys.ToArray();
         foreach (BossSequence sequence in sequences)
         {
             try
             {
-                ref BossScene[] bossScenes = ref Mirror.GetFieldRef<BossSequence, BossScene[]>(sequence, "bossScenes");
+                BossScene[]? bossScenes = GetBossScenes(sequence);
                 if (bossScenes == null || bossScenes.Length <= 1)
                 {
                     continue;
@@ -231,15 +327,51 @@ public sealed class TrueBossRush : Module
         }
     }
 
-    private static bool TryRestoreOriginalSequence(BossSequence sequence, ref BossScene[] bossScenes)
+    private static bool TryRestoreOriginalSequence(BossSequence sequence, out BossScene[] restored)
     {
         if (!OriginalSequences.TryGetValue(sequence, out BossScene[]? original))
+        {
+            restored = Array.Empty<BossScene>();
+            return false;
+        }
+
+        restored = original.ToArray();
+        return true;
+    }
+
+    private static BossScene[]? GetBossScenes(BossSequence sequence)
+    {
+        if (sequence == null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return BossScenesField.GetValue(sequence) as BossScene[];
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static bool SetBossScenes(BossSequence sequence, BossScene[] scenes)
+    {
+        if (sequence == null || scenes == null)
         {
             return false;
         }
 
-        bossScenes = original.ToArray();
-        return true;
+        try
+        {
+            BossScenesField.SetValue(sequence, scenes);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static Pantheon GetPantheon(IReadOnlyList<BossScene> scenes)

@@ -192,5 +192,17 @@ public sealed partial class QuickMenu : Module
                 Highlight = highlight;
             }
         }
+
+        private sealed class BossManipulateCardVisual
+        {
+            public BossManipulateCardVisual(CanvasGroup group, Type moduleType)
+            {
+                Group = group;
+                ModuleType = moduleType;
+            }
+
+            public CanvasGroup Group { get; }
+            public Type ModuleType { get; }
+        }
     }
 }

@@ -103,8 +103,10 @@ public sealed partial class QuickMenu : Module
 			button.targetGraphic = image;
 			button.onClick.AddListener(delegate
 			{
-				SetSelectedPresetMaxHealth(value);
-				GearSwitcher.ApplyStatsImmediate(GetSelectedPreset());
+				if (SetSelectedPresetMaxHealth(value))
+				{
+					GearSwitcher.ApplyStatsImmediate(GetSelectedPreset());
+				}
 				UpdateGearSwitcherHpMaskIcons();
 			});
 			gearSwitcherHpMaskIcons.Add(image);
@@ -1351,7 +1353,6 @@ public sealed partial class QuickMenu : Module
 			GearSwitcher.ResetDefaults();
 			gearSwitcherSelectedPreset = "FullGear";
 			SetGearSwitcherEnabled(value: false);
-			GodhomeQoL.SaveGlobalSettingsSafe();
 			RefreshGearSwitcherUi();
 			SetGearSwitcherResetConfirmVisible(value: false);
 		}
@@ -1370,15 +1371,15 @@ public sealed partial class QuickMenu : Module
 		{
 			if (GearSwitcher.IsGloballyEnabled != value)
 			{
-				GearSwitcher.IsGloballyEnabled = value;
-				GodhomeQoL.SaveGlobalSettingsSafe();
 				if (value)
 				{
+					GearSwitcher.PrepareForEnable();
+					GearSwitcher.IsGloballyEnabled = true;
 					GearSwitcher.ApplyPreset(gearSwitcherSelectedPreset, allowQueue: true);
 				}
 				else
 				{
-					GearSwitcher.ClearPendingApplies();
+					GearSwitcher.DisableAndRestoreState();
 				}
 				RefreshGearSwitcherUi();
 				UpdateGearSwitcherInteractivity();
@@ -1658,7 +1659,7 @@ public sealed partial class QuickMenu : Module
 			{
 				if (dashSlashSprite is null)
 				{
-					dashSlashSprite = LoadCollectorIconSprite("Great Slash.png", "DashSlash");
+					dashSlashSprite = LoadCollectorIconSprite("Dash Slash.png", "DashSlash");
 				}
 				Sprite? sprite = dashSlashSprite;
 				if (sprite != null)
@@ -1685,7 +1686,7 @@ public sealed partial class QuickMenu : Module
 			{
 				if (greatSlashSprite is null)
 				{
-					greatSlashSprite = LoadCollectorIconSprite("Dash Slash.png", "GreatSlash");
+					greatSlashSprite = LoadCollectorIconSprite("Great Slash.png", "GreatSlash");
 				}
 				Sprite? sprite = greatSlashSprite;
 				if (sprite != null)
@@ -1936,7 +1937,7 @@ public sealed partial class QuickMenu : Module
 			{
 				hpMaskSprite = LoadCollectorIconSprite("HPMask.png", "HPMask");
 			}
-			int maxHealth = GetSelectedPreset().MaxHealth;
+			int maxHealth = GetEffectiveSelectedPresetMaxHealth();
 			for (int i = 0; i < gearSwitcherHpMaskIcons.Count; i++)
 			{
 				Image image = gearSwitcherHpMaskIcons[i];
@@ -2388,12 +2389,44 @@ public sealed partial class QuickMenu : Module
 			return value;
 		}
 
-		private void SetSelectedPresetMaxHealth(int value)
+		private bool IsAlwaysFuriousHealthLockActive()
 		{
+			return global::GodhomeQoL.Modules.BossChallenge.AlwaysFurious.IsGearSwitcherHealthLockActive();
+		}
+
+		private int GetEffectiveSelectedPresetMaxHealth()
+		{
+			if (IsAlwaysFuriousHealthLockActive())
+			{
+				return 1;
+			}
+
+			return Math.Max(1, Math.Min(9, GetSelectedPreset().MaxHealth));
+		}
+
+		private bool SetSelectedPresetMaxHealth(int value)
+		{
+			if (IsAlwaysFuriousHealthLockActive())
+			{
+				if (value != 1)
+				{
+					ShowStatusMessage("OFF Always Furious");
+				}
+
+				return false;
+			}
+
 			GearPreset selectedPreset = GetSelectedPreset();
-			selectedPreset.MaxHealth = Math.Max(1, Math.Min(9, value));
+			int clamped = Math.Max(1, Math.Min(9, value));
+			if (selectedPreset.MaxHealth == clamped)
+			{
+				return false;
+			}
+
+			selectedPreset.MaxHealth = clamped;
 			GodhomeQoL.SaveGlobalSettingsSafe();
 			MarkGearSwitcherPresetEdited();
+			return true;
 		}
 
 		private void SetSelectedPresetSoulVessels(int value)

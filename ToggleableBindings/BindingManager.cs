@@ -732,8 +732,16 @@ namespace ToggleableBindings
                 {
                     Type bindingType = binding.GetType();
 
-                    if (IsBindingRegistered(bindingType))
-                        RemoveBinding(binding);
+                    if (RegisteredBindings.TryGetValue(bindingType, out Binding? existingBinding))
+                    {
+                        // Replace currently registered runtime instance with deserialized one.
+                        // If runtime instance was already applied, restore it first so no stale
+                        // hooks/effects survive after we swap the registration entry.
+                        if (existingBinding.IsApplied)
+                            existingBinding.Restore();
+
+                        RemoveBinding(existingBinding);
+                    }
 
                     AddBinding(binding);
 

@@ -21,27 +21,20 @@ public sealed partial class QuickMenu : Module
             Modules.QoL.FastSuperDash.fastSuperDashSpeedMultiplier = 1f;
 
             ResetCollectorPhasesDefaults();
-            Modules.CollectorPhases.CollectorPhases.HoGOnly = true;
             SetModuleEnabled<Modules.QoL.CollectorRoarMute>(false);
             SetModuleEnabled<Modules.CollectorPhases.CollectorPhases>(false);
 
             SetModuleEnabled<Modules.FastReload>(false);
             Modules.FastReload.reloadKeyCode = (int)KeyCode.None;
-            Modules.FastReload.teleportKeyCode = (int)KeyCode.None;
 
-            Modules.QoL.DreamshieldStartAngle.startAngleEnabled = false;
-            Modules.QoL.DreamshieldStartAngle.rotationDelay = 0f;
-            Modules.QoL.DreamshieldStartAngle.rotationSpeed = 1f;
+            Modules.QoL.DreamshieldStartAngle.ResetDefaults();
 
-            ShowHpSettings.EnabledMod = false;
-            ShowHpSettings.ShowPB = true;
-            ShowHpSettings.HideAfter10Sec = true;
-            ShowHpSettings.HudFadeSeconds = 5f;
+            ShowHPOnDeath.ResetFeatureDefaults();
             ApplyShowHpBinding(null);
 
             GodhomeQoL.GlobalSettings.MaskDamage ??= new MaskDamageSettings();
             GodhomeQoL.GlobalSettings.MaskDamage.Enabled = false;
-            GodhomeQoL.GlobalSettings.MaskDamage.DamageMultiplier = 1;
+            GodhomeQoL.GlobalSettings.MaskDamage.DamageMultiplier = 1f;
             GodhomeQoL.GlobalSettings.MaskDamage.ShowUI = true;
             GodhomeQoL.GlobalSettings.MaskDamage.ToggleUiKeybind = string.Empty;
 
@@ -56,8 +49,6 @@ public sealed partial class QuickMenu : Module
             SpeedChanger.displayStyle = 0;
             SpeedChanger.toggleKeybind = string.Empty;
             SpeedChanger.inputSpeedKeybind = string.Empty;
-            SpeedChanger.slowDownKeybind = string.Empty;
-            SpeedChanger.speedUpKeybind = string.Empty;
             SpeedChanger.speed = 1f;
 
             SetModuleEnabled<Modules.QoL.TeleportKit>(false);
@@ -73,10 +64,7 @@ public sealed partial class QuickMenu : Module
             SetModuleEnabled<Modules.BossChallenge.InfiniteGrimmPufferfish>(false);
             SetModuleEnabled<Modules.BossChallenge.InfiniteRadianceClimbing>(false);
             Modules.QoL.CarefreeMelodyReset.SetMode(Modules.QoL.CarefreeMelodyReset.ModeOff);
-            SetModuleEnabled<Modules.BossChallenge.P5Health>(false);
             SetModuleEnabled<Modules.BossChallenge.SegmentedP5>(false);
-            SetModuleEnabled<Modules.BossChallenge.HalveDamageHoGAscendedOrAbove>(false);
-            SetModuleEnabled<Modules.BossChallenge.HalveDamageHoGAttuned>(false);
             SetModuleEnabled<Modules.BossChallenge.AddLifeblood>(false);
             SetModuleEnabled<Modules.BossChallenge.AddSoul>(false);
             SetModuleEnabled<Modules.BossChallenge.ForceArriveAnimation>(false);
@@ -91,6 +79,44 @@ public sealed partial class QuickMenu : Module
             Modules.BossChallenge.ForceGreyPrinceEnterType.gpzEnterType =
                 Modules.BossChallenge.ForceGreyPrinceEnterType.EnterType.Off;
             SetModuleEnabled<Modules.BossChallenge.ZoteHelper>(false);
+            ResetGruzMotherHelperDefaults();
+            SetModuleEnabled<Modules.BossChallenge.GruzMotherHelper>(false);
+            ResetGruzMotherP1HelperDefaults();
+            SetModuleEnabled<Modules.BossChallenge.GruzMotherP1Helper>(false);
+            ResetVengeflyKingP1HelperDefaults();
+            SetModuleEnabled<Modules.BossChallenge.VengeflyKingP1Helper>(false);
+            ResetBroodingMawlekP1HelperDefaults();
+            SetModuleEnabled<Modules.BossChallenge.BroodingMawlekP1Helper>(false);
+            ResetNoskP2HelperDefaults();
+            SetModuleEnabled<Modules.BossChallenge.NoskP2Helper>(false);
+            ResetUumuuP3HelperDefaults();
+            SetModuleEnabled<Modules.BossChallenge.UumuuP3Helper>(false);
+            ResetSoulWarriorP1HelperDefaults();
+            SetModuleEnabled<Modules.BossChallenge.SoulWarriorP1Helper>(false);
+            ResetNoEyesP4HelperDefaults();
+            SetModuleEnabled<Modules.BossChallenge.NoEyesP4Helper>(false);
+            ResetMarmuP2HelperDefaults();
+            SetModuleEnabled<Modules.BossChallenge.MarmuP2Helper>(false);
+            ResetXeroP2HelperDefaults();
+            SetModuleEnabled<Modules.BossChallenge.XeroP2Helper>(false);
+            ResetMarkothP4HelperDefaults();
+            SetModuleEnabled<Modules.BossChallenge.MarkothP4Helper>(false);
+            ResetGorbP1HelperDefaults();
+            SetModuleEnabled<Modules.BossChallenge.GorbP1Helper>(false);
+            ResetHornetProtectorHelperDefaults();
+            SetModuleEnabled<Modules.BossChallenge.HornetProtectorHelper>(false);
+            ResetBroodingMawlekHelperDefaults();
+            SetModuleEnabled<Modules.BossChallenge.BroodingMawlekHelper>(false);
+            ResetMassiveMossChargerHelperDefaults();
+            SetModuleEnabled<Modules.BossChallenge.MassiveMossChargerHelper>(false);
+            ResetCrystalGuardianHelperDefaults();
+            SetModuleEnabled<Modules.BossChallenge.CrystalGuardianHelper>(false);
+            ResetEnragedGuardianHelperDefaults();
+            SetModuleEnabled<Modules.BossChallenge.EnragedGuardianHelper>(false);
+            ResetHornetSentinelHelperDefaults();
+            SetModuleEnabled<Modules.BossChallenge.HornetSentinelHelper>(false);
+            ResetAdditionalGhostHelperDefaultsGlobal();
+            SetAdditionalGhostHelpersModulesEnabled(false);
 
             SetModuleEnabled<Modules.QoL.FastDreamWarp>(false);
             FastDreamWarpSettings.Keybinds.Toggle.ClearBindings();
@@ -133,11 +159,11 @@ public sealed partial class QuickMenu : Module
             Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon3Enabled = false;
             Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon4Enabled = false;
             Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon5Enabled = false;
-            Modules.Cheats.Cheats.InfiniteSoulEnabled = false;
-            Modules.Cheats.Cheats.InfiniteHpEnabled = false;
-            Modules.Cheats.Cheats.InvincibilityEnabled = false;
-            Modules.Cheats.Cheats.NoclipEnabled = false;
-            Modules.Cheats.Cheats.KillAllHotkeyRaw = string.Empty;
+            Modules.Cheats.Cheats.SetInfiniteSoulEnabled(false);
+            Modules.Cheats.Cheats.SetInfiniteHpEnabled(false);
+            Modules.Cheats.Cheats.SetInvincibilityEnabled(false);
+            Modules.Cheats.Cheats.SetNoclipEnabled(false);
+            Modules.Cheats.Cheats.SetKillAllHotkeyRaw(string.Empty);
 
             GodhomeQoL.GlobalSettings.QuickMenuMasters.BossChallengeEnabled = false;
             GodhomeQoL.GlobalSettings.QuickMenuMasters.BossChallengeHasSnapshot = false;
@@ -147,6 +173,7 @@ public sealed partial class QuickMenu : Module
             GodhomeQoL.GlobalSettings.QuickMenuMasters.MenuAnimHasSnapshot = false;
             GodhomeQoL.GlobalSettings.QuickMenuMasters.BossAnimEnabled = true;
             GodhomeQoL.GlobalSettings.QuickMenuMasters.BossAnimHasSnapshot = false;
+            GodhomeQoL.GlobalSettings.QuickMenuMasters.BossAnimSavedHallOfGods = false;
             GodhomeQoL.GlobalSettings.QuickMenuMasters.RandomPantheonsEnabled = false;
             GodhomeQoL.GlobalSettings.QuickMenuMasters.RandomPantheonsHasSnapshot = false;
             GodhomeQoL.GlobalSettings.QuickMenuMasters.RandomPantheonsSavedP1 = false;
@@ -167,6 +194,11 @@ public sealed partial class QuickMenu : Module
             GodhomeQoL.GlobalSettings.QuickMenuMasters.CheatsSavedInfiniteHp = false;
             GodhomeQoL.GlobalSettings.QuickMenuMasters.CheatsSavedInvincibility = false;
             GodhomeQoL.GlobalSettings.QuickMenuMasters.CheatsSavedNoclip = false;
+            GodhomeQoL.GlobalSettings.QuickMenuMasters.BossManipulateGlobalP5Enabled = false;
+            GodhomeQoL.GlobalSettings.QuickMenuMasters.BossManipulateGlobalP5TouchedModules ??= new List<string>();
+            GodhomeQoL.GlobalSettings.QuickMenuMasters.BossManipulateGlobalP5TouchedModules.Clear();
+            GodhomeQoL.GlobalSettings.QuickMenuMasters.BossManipulateGlobalP5EnabledModules ??= new List<string>();
+            GodhomeQoL.GlobalSettings.QuickMenuMasters.BossManipulateGlobalP5EnabledModules.Clear();
         }
 
         private static void ResetCollectorPhasesDefaults()
@@ -194,26 +226,101 @@ public sealed partial class QuickMenu : Module
             Modules.CollectorPhases.CollectorPhases.buzzerHP = 26;
             Modules.CollectorPhases.CollectorPhases.rollerHP = 26;
             Modules.CollectorPhases.CollectorPhases.spitterHP = 26;
-            Modules.CollectorPhases.CollectorPhases.spawnBuzzer = false;
-            Modules.CollectorPhases.CollectorPhases.spawnRoller = false;
+            Modules.CollectorPhases.CollectorPhases.spawnBuzzer = true;
+            Modules.CollectorPhases.CollectorPhases.spawnRoller = true;
             Modules.CollectorPhases.CollectorPhases.spawnSpitter = true;
             Modules.CollectorPhases.CollectorPhases.CollectorImmortal = false;
-            Modules.CollectorPhases.CollectorPhases.IgnoreInitialJarLimit = true;
+            Modules.CollectorPhases.CollectorPhases.IgnoreInitialJarLimit = false;
             Modules.CollectorPhases.CollectorPhases.DisableSummonLimit = false;
             Modules.CollectorPhases.CollectorPhases.CustomSummonLimit = 20;
-            Modules.CollectorPhases.CollectorPhases.HoGOnly = true;
         }
 
         private static void ResetZoteHelperDefaults()
         {
             Modules.BossChallenge.ZoteHelper.zoteBossHp = 1400;
+            Modules.BossChallenge.ZoteHelper.zoteUseCustomBossHp = true;
             Modules.BossChallenge.ZoteHelper.zoteImmortal = false;
             Modules.BossChallenge.ZoteHelper.zoteSpawnFlying = true;
             Modules.BossChallenge.ZoteHelper.zoteSpawnHopping = true;
             Modules.BossChallenge.ZoteHelper.zoteSummonFlyingHp = 20;
+            Modules.BossChallenge.ZoteHelper.zoteUseCustomFlyingHp = true;
             Modules.BossChallenge.ZoteHelper.zoteSummonHoppingHp = 20;
+            Modules.BossChallenge.ZoteHelper.zoteUseCustomHoppingHp = true;
             Modules.BossChallenge.ZoteHelper.zoteSummonLimit = 3;
-            Modules.BossChallenge.ZoteHelper.ZoteHoGOnly = true;
+            Modules.BossChallenge.ZoteHelper.zoteUseCustomSummonLimit = false;
+        }
+
+        private static void ResetGruzMotherHelperDefaults()
+        {
+            Modules.BossChallenge.GruzMotherHelper.gruzUseMaxHp = false;
+            Modules.BossChallenge.GruzMotherHelper.gruzP5Hp = false;
+            Modules.BossChallenge.GruzMotherHelper.gruzMaxHp = 945;
+            Modules.BossChallenge.GruzMotherHelper.gruzMaxHpBeforeP5 = 945;
+            Modules.BossChallenge.GruzMotherHelper.gruzHasStoredMaxHpBeforeP5 = false;
+        }
+
+        private static void ResetHornetProtectorHelperDefaults()
+        {
+            Modules.BossChallenge.HornetProtectorHelper.hornetUseMaxHp = false;
+            Modules.BossChallenge.HornetProtectorHelper.hornetP5Hp = false;
+            Modules.BossChallenge.HornetProtectorHelper.hornetMaxHp = 1250;
+            Modules.BossChallenge.HornetProtectorHelper.hornetMaxHpBeforeP5 = 1250;
+            Modules.BossChallenge.HornetProtectorHelper.hornetUseMaxHpBeforeP5 = false;
+            Modules.BossChallenge.HornetProtectorHelper.hornetHasStoredStateBeforeP5 = false;
+        }
+
+        private static void ResetBroodingMawlekHelperDefaults()
+        {
+            Modules.BossChallenge.BroodingMawlekHelper.mawlekUseMaxHp = false;
+            Modules.BossChallenge.BroodingMawlekHelper.mawlekP5Hp = false;
+            Modules.BossChallenge.BroodingMawlekHelper.mawlekMaxHp = 1050;
+            Modules.BossChallenge.BroodingMawlekHelper.mawlekMaxHpBeforeP5 = 1050;
+            Modules.BossChallenge.BroodingMawlekHelper.mawlekUseMaxHpBeforeP5 = false;
+            Modules.BossChallenge.BroodingMawlekHelper.mawlekHasStoredStateBeforeP5 = false;
+        }
+
+        private static void ResetMassiveMossChargerHelperDefaults()
+        {
+            Modules.BossChallenge.MassiveMossChargerHelper.massiveMossUseMaxHp = false;
+            Modules.BossChallenge.MassiveMossChargerHelper.massiveMossP5Hp = false;
+            Modules.BossChallenge.MassiveMossChargerHelper.massiveMossMaxHp = 850;
+            Modules.BossChallenge.MassiveMossChargerHelper.massiveMossMaxHpBeforeP5 = 850;
+            Modules.BossChallenge.MassiveMossChargerHelper.massiveMossUseMaxHpBeforeP5 = false;
+            Modules.BossChallenge.MassiveMossChargerHelper.massiveMossHasStoredStateBeforeP5 = false;
+        }
+
+        private static void ResetCrystalGuardianHelperDefaults()
+        {
+            Modules.BossChallenge.CrystalGuardianHelper.crystalGuardianUseMaxHp = false;
+            Modules.BossChallenge.CrystalGuardianHelper.crystalGuardianP5Hp = false;
+            Modules.BossChallenge.CrystalGuardianHelper.crystalGuardianMaxHp = 900;
+            Modules.BossChallenge.CrystalGuardianHelper.crystalGuardianMaxHpBeforeP5 = 900;
+            Modules.BossChallenge.CrystalGuardianHelper.crystalGuardianUseMaxHpBeforeP5 = false;
+            Modules.BossChallenge.CrystalGuardianHelper.crystalGuardianHasStoredStateBeforeP5 = false;
+        }
+
+        private static void ResetEnragedGuardianHelperDefaults()
+        {
+            Modules.BossChallenge.EnragedGuardianHelper.enragedGuardianUseMaxHp = false;
+            Modules.BossChallenge.EnragedGuardianHelper.enragedGuardianP5Hp = false;
+            Modules.BossChallenge.EnragedGuardianHelper.enragedGuardianMaxHp = 1250;
+            Modules.BossChallenge.EnragedGuardianHelper.enragedGuardianMaxHpBeforeP5 = 1250;
+            Modules.BossChallenge.EnragedGuardianHelper.enragedGuardianUseMaxHpBeforeP5 = false;
+            Modules.BossChallenge.EnragedGuardianHelper.enragedGuardianHasStoredStateBeforeP5 = false;
+        }
+
+        private static void ResetHornetSentinelHelperDefaults()
+        {
+            Modules.BossChallenge.HornetSentinelHelper.hornetSentinelUseMaxHp = false;
+            Modules.BossChallenge.HornetSentinelHelper.hornetSentinelP5Hp = false;
+            Modules.BossChallenge.HornetSentinelHelper.hornetSentinelMaxHp = 1200;
+            Modules.BossChallenge.HornetSentinelHelper.hornetSentinelUseCustomPhase = false;
+            Modules.BossChallenge.HornetSentinelHelper.hornetSentinelPhase2Hp = 480;
+            Modules.BossChallenge.HornetSentinelHelper.hornetSentinelMaxHpBeforeP5 = 1200;
+            Modules.BossChallenge.HornetSentinelHelper.hornetSentinelUseCustomPhaseBeforeP5 = false;
+            Modules.BossChallenge.HornetSentinelHelper.hornetSentinelPhase2HpBeforeP5 = 480;
+            Modules.BossChallenge.HornetSentinelHelper.hornetSentinelUseMaxHpBeforeP5 = false;
+            Modules.BossChallenge.HornetSentinelHelper.hornetSentinelHasStoredStateBeforeP5 = false;
         }
 
         private bool GetModuleEnabled()
@@ -230,6 +337,7 @@ public sealed partial class QuickMenu : Module
                 module.Enabled = value;
             }
 
+            GodhomeQoL.SaveGlobalSettingsSafe();
             UpdateFastSuperDashInteractivity();
             UpdateQuickMenuEntryStateColors();
         }
@@ -277,7 +385,7 @@ public sealed partial class QuickMenu : Module
 
         private void SetDreamshieldEnabled(bool value)
         {
-            Modules.QoL.DreamshieldStartAngle.startAngleEnabled = value;
+            Modules.QoL.DreamshieldStartAngle.SetEnabled(value);
             UpdateDreamshieldSliderState();
             UpdateDreamshieldInteractivity();
             UpdateQuickMenuEntryStateColors();
@@ -305,7 +413,7 @@ public sealed partial class QuickMenu : Module
 
         private void SetShowHpOnDeathEnabled(bool value)
         {
-            ShowHpSettings.EnabledMod = value;
+            ShowHPOnDeath.SetFeatureEnabled(value);
             UpdateShowHpOnDeathInteractivity();
             UpdateQuickMenuEntryStateColors();
         }
@@ -321,6 +429,17 @@ public sealed partial class QuickMenu : Module
 
             UpdateMaskDamageInteractivity();
             UpdateQuickMenuEntryStateColors();
+        }
+
+        private static bool GetMaskDamageUiVisible()
+        {
+            return MaskDamage.GetUiVisible();
+        }
+
+        private void SetMaskDamageUiVisible(bool value)
+        {
+            MaskDamage.SetUiVisible(value);
+            RefreshMaskDamageUi();
         }
 
         private bool GetFreezeHitboxesEnabled()
@@ -371,7 +490,17 @@ public sealed partial class QuickMenu : Module
         private void SetZoteBossHp(int value)
         {
             Modules.BossChallenge.ZoteHelper.zoteBossHp = Mathf.Clamp(value, 100, 999999);
-            Modules.BossChallenge.ZoteHelper.ApplyBossHealthIfPresent();
+            if (Modules.BossChallenge.ZoteHelper.zoteUseCustomBossHp)
+            {
+                Modules.BossChallenge.ZoteHelper.ApplyBossHealthIfPresent();
+            }
+        }
+
+        private void SetZoteUseCustomBossHpEnabled(bool value)
+        {
+            Modules.BossChallenge.ZoteHelper.zoteUseCustomBossHp = value;
+            Modules.BossChallenge.ZoteHelper.ReapplyLiveSettings();
+            RefreshZoteHelperUi();
         }
 
         private void SetZoteImmortalEnabled(bool value)
@@ -393,13 +522,461 @@ public sealed partial class QuickMenu : Module
         private void SetZoteFlyingHp(int value)
         {
             Modules.BossChallenge.ZoteHelper.zoteSummonFlyingHp = Mathf.Clamp(value, 0, 99);
+            if (Modules.BossChallenge.ZoteHelper.zoteUseCustomFlyingHp)
+            {
+                Modules.BossChallenge.ZoteHelper.ApplyZotelingHealthIfPresent();
+            }
+        }
+
+        private void SetZoteUseCustomFlyingHpEnabled(bool value)
+        {
+            Modules.BossChallenge.ZoteHelper.zoteUseCustomFlyingHp = value;
             Modules.BossChallenge.ZoteHelper.ApplyZotelingHealthIfPresent();
+            RefreshZoteHelperUi();
         }
 
         private void SetZoteHoppingHp(int value)
         {
             Modules.BossChallenge.ZoteHelper.zoteSummonHoppingHp = Mathf.Clamp(value, 0, 99);
+            if (Modules.BossChallenge.ZoteHelper.zoteUseCustomHoppingHp)
+            {
+                Modules.BossChallenge.ZoteHelper.ApplyZotelingHealthIfPresent();
+            }
+        }
+
+        private void SetZoteUseCustomHoppingHpEnabled(bool value)
+        {
+            Modules.BossChallenge.ZoteHelper.zoteUseCustomHoppingHp = value;
             Modules.BossChallenge.ZoteHelper.ApplyZotelingHealthIfPresent();
+            RefreshZoteHelperUi();
+        }
+
+        private void SetZoteSummonLimit(int value)
+        {
+            Modules.BossChallenge.ZoteHelper.zoteSummonLimit = Mathf.Clamp(value, 0, 99);
+            if (Modules.BossChallenge.ZoteHelper.zoteUseCustomSummonLimit)
+            {
+                Modules.BossChallenge.ZoteHelper.ReapplyLiveSettings();
+            }
+        }
+
+        private void SetZoteUseCustomSummonLimitEnabled(bool value)
+        {
+            Modules.BossChallenge.ZoteHelper.zoteUseCustomSummonLimit = value;
+            Modules.BossChallenge.ZoteHelper.ReapplyLiveSettings();
+            RefreshZoteHelperUi();
+        }
+
+        private bool GetGruzMotherHelperEnabled()
+        {
+            Module? module = GetGruzMotherHelperModule();
+            return module?.Enabled ?? false;
+        }
+
+        private void SetGruzMotherHelperEnabled(bool value)
+        {
+            Module? module = GetGruzMotherHelperModule();
+            if (module != null)
+            {
+                module.Enabled = value;
+            }
+
+            UpdateGruzHelperInteractivity();
+            UpdateQuickMenuEntryStateColors();
+        }
+
+        private void SetGruzUseMaxHpEnabled(bool value)
+        {
+            if (Modules.BossChallenge.GruzMotherHelper.gruzP5Hp)
+            {
+                Modules.BossChallenge.GruzMotherHelper.gruzUseMaxHp = true;
+                RefreshGruzHelperUi();
+                return;
+            }
+
+            Modules.BossChallenge.GruzMotherHelper.gruzUseMaxHp = value;
+            Modules.BossChallenge.GruzMotherHelper.ReapplyLiveSettings();
+            RefreshGruzHelperUi();
+        }
+
+        private void SetGruzP5HpEnabled(bool value)
+        {
+            Modules.BossChallenge.GruzMotherHelper.SetP5HpEnabled(value);
+            RefreshGruzHelperUi();
+        }
+
+        private void SetGruzMaxHp(int value)
+        {
+            if (Modules.BossChallenge.GruzMotherHelper.gruzP5Hp)
+            {
+                Modules.BossChallenge.GruzMotherHelper.gruzMaxHp = 650;
+                RefreshGruzHelperUi();
+                return;
+            }
+
+            Modules.BossChallenge.GruzMotherHelper.gruzMaxHp = Mathf.Clamp(value, 1, 999999);
+            if (Modules.BossChallenge.GruzMotherHelper.gruzUseMaxHp)
+            {
+                Modules.BossChallenge.GruzMotherHelper.ApplyGruzHealthIfPresent();
+            }
+        }
+
+        private bool GetHornetProtectorHelperEnabled()
+        {
+            Module? module = GetHornetProtectorHelperModule();
+            return module?.Enabled ?? false;
+        }
+
+        private void SetHornetProtectorHelperEnabled(bool value)
+        {
+            Module? module = GetHornetProtectorHelperModule();
+            if (module != null)
+            {
+                module.Enabled = value;
+            }
+
+            UpdateHornetHelperInteractivity();
+            UpdateQuickMenuEntryStateColors();
+        }
+
+        private void SetHornetUseMaxHpEnabled(bool value)
+        {
+            if (Modules.BossChallenge.HornetProtectorHelper.hornetP5Hp)
+            {
+                Modules.BossChallenge.HornetProtectorHelper.hornetUseMaxHp = true;
+                RefreshHornetHelperUi();
+                return;
+            }
+
+            Modules.BossChallenge.HornetProtectorHelper.hornetUseMaxHp = value;
+            Modules.BossChallenge.HornetProtectorHelper.ReapplyLiveSettings();
+            RefreshHornetHelperUi();
+        }
+
+        private void SetHornetP5HpEnabled(bool value)
+        {
+            Modules.BossChallenge.HornetProtectorHelper.SetP5HpEnabled(value);
+            RefreshHornetHelperUi();
+        }
+
+        private void SetHornetMaxHp(int value)
+        {
+            if (Modules.BossChallenge.HornetProtectorHelper.hornetP5Hp)
+            {
+                Modules.BossChallenge.HornetProtectorHelper.hornetMaxHp = 900;
+                RefreshHornetHelperUi();
+                return;
+            }
+
+            Modules.BossChallenge.HornetProtectorHelper.hornetMaxHp = Mathf.Clamp(value, 1, 999999);
+            if (Modules.BossChallenge.HornetProtectorHelper.hornetUseMaxHp)
+            {
+                Modules.BossChallenge.HornetProtectorHelper.ApplyHornetHealthIfPresent();
+            }
+        }
+
+        private bool GetBroodingMawlekHelperEnabled()
+        {
+            Module? module = GetBroodingMawlekHelperModule();
+            return module?.Enabled ?? false;
+        }
+
+        private void SetBroodingMawlekHelperEnabled(bool value)
+        {
+            Module? module = GetBroodingMawlekHelperModule();
+            if (module != null)
+            {
+                module.Enabled = value;
+            }
+
+            UpdateMawlekHelperInteractivity();
+            UpdateQuickMenuEntryStateColors();
+        }
+
+        private void SetMawlekUseMaxHpEnabled(bool value)
+        {
+            if (Modules.BossChallenge.BroodingMawlekHelper.mawlekP5Hp)
+            {
+                Modules.BossChallenge.BroodingMawlekHelper.mawlekUseMaxHp = true;
+                RefreshMawlekHelperUi();
+                return;
+            }
+
+            Modules.BossChallenge.BroodingMawlekHelper.mawlekUseMaxHp = value;
+            Modules.BossChallenge.BroodingMawlekHelper.ReapplyLiveSettings();
+            RefreshMawlekHelperUi();
+        }
+
+        private void SetMawlekP5HpEnabled(bool value)
+        {
+            Modules.BossChallenge.BroodingMawlekHelper.SetP5HpEnabled(value);
+            RefreshMawlekHelperUi();
+        }
+
+        private void SetMawlekMaxHp(int value)
+        {
+            if (Modules.BossChallenge.BroodingMawlekHelper.mawlekP5Hp)
+            {
+                Modules.BossChallenge.BroodingMawlekHelper.mawlekMaxHp = 750;
+                RefreshMawlekHelperUi();
+                return;
+            }
+
+            Modules.BossChallenge.BroodingMawlekHelper.mawlekMaxHp = Mathf.Clamp(value, 1, 999999);
+            if (Modules.BossChallenge.BroodingMawlekHelper.mawlekUseMaxHp)
+            {
+                Modules.BossChallenge.BroodingMawlekHelper.ApplyMawlekHealthIfPresent();
+            }
+        }
+
+        private bool GetMassiveMossChargerHelperEnabled()
+        {
+            Module? module = GetMassiveMossChargerHelperModule();
+            return module?.Enabled ?? false;
+        }
+
+        private void SetMassiveMossChargerHelperEnabled(bool value)
+        {
+            Module? module = GetMassiveMossChargerHelperModule();
+            if (module != null)
+            {
+                module.Enabled = value;
+            }
+
+            UpdateMassiveMossHelperInteractivity();
+            UpdateQuickMenuEntryStateColors();
+        }
+
+        private void SetMassiveMossUseMaxHpEnabled(bool value)
+        {
+            if (Modules.BossChallenge.MassiveMossChargerHelper.massiveMossP5Hp)
+            {
+                Modules.BossChallenge.MassiveMossChargerHelper.massiveMossUseMaxHp = true;
+                RefreshMassiveMossHelperUi();
+                return;
+            }
+
+            Modules.BossChallenge.MassiveMossChargerHelper.massiveMossUseMaxHp = value;
+            Modules.BossChallenge.MassiveMossChargerHelper.ReapplyLiveSettings();
+            RefreshMassiveMossHelperUi();
+        }
+
+        private void SetMassiveMossP5HpEnabled(bool value)
+        {
+            Modules.BossChallenge.MassiveMossChargerHelper.SetP5HpEnabled(value);
+            RefreshMassiveMossHelperUi();
+        }
+
+        private void SetMassiveMossMaxHp(int value)
+        {
+            if (Modules.BossChallenge.MassiveMossChargerHelper.massiveMossP5Hp)
+            {
+                Modules.BossChallenge.MassiveMossChargerHelper.massiveMossMaxHp = 480;
+                RefreshMassiveMossHelperUi();
+                return;
+            }
+
+            Modules.BossChallenge.MassiveMossChargerHelper.massiveMossMaxHp = Mathf.Clamp(value, 1, 999999);
+            if (Modules.BossChallenge.MassiveMossChargerHelper.massiveMossUseMaxHp)
+            {
+                Modules.BossChallenge.MassiveMossChargerHelper.ApplyMassiveMossHealthIfPresent();
+            }
+        }
+
+        private bool GetCrystalGuardianHelperEnabled()
+        {
+            Module? module = GetCrystalGuardianHelperModule();
+            return module?.Enabled ?? false;
+        }
+
+        private void SetCrystalGuardianHelperEnabled(bool value)
+        {
+            Module? module = GetCrystalGuardianHelperModule();
+            if (module != null)
+            {
+                module.Enabled = value;
+            }
+
+            UpdateCrystalGuardianHelperInteractivity();
+            UpdateQuickMenuEntryStateColors();
+        }
+
+        private void SetCrystalGuardianUseMaxHpEnabled(bool value)
+        {
+            if (Modules.BossChallenge.CrystalGuardianHelper.crystalGuardianP5Hp)
+            {
+                Modules.BossChallenge.CrystalGuardianHelper.crystalGuardianUseMaxHp = true;
+                RefreshCrystalGuardianHelperUi();
+                return;
+            }
+
+            Modules.BossChallenge.CrystalGuardianHelper.crystalGuardianUseMaxHp = value;
+            Modules.BossChallenge.CrystalGuardianHelper.ReapplyLiveSettings();
+            RefreshCrystalGuardianHelperUi();
+        }
+
+        private void SetCrystalGuardianP5HpEnabled(bool value)
+        {
+            Modules.BossChallenge.CrystalGuardianHelper.SetP5HpEnabled(value);
+            RefreshCrystalGuardianHelperUi();
+        }
+
+        private void SetCrystalGuardianMaxHp(int value)
+        {
+            if (Modules.BossChallenge.CrystalGuardianHelper.crystalGuardianP5Hp)
+            {
+                Modules.BossChallenge.CrystalGuardianHelper.crystalGuardianMaxHp = 650;
+                RefreshCrystalGuardianHelperUi();
+                return;
+            }
+
+            Modules.BossChallenge.CrystalGuardianHelper.crystalGuardianMaxHp = Mathf.Clamp(value, 1, 999999);
+            if (Modules.BossChallenge.CrystalGuardianHelper.crystalGuardianUseMaxHp)
+            {
+                Modules.BossChallenge.CrystalGuardianHelper.ApplyCrystalGuardianHealthIfPresent();
+            }
+        }
+
+        private bool GetEnragedGuardianHelperEnabled()
+        {
+            Module? module = GetEnragedGuardianHelperModule();
+            return module?.Enabled ?? false;
+        }
+
+        private void SetEnragedGuardianHelperEnabled(bool value)
+        {
+            Module? module = GetEnragedGuardianHelperModule();
+            if (module != null)
+            {
+                module.Enabled = value;
+            }
+
+            UpdateEnragedGuardianHelperInteractivity();
+            UpdateQuickMenuEntryStateColors();
+        }
+
+        private void SetEnragedGuardianUseMaxHpEnabled(bool value)
+        {
+            if (Modules.BossChallenge.EnragedGuardianHelper.enragedGuardianP5Hp)
+            {
+                Modules.BossChallenge.EnragedGuardianHelper.enragedGuardianUseMaxHp = true;
+                RefreshEnragedGuardianHelperUi();
+                return;
+            }
+
+            Modules.BossChallenge.EnragedGuardianHelper.enragedGuardianUseMaxHp = value;
+            Modules.BossChallenge.EnragedGuardianHelper.ReapplyLiveSettings();
+            RefreshEnragedGuardianHelperUi();
+        }
+
+        private void SetEnragedGuardianP5HpEnabled(bool value)
+        {
+            Modules.BossChallenge.EnragedGuardianHelper.SetP5HpEnabled(value);
+            RefreshEnragedGuardianHelperUi();
+        }
+
+        private void SetEnragedGuardianMaxHp(int value)
+        {
+            if (Modules.BossChallenge.EnragedGuardianHelper.enragedGuardianP5Hp)
+            {
+                Modules.BossChallenge.EnragedGuardianHelper.enragedGuardianMaxHp = 650;
+                RefreshEnragedGuardianHelperUi();
+                return;
+            }
+
+            Modules.BossChallenge.EnragedGuardianHelper.enragedGuardianMaxHp = Mathf.Clamp(value, 1, 999999);
+            if (Modules.BossChallenge.EnragedGuardianHelper.enragedGuardianUseMaxHp)
+            {
+                Modules.BossChallenge.EnragedGuardianHelper.ApplyEnragedGuardianHealthIfPresent();
+            }
+        }
+
+        private bool GetHornetSentinelHelperEnabled()
+        {
+            Module? module = GetHornetSentinelHelperModule();
+            return module?.Enabled ?? false;
+        }
+
+        private void SetHornetSentinelHelperEnabled(bool value)
+        {
+            Module? module = GetHornetSentinelHelperModule();
+            if (module != null)
+            {
+                module.Enabled = value;
+            }
+
+            UpdateHornetSentinelHelperInteractivity();
+            UpdateQuickMenuEntryStateColors();
+        }
+
+        private void SetHornetSentinelUseMaxHpEnabled(bool value)
+        {
+            if (Modules.BossChallenge.HornetSentinelHelper.hornetSentinelP5Hp)
+            {
+                Modules.BossChallenge.HornetSentinelHelper.hornetSentinelUseMaxHp = true;
+                RefreshHornetSentinelHelperUi();
+                return;
+            }
+
+            Modules.BossChallenge.HornetSentinelHelper.hornetSentinelUseMaxHp = value;
+            Modules.BossChallenge.HornetSentinelHelper.ReapplyLiveSettings();
+            RefreshHornetSentinelHelperUi();
+        }
+
+        private void SetHornetSentinelUseCustomPhaseEnabled(bool value)
+        {
+            if (Modules.BossChallenge.HornetSentinelHelper.hornetSentinelP5Hp)
+            {
+                Modules.BossChallenge.HornetSentinelHelper.hornetSentinelUseCustomPhase = false;
+                RefreshHornetSentinelHelperUi();
+                return;
+            }
+
+            Modules.BossChallenge.HornetSentinelHelper.hornetSentinelUseCustomPhase = value;
+            Modules.BossChallenge.HornetSentinelHelper.ReapplyLiveSettings();
+            RefreshHornetSentinelHelperUi();
+        }
+
+        private void SetHornetSentinelP5HpEnabled(bool value)
+        {
+            Modules.BossChallenge.HornetSentinelHelper.SetP5HpEnabled(value);
+            RefreshHornetSentinelHelperUi();
+        }
+
+        private void SetHornetSentinelMaxHp(int value)
+        {
+            if (Modules.BossChallenge.HornetSentinelHelper.hornetSentinelP5Hp)
+            {
+                Modules.BossChallenge.HornetSentinelHelper.hornetSentinelMaxHp = 850;
+                RefreshHornetSentinelHelperUi();
+                return;
+            }
+
+            Modules.BossChallenge.HornetSentinelHelper.hornetSentinelMaxHp = Mathf.Clamp(value, 1, 999999);
+            if (Modules.BossChallenge.HornetSentinelHelper.hornetSentinelUseMaxHp)
+            {
+                Modules.BossChallenge.HornetSentinelHelper.ApplyHornetSentinelHealthIfPresent();
+            }
+        }
+
+        private void SetHornetSentinelPhase2Hp(int value)
+        {
+            if (Modules.BossChallenge.HornetSentinelHelper.hornetSentinelP5Hp)
+            {
+                RefreshHornetSentinelHelperUi();
+                return;
+            }
+
+            Modules.BossChallenge.HornetSentinelHelper.hornetSentinelPhase2Hp = Mathf.Clamp(value, 1, 1200);
+            if (Modules.BossChallenge.HornetSentinelHelper.hornetSentinelUseCustomPhase)
+            {
+                Modules.BossChallenge.HornetSentinelHelper.ApplyPhaseThresholdSettingsIfPresent();
+            }
+        }
+
+        private static void ReapplyCollectorPhasesLiveSettings()
+        {
+            Modules.CollectorPhases.CollectorPhases.ReapplyLiveSettings();
         }
 
         private void SetCollectorPhase(int value)
@@ -412,6 +989,92 @@ public sealed partial class QuickMenu : Module
                 Modules.CollectorPhases.CollectorPhases.IgnoreInitialJarLimit = true;
                 UpdateToggleValue(ignoreInitialJarLimitValue, true);
             }
+
+            ReapplyCollectorPhasesLiveSettings();
+        }
+
+        private void SetCollectorImmortalEnabled(bool value)
+        {
+            Modules.CollectorPhases.CollectorPhases.CollectorImmortal = value;
+            ReapplyCollectorPhasesLiveSettings();
+        }
+
+        private void SetCollectorIgnoreInitialJarLimitEnabled(bool value)
+        {
+            Modules.CollectorPhases.CollectorPhases.IgnoreInitialJarLimit = value;
+            ReapplyCollectorPhasesLiveSettings();
+        }
+
+        private void SetCollectorUseCustomPhase2ThresholdEnabled(bool value)
+        {
+            Modules.CollectorPhases.CollectorPhases.UseCustomPhase2Threshold = value;
+            ReapplyCollectorPhasesLiveSettings();
+        }
+
+        private void SetCollectorCustomPhase2Threshold(int value)
+        {
+            Modules.CollectorPhases.CollectorPhases.CustomPhase2Threshold = Mathf.Clamp(value, 1, 99999);
+            ReapplyCollectorPhasesLiveSettings();
+        }
+
+        private void SetCollectorUseMaxHpEnabled(bool value)
+        {
+            Modules.CollectorPhases.CollectorPhases.UseMaxHP = value;
+            ReapplyCollectorPhasesLiveSettings();
+        }
+
+        private void SetCollectorMaxHp(int value)
+        {
+            Modules.CollectorPhases.CollectorPhases.collectorMaxHP = Math.Max(value, 100);
+            ReapplyCollectorPhasesLiveSettings();
+        }
+
+        private void SetCollectorBuzzerHp(int value)
+        {
+            Modules.CollectorPhases.CollectorPhases.buzzerHP = Math.Max(value, 1);
+            ReapplyCollectorPhasesLiveSettings();
+        }
+
+        private void SetCollectorSpawnBuzzerEnabled(bool value)
+        {
+            Modules.CollectorPhases.CollectorPhases.spawnBuzzer = value;
+            ReapplyCollectorPhasesLiveSettings();
+        }
+
+        private void SetCollectorRollerHp(int value)
+        {
+            Modules.CollectorPhases.CollectorPhases.rollerHP = Math.Max(value, 1);
+            ReapplyCollectorPhasesLiveSettings();
+        }
+
+        private void SetCollectorSpawnRollerEnabled(bool value)
+        {
+            Modules.CollectorPhases.CollectorPhases.spawnRoller = value;
+            ReapplyCollectorPhasesLiveSettings();
+        }
+
+        private void SetCollectorSpitterHp(int value)
+        {
+            Modules.CollectorPhases.CollectorPhases.spitterHP = Math.Max(value, 1);
+            ReapplyCollectorPhasesLiveSettings();
+        }
+
+        private void SetCollectorSpawnSpitterEnabled(bool value)
+        {
+            Modules.CollectorPhases.CollectorPhases.spawnSpitter = value;
+            ReapplyCollectorPhasesLiveSettings();
+        }
+
+        private void SetCollectorDisableSummonLimitEnabled(bool value)
+        {
+            Modules.CollectorPhases.CollectorPhases.DisableSummonLimit = value;
+            ReapplyCollectorPhasesLiveSettings();
+        }
+
+        private void SetCollectorCustomSummonLimit(int value)
+        {
+            Modules.CollectorPhases.CollectorPhases.CustomSummonLimit = Mathf.Clamp(value, 2, 999);
+            ReapplyCollectorPhasesLiveSettings();
         }
 
         private bool GetBossChallengeMasterEnabled() => bossChallengeMasterEnabled;
@@ -449,10 +1112,7 @@ public sealed partial class QuickMenu : Module
             bossChallengeSavedForceArrive = GetForceArriveAnimationEnabled();
             bossChallengeSavedInfiniteGrimm = GetInfiniteGrimmPufferfishEnabled();
             bossChallengeSavedInfiniteRadiance = GetInfiniteRadianceClimbingEnabled();
-            bossChallengeSavedP5Health = GetP5HealthEnabled();
             bossChallengeSavedSegmentedP5 = GetSegmentedP5Enabled();
-            bossChallengeSavedHalveAscended = GetHalveAscendedEnabled();
-            bossChallengeSavedHalveAttuned = GetHalveAttunedEnabled();
             bossChallengeSavedAddLifeblood = GetAddLifebloodEnabled();
             bossChallengeSavedAddSoul = GetAddSoulEnabled();
         }
@@ -471,10 +1131,7 @@ public sealed partial class QuickMenu : Module
             SetForceArriveAnimationEnabled(bossChallengeSavedForceArrive);
             SetInfiniteGrimmPufferfishEnabled(bossChallengeSavedInfiniteGrimm);
             SetInfiniteRadianceClimbingEnabled(bossChallengeSavedInfiniteRadiance);
-            SetP5HealthEnabled(bossChallengeSavedP5Health);
             SetSegmentedP5Enabled(bossChallengeSavedSegmentedP5);
-            SetHalveAscendedEnabled(bossChallengeSavedHalveAscended);
-            SetHalveAttunedEnabled(bossChallengeSavedHalveAttuned);
             SetAddLifebloodEnabled(bossChallengeSavedAddLifeblood);
             SetAddSoulEnabled(bossChallengeSavedAddSoul);
         }
@@ -488,10 +1145,7 @@ public sealed partial class QuickMenu : Module
             SetForceArriveAnimationEnabled(value);
             SetInfiniteGrimmPufferfishEnabled(value);
             SetInfiniteRadianceClimbingEnabled(value);
-            SetP5HealthEnabled(value);
             SetSegmentedP5Enabled(value);
-            SetHalveAscendedEnabled(value);
-            SetHalveAttunedEnabled(value);
             SetAddLifebloodEnabled(value);
             SetAddSoulEnabled(value);
         }
@@ -524,6 +1178,7 @@ public sealed partial class QuickMenu : Module
         private void CaptureBossAnimationSnapshot()
         {
             bossAnimMasterHasSnapshot = true;
+            bossAnimSavedHallOfGods = Modules.QoL.SkipCutscenes.HallOfGodsStatues;
             bossAnimSavedAbsoluteRadiance = Modules.QoL.SkipCutscenes.AbsoluteRadiance;
             bossAnimSavedPureVesselRoar = Modules.QoL.SkipCutscenes.PureVesselRoar;
             bossAnimSavedGrimmNightmare = Modules.QoL.SkipCutscenes.GrimmNightmare;
@@ -539,6 +1194,7 @@ public sealed partial class QuickMenu : Module
                 return;
             }
 
+            Modules.QoL.SkipCutscenes.HallOfGodsStatues = bossAnimSavedHallOfGods;
             Modules.QoL.SkipCutscenes.AbsoluteRadiance = bossAnimSavedAbsoluteRadiance;
             Modules.QoL.SkipCutscenes.PureVesselRoar = bossAnimSavedPureVesselRoar;
             Modules.QoL.SkipCutscenes.GrimmNightmare = bossAnimSavedGrimmNightmare;
@@ -549,6 +1205,7 @@ public sealed partial class QuickMenu : Module
 
         private void SetBossAnimationAll(bool value)
         {
+            Modules.QoL.SkipCutscenes.HallOfGodsStatues = value;
             Modules.QoL.SkipCutscenes.AbsoluteRadiance = value;
             Modules.QoL.SkipCutscenes.PureVesselRoar = value;
             Modules.QoL.SkipCutscenes.GrimmNightmare = value;
@@ -570,10 +1227,7 @@ public sealed partial class QuickMenu : Module
             settings.BossChallengeSavedCarefreeMelodyMode = bossChallengeSavedCarefreeMelodyMode;
             settings.BossChallengeSavedInfiniteGrimm = bossChallengeSavedInfiniteGrimm;
             settings.BossChallengeSavedInfiniteRadiance = bossChallengeSavedInfiniteRadiance;
-            settings.BossChallengeSavedP5Health = bossChallengeSavedP5Health;
             settings.BossChallengeSavedSegmentedP5 = bossChallengeSavedSegmentedP5;
-            settings.BossChallengeSavedHalveAscended = bossChallengeSavedHalveAscended;
-            settings.BossChallengeSavedHalveAttuned = bossChallengeSavedHalveAttuned;
             settings.BossChallengeSavedAddLifeblood = bossChallengeSavedAddLifeblood;
             settings.BossChallengeSavedAddSoul = bossChallengeSavedAddSoul;
             settings.BossChallengeSavedForceArriveAnimation = bossChallengeSavedForceArrive;
@@ -582,7 +1236,7 @@ public sealed partial class QuickMenu : Module
             settings.QolHasSnapshot = qolMasterHasSnapshot;
             settings.QolSavedFastDreamWarp = qolSavedFastDreamWarp;
             settings.QolSavedShortDeath = qolSavedShortDeath;
-            settings.QolSavedHallOfGods = qolSavedHallOfGods;
+            settings.QolSavedHallOfGods = false;
             settings.QolSavedUnlockAllModes = qolSavedUnlockAllModes;
             settings.QolSavedUnlockPantheons = qolSavedUnlockPantheons;
             settings.QolSavedUnlockRadiance = qolSavedUnlockRadiance;
@@ -603,6 +1257,7 @@ public sealed partial class QuickMenu : Module
 
             settings.BossAnimEnabled = bossAnimMasterEnabled;
             settings.BossAnimHasSnapshot = bossAnimMasterHasSnapshot;
+            settings.BossAnimSavedHallOfGods = bossAnimSavedHallOfGods;
             settings.BossAnimSavedAbsoluteRadiance = bossAnimSavedAbsoluteRadiance;
             settings.BossAnimSavedPureVesselRoar = bossAnimSavedPureVesselRoar;
             settings.BossAnimSavedGrimmNightmare = bossAnimSavedGrimmNightmare;
@@ -677,11 +1332,36 @@ public sealed partial class QuickMenu : Module
                 return;
             }
 
+            if (value)
+            {
+                bool hadTrueBossRush =
+                    GetTrueBossRushMasterEnabled()
+                    || Modules.BossChallenge.TrueBossRush.AnyPantheonEnabled;
+                bool hadSegmentedP5 = GetSegmentedP5Enabled();
+
+                if (hadTrueBossRush)
+                {
+                    SetTrueBossRushMasterEnabled(false);
+                    _ = Modules.BossChallenge.PantheonSequenceCompatibility.DisableTrueBossRush();
+                }
+
+                if (hadSegmentedP5)
+                {
+                    SetSegmentedP5Enabled(false);
+                }
+
+                if (hadTrueBossRush || hadSegmentedP5)
+                {
+                    ShowStatusMessage("Random Pantheons disabled True Boss Rush / Segmented P5.");
+                }
+            }
+
             randomPantheonsMasterEnabled = value;
             if (!value)
             {
                 CaptureRandomPantheonsSnapshot();
                 SetRandomPantheonsAll(false);
+                SetRandomPantheonsEnabled(false);
             }
             else
             {
@@ -799,6 +1479,32 @@ public sealed partial class QuickMenu : Module
             if (trueBossRushMasterEnabled == value)
             {
                 return;
+            }
+
+            if (value)
+            {
+                bool hadRandomPantheons =
+                    GetRandomPantheonsMasterEnabled()
+                    || GetRandomPantheonsEnabled()
+                    || Modules.BossChallenge.RandomPantheons.AnyPantheonEnabled;
+                bool hadSegmentedP5 = GetSegmentedP5Enabled();
+
+                if (hadRandomPantheons)
+                {
+                    SetRandomPantheonsMasterEnabled(false);
+                    SetRandomPantheonsEnabled(false);
+                    _ = Modules.BossChallenge.PantheonSequenceCompatibility.DisableRandomPantheons();
+                }
+
+                if (hadSegmentedP5)
+                {
+                    SetSegmentedP5Enabled(false);
+                }
+
+                if (hadRandomPantheons || hadSegmentedP5)
+                {
+                    ShowStatusMessage("True Boss Rush disabled Random Pantheons / Segmented P5.");
+                }
             }
 
             trueBossRushMasterEnabled = value;
@@ -1026,6 +1732,8 @@ public sealed partial class QuickMenu : Module
             }
 
             UpdateQuickMenuEntryStateColors();
+            RefreshAlwaysFuriousUi();
+            RefreshGearSwitcherUi();
         }
 
         private bool GetInfiniteGrimmPufferfishEnabled()

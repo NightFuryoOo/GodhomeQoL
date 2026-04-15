@@ -2,6 +2,8 @@ namespace GodhomeQoL.Modules.Tools;
 
 internal sealed class FreezeHitboxesRender : MonoBehaviour
 {
+    private const int CleanupIntervalFrames = 30;
+
     private struct HitboxType : IComparable<HitboxType>
     {
         public static readonly HitboxType Knight = new(Color.yellow, 0);
@@ -41,6 +43,7 @@ internal sealed class FreezeHitboxesRender : MonoBehaviour
         { HitboxType.HazardRespawn, new HashSet<Collider2D>() },
         { HitboxType.Other, new HashSet<Collider2D>() }
     };
+    private int lastCleanupFrame = -1;
 
     public static float LineWidth => Math.Max(0.7f, Screen.width / 960f * GameCameras.instance.tk2dCam.ZoomFactor);
 
@@ -129,6 +132,8 @@ internal sealed class FreezeHitboxesRender : MonoBehaviour
             return;
         }
 
+        CleanupDestroyedCollidersIfNeeded();
+
         GUI.depth = int.MaxValue;
         Camera camera = Camera.main;
         float lineWidth = LineWidth;
@@ -138,6 +143,21 @@ internal sealed class FreezeHitboxesRender : MonoBehaviour
             {
                 DrawHitbox(camera, collider2D, pair.Key, lineWidth);
             }
+        }
+    }
+
+    private void CleanupDestroyedCollidersIfNeeded()
+    {
+        int frame = Time.frameCount;
+        if (frame == lastCleanupFrame || frame % CleanupIntervalFrames != 0)
+        {
+            return;
+        }
+
+        lastCleanupFrame = frame;
+        foreach (HashSet<Collider2D> set in colliders.Values)
+        {
+            set.RemoveWhere(collider => collider == null);
         }
     }
 

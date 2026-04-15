@@ -3,6 +3,7 @@ using MonoMod.Cil;
 using IL;
 using InControl;
 using GodhomeQoL.Modules.BossChallenge;
+using GodhomeQoL.Modules.QoL;
 using ToggleableBindings;
 using ToggleableBindings.VanillaBindings;
 
@@ -12,14 +13,26 @@ public sealed class GearSwitcher : Module
 {
     public override bool DefaultEnabled => false;
     public override bool Hidden => true;
+    public override bool AlwaysEnabled => true;
 
     private const int VoidHeartCharmId = 36;
+    private const int GrimmchildCharmId = 40;
     private static readonly int[] PaleCourtCharmIds = { 41, 42, 43, 44 };
+    private const string ShowBoundNailEvent = "SHOW BOUND NAIL";
+    private const string HideBoundNailEvent = "HIDE BOUND NAIL";
+    private const string ShowBoundCharmsEvent = "SHOW BOUND CHARMS";
+    private const string HideBoundCharmsEvent = "HIDE BOUND CHARMS";
+    private const string BindVesselOrbEvent = "BIND VESSEL ORB";
+    private const string UnbindVesselOrbEvent = "UNBIND VESSEL ORB";
+    private const string MPLoseEvent = "MP LOSE";
+    private const string MPReserveUpEvent = "MP RESERVE UP";
+    private const string MPReserveDownEvent = "MP RESERVE DOWN";
+    private const string CharmIndicatorCheckEvent = "CHARM INDICATOR CHECK";
+    private const string UpdateBlueHealthEvent = "UPDATE BLUE HEALTH";
+    private const int SoulHudIndicatorResyncMaxFrames = 3600;
 
     private static bool pantheonActive;
     private static bool pantheonShellBound;
-    private static bool pantheonShellSelectedFromUi;
-    private static bool pantheonShellSelectionKnown;
     private static bool pendingApply;
     private static string pendingPresetName = string.Empty;
     private static bool pendingSpellsApply;
@@ -42,10 +55,15 @@ public sealed class GearSwitcher : Module
     private static GearPreset? pendingOvercharmedPreset;
     internal static bool IsApplyingPreset { get; private set; }
     private static bool pendingCoroutineRunning;
+    private static int coroutineGeneration;
+    private static int bindingHudResyncToken;
+    private static int soulBindingHudResyncToken;
     private static readonly List<BindingSource> savedNailAttackBindings = new();
     private static bool hasSavedNailAttackBindings;
-    private static int mainSoulGainOverride = 11;
-    private static int reserveSoulGainOverride = 6;
+    private const int DefaultMainSoulGain = 11;
+    private const int DefaultReserveSoulGain = 6;
+    private static int mainSoulGainOverride = DefaultMainSoulGain;
+    private static int reserveSoulGainOverride = DefaultReserveSoulGain;
 
         internal static GearSwitcherSettings Settings => GodhomeQoL.GlobalSettings.GearSwitcher ??= new GearSwitcherSettings();
 
@@ -54,6 +72,11 @@ public sealed class GearSwitcher : Module
             get => Settings.Enabled;
             set
             {
+                if (Settings.Enabled == value)
+                {
+                    return;
+                }
+
                 Settings.Enabled = value;
                 GodhomeQoL.SaveGlobalSettingsSafe();
             }
@@ -61,6 +84,7 @@ public sealed class GearSwitcher : Module
 
     private protected override void Load()
     {
+        coroutineGeneration++;
         On.HeroController.Start += OnHeroStart;
         On.HeroController.CharmUpdate += OnCharmUpdate;
         On.InputHandler.OnGUI += OnInputHandlerOnGUI;
@@ -72,6 +96,7 @@ public sealed class GearSwitcher : Module
 
     private protected override void Unload()
     {
+        RestoreRuntimeState(disableGlobalToggle: false);
         On.HeroController.Start -= OnHeroStart;
         On.HeroController.CharmUpdate -= OnCharmUpdate;
         On.InputHandler.OnGUI -= OnInputHandlerOnGUI;
@@ -79,36 +104,44 @@ public sealed class GearSwitcher : Module
         On.HealthManager.TakeDamage -= OnEnemyDamaged;
         USceneManager.activeSceneChanged -= OnSceneChanged;
         On.BossDoorChallengeUI.HideSequence -= OnBossDoorHideSequence;
+        savedNailAttackBindings.Clear();
+        hasSavedNailAttackBindings = false;
     }
 
     private static void OnHeroStart(On.HeroController.orig_Start orig, HeroController self)
     {
         orig(self);
         UpdatePantheonShellBindingState();
-        const string startupPreset = "FullGear";
-        CancelPendingPresetApply();
-        if (TryGetPreset(startupPreset, out GearPreset fullGearPreset))
+        ClearPendingApplies();
+
+        string startupPreset = NormalizeBuiltinPresetName(GetLastPresetName());
+        GearPreset? startupPresetData = null;
+        if (!string.IsNullOrEmpty(startupPreset) && TryGetPreset(startupPreset, out GearPreset currentPreset))
         {
-            // Force a clean baseline on save load to avoid stale shell binding after abrupt exits.
-            GodhomeQoL.GlobalSettings.GearSwitcher.LastPreset = startupPreset;
-            GodhomeQoL.SaveGlobalSettingsSafe();
-            QueueApplyPreset(startupPreset);
-            ApplyNailInputImmediate(fullGearPreset);
+            startupPresetData = currentPreset;
         }
-        else
+
+        if (startupPresetData == null)
         {
-            // Fallback: keep previous behavior only if FullGear is missing unexpectedly.
-            string lastPreset = GetLastPresetName();
-            if (!string.IsNullOrEmpty(lastPreset))
+            startupPreset = "FullGear";
+            if (TryGetPreset(startupPreset, out GearPreset fullGearPreset))
             {
-                lastPreset = NormalizeBuiltinPresetName(lastPreset);
-                QueueApplyPreset(lastPreset);
-                if (TryGetPreset(lastPreset, out GearPreset preset))
+                startupPresetData = fullGearPreset;
+                if (!string.Equals(GodhomeQoL.GlobalSettings.GearSwitcher.LastPreset, startupPreset, StringComparison.Ordinal))
                 {
-                    ApplyNailInputImmediate(preset);
+                    GodhomeQoL.GlobalSettings.GearSwitcher.LastPreset = startupPreset;
+                    GodhomeQoL.SaveGlobalSettingsSafe();
                 }
             }
         }
+
+        RunStartupShellCleanup(startupPresetData);
+        if (IsGloballyEnabled && startupPresetData != null)
+        {
+            QueueApplyPreset(startupPreset);
+            ApplyNailInputImmediate(startupPresetData);
+        }
+
         ScheduleOvercharmedReapply();
         ScheduleNailInputReapply();
         ScheduleShellBindingResync();
@@ -117,6 +150,12 @@ public sealed class GearSwitcher : Module
     private static void OnCharmUpdate(On.HeroController.orig_CharmUpdate orig, HeroController self)
     {
         orig(self);
+
+        if (IsApplyingPreset)
+        {
+            return;
+        }
+
         ReapplyForcedOvercharmed();
     }
 
@@ -154,12 +193,23 @@ public sealed class GearSwitcher : Module
             yield return origEnum.Current;
         }
 
-        TryRecordPantheonShellBindingFromUi(self);
+        // MemorizeBindings is the single owner of persisted pantheon UI states.
+        // GearSwitcher only consumes that state and applies runtime overrides.
         UpdatePantheonShellBindingState();
     }
 
     private static void UpdatePantheonShellBindingState()
     {
+        if (!IsGloballyEnabled)
+        {
+            return;
+        }
+
+        if (ModuleManager.IsModuleLoaded<MemorizeBindings>() && MemorizeBindings.IsApplyingBindingStates)
+        {
+            return;
+        }
+
         bool bossRush = PlayerData.instance != null && PlayerData.instance.bossRushMode;
         bool shellBound = bossRush && GetPantheonShellBindingSelected();
         if (bossRush == pantheonActive && shellBound == pantheonShellBound)
@@ -169,32 +219,22 @@ public sealed class GearSwitcher : Module
 
         pantheonActive = bossRush;
         pantheonShellBound = shellBound;
-        if (!bossRush)
-        {
-            pantheonShellSelectedFromUi = false;
-            pantheonShellSelectionKnown = false;
-        }
         ApplyPantheonShellBindingOverride();
-    }
-
-    private static void TryRecordPantheonShellBindingFromUi(BossDoorChallengeUI ui)
-    {
-        try
-        {
-            pantheonShellSelectedFromUi = ui != null && ui.boundHeartButton != null && ui.boundHeartButton.Selected;
-            pantheonShellSelectionKnown = true;
-        }
-        catch
-        {
-            // ignore missing UI binding button
-        }
     }
 
     private static bool GetPantheonShellBindingSelected()
     {
-        if (pantheonShellSelectionKnown)
+        // GearSwitcher is the owner of runtime shell state while globally enabled.
+        // Do not import memorized statue selection into runtime override logic.
+        if (IsGloballyEnabled)
         {
-            return pantheonShellSelectedFromUi;
+            return false;
+        }
+
+        if (ModuleManager.IsModuleLoaded<MemorizeBindings>()
+            && MemorizeBindings.TryGetRecordedShellBinding(out bool selected))
+        {
+            return selected;
         }
 
         // Fallback to the BossSequenceController backing fields (not the BoundShell property),
@@ -202,7 +242,7 @@ public sealed class GearSwitcher : Module
         try
         {
             Type type = typeof(BossSequenceController);
-            foreach (string fieldName in new[] { "boundHeart", "boundShell" })
+            foreach (string fieldName in new[] { "boundShell", "boundHeart" })
             {
                 FieldInfo? field = type.GetField(fieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
                 if (field != null && field.FieldType == typeof(bool))
@@ -221,6 +261,11 @@ public sealed class GearSwitcher : Module
 
     private static void ApplyPantheonShellBindingOverride()
     {
+        if (!IsGloballyEnabled)
+        {
+            return;
+        }
+
         if (!TryGetPreset(GetLastPresetName(), out GearPreset preset))
         {
             return;
@@ -229,18 +274,11 @@ public sealed class GearSwitcher : Module
         bool shouldEnableShell = GetPresetShellBindingState(preset);
         if (IsPantheonSequenceActive() && pantheonShellBound)
         {
-            RestoreBindingIfActive<ShellBinding>();
+            SetBinding<ShellBinding>(false);
             return;
         }
 
-        if (shouldEnableShell)
-        {
-            BindingManager.ApplyBinding<ShellBinding>();
-        }
-        else
-        {
-            RestoreBindingIfActive<ShellBinding>();
-        }
+        SetBinding<ShellBinding>(shouldEnableShell);
     }
 
     private static bool GetBossBindingFlag(string propertyName, params string[] fieldNames)
@@ -289,38 +327,13 @@ public sealed class GearSwitcher : Module
                 if (field != null && field.FieldType == typeof(bool))
                 {
                     field.SetValue(null, value);
+                    return;
                 }
             }
         }
         catch
         {
             // ignore missing binding flags
-        }
-    }
-
-    private static void InvokeBossSequenceRestoreBindings()
-    {
-        try
-        {
-            MethodInfo? method = typeof(BossSequenceController).GetMethod("RestoreBindings", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-            method?.Invoke(null, null);
-        }
-        catch
-        {
-            // ignore restore errors
-        }
-    }
-
-    private static void InvokeBossSequenceApplyBindings()
-    {
-        try
-        {
-            MethodInfo? method = typeof(BossSequenceController).GetMethod("ApplyBindings", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-            method?.Invoke(null, null);
-        }
-        catch
-        {
-            // ignore apply errors
         }
     }
 
@@ -580,7 +593,7 @@ public sealed class GearSwitcher : Module
         UpdatePantheonShellBindingState();
         if (allowQueue)
         {
-            CancelPendingPresetApply();
+            ClearPendingApplies();
         }
         if (!TryGetPreset(presetName, out GearPreset preset))
         {
@@ -632,6 +645,7 @@ public sealed class GearSwitcher : Module
             ApplyBindings(preset);
             ApplyNailInput(preset);
             ApplyCharmCosts(preset);
+            ApplyOvercharmed(preset);
         }
         finally
         {
@@ -858,8 +872,11 @@ public sealed class GearSwitcher : Module
     }
 
     internal static void RestoreAllBindingsImmediate()
+        => RestoreAllBindingsImmediate(force: false);
+
+    internal static void RestoreAllBindingsImmediate(bool force)
     {
-        if (!IsGloballyEnabled)
+        if (!force && !IsGloballyEnabled)
         {
             return;
         }
@@ -877,6 +894,92 @@ public sealed class GearSwitcher : Module
         catch
         {
             // ignore binding restore errors
+        }
+    }
+
+    internal static void DisableAndRestoreState()
+        => RestoreRuntimeState(disableGlobalToggle: true);
+
+    internal static void PrepareForEnable()
+    {
+        // Cancel any delayed rollback coroutines that may still be running from a recent OFF.
+        coroutineGeneration++;
+        pendingCoroutineRunning = false;
+        ClearPendingApplies();
+    }
+
+    private static void RestoreRuntimeState(bool disableGlobalToggle)
+    {
+        coroutineGeneration++;
+        pendingCoroutineRunning = false;
+        ClearPendingApplies();
+
+        if (disableGlobalToggle)
+        {
+            IsGloballyEnabled = false;
+        }
+
+        RestoreAllBindingsImmediate(force: true);
+        RestoreNailInputState();
+        RestoreOvercharmedToNatural();
+        ResetSoulGainOverridesToDefaults();
+        RestoreCharmsBindingExemptDefaults();
+        pantheonActive = false;
+        pantheonShellBound = false;
+    }
+
+    private static void ResetSoulGainOverridesToDefaults()
+    {
+        mainSoulGainOverride = DefaultMainSoulGain;
+        reserveSoulGainOverride = DefaultReserveSoulGain;
+    }
+
+    private static void RestoreCharmsBindingExemptDefaults()
+    {
+        try
+        {
+            CharmsBinding.ExemptCharms = new[] { VoidHeartCharmId, GrimmchildCharmId };
+        }
+        catch
+        {
+            // ignore if binding host is unavailable during restore/unload
+        }
+    }
+
+    private static void RestoreNailInputState()
+    {
+        try
+        {
+            PlayerAction? action = GetNailAttackAction();
+            if (action == null)
+            {
+                return;
+            }
+
+            RestoreNailAttack(action);
+        }
+        catch
+        {
+            // ignore nail input restore issues
+        }
+    }
+
+    private static void RestoreOvercharmedToNatural()
+    {
+        try
+        {
+            PlayerData? pd = PlayerData.instance;
+            if (pd == null)
+            {
+                return;
+            }
+
+            pd.overcharmed = IsNaturallyOvercharmed(pd);
+            PlayMakerFSM.BroadcastEvent(CharmIndicatorCheckEvent);
+        }
+        catch
+        {
+            // ignore overcharmed restore issues
         }
     }
 
@@ -898,22 +1001,8 @@ public sealed class GearSwitcher : Module
         ApplyCharmCosts(preset);
     }
 
-    private static void CancelPendingPresetApply()
+    private static void ClearPendingComponentApplies()
     {
-        pendingApply = false;
-        pendingPresetName = string.Empty;
-    }
-    private static void QueueApplyPreset(string presetName)
-    {
-        pendingPresetName = presetName;
-        pendingApply = true;
-        EnsurePendingCoroutine();
-    }
-
-    internal static void ClearPendingApplies()
-    {
-        pendingApply = false;
-        pendingPresetName = string.Empty;
         pendingSpellsApply = false;
         pendingNailArtsApply = false;
         pendingAbilitiesApply = false;
@@ -934,6 +1023,21 @@ public sealed class GearSwitcher : Module
         pendingOvercharmedPreset = null;
     }
 
+    private static void QueueApplyPreset(string presetName)
+    {
+        ClearPendingComponentApplies();
+        pendingPresetName = presetName;
+        pendingApply = true;
+        EnsurePendingCoroutine();
+    }
+
+    internal static void ClearPendingApplies()
+    {
+        pendingApply = false;
+        pendingPresetName = string.Empty;
+        ClearPendingComponentApplies();
+    }
+
     private static void EnsurePendingCoroutine()
     {
         if (pendingCoroutineRunning)
@@ -942,17 +1046,20 @@ public sealed class GearSwitcher : Module
         }
 
         pendingCoroutineRunning = true;
-        _ = GlobalCoroutineExecutor.Start(ApplyWhenSafe());
+        int generation = coroutineGeneration;
+        _ = GlobalCoroutineExecutor.Start(ApplyWhenSafe(generation));
     }
 
     private static void ScheduleOvercharmedReapply()
     {
-        _ = GlobalCoroutineExecutor.Start(DelayedOvercharmedReapply());
+        int generation = coroutineGeneration;
+        _ = GlobalCoroutineExecutor.Start(DelayedOvercharmedReapply(generation));
     }
 
     private static void ScheduleNailInputReapply()
     {
-        _ = GlobalCoroutineExecutor.Start(DelayedNailInputReapply());
+        int generation = coroutineGeneration;
+        _ = GlobalCoroutineExecutor.Start(DelayedNailInputReapply(generation));
     }
 
     private static void ReapplyForcedOvercharmed()
@@ -970,11 +1077,21 @@ public sealed class GearSwitcher : Module
         ApplyOvercharmedImmediate(preset);
     }
 
-    private static IEnumerator DelayedOvercharmedReapply()
+    private static IEnumerator DelayedOvercharmedReapply(int generation)
     {
         for (int i = 0; i < 5; i++)
         {
+            if (generation != coroutineGeneration)
+            {
+                yield break;
+            }
+
             yield return null;
+        }
+
+        if (generation != coroutineGeneration)
+        {
+            yield break;
         }
 
         if (!TryGetPreset(GetLastPresetName(), out GearPreset preset))
@@ -985,18 +1102,38 @@ public sealed class GearSwitcher : Module
         ApplyOvercharmedImmediate(preset);
     }
 
-    private static IEnumerator DelayedNailInputReapply()
+    private static IEnumerator DelayedNailInputReapply(int generation)
     {
         for (int i = 0; i < 30; i++)
         {
+            if (generation != coroutineGeneration)
+            {
+                yield break;
+            }
+
             yield return null;
+        }
+
+        if (generation != coroutineGeneration)
+        {
+            yield break;
         }
 
         EnsureNailInputState();
 
         for (int i = 0; i < 30; i++)
         {
+            if (generation != coroutineGeneration)
+            {
+                yield break;
+            }
+
             yield return null;
+        }
+
+        if (generation != coroutineGeneration)
+        {
+            yield break;
         }
 
         EnsureNailInputState();
@@ -1005,29 +1142,60 @@ public sealed class GearSwitcher : Module
 
     private static void ScheduleShellBindingResync()
     {
-        _ = GlobalCoroutineExecutor.Start(DelayedShellBindingResync());
+        int generation = coroutineGeneration;
+        _ = GlobalCoroutineExecutor.Start(DelayedShellBindingResync(generation));
     }
 
-    private static IEnumerator DelayedShellBindingResync()
+    private static IEnumerator DelayedShellBindingResync(int generation)
     {
         // Re-sync several times because serialized bindings can be re-applied shortly after load.
         for (int i = 0; i < 2; i++)
         {
+            if (generation != coroutineGeneration)
+            {
+                yield break;
+            }
+
             yield return null;
+        }
+
+        if (generation != coroutineGeneration)
+        {
+            yield break;
         }
 
         SyncShellBindingWithLastPreset();
 
         for (int i = 0; i < 20; i++)
         {
+            if (generation != coroutineGeneration)
+            {
+                yield break;
+            }
+
             yield return null;
+        }
+
+        if (generation != coroutineGeneration)
+        {
+            yield break;
         }
 
         SyncShellBindingWithLastPreset();
 
         for (int i = 0; i < 40; i++)
         {
+            if (generation != coroutineGeneration)
+            {
+                yield break;
+            }
+
             yield return null;
+        }
+
+        if (generation != coroutineGeneration)
+        {
+            yield break;
         }
 
         SyncShellBindingWithLastPreset();
@@ -1035,6 +1203,11 @@ public sealed class GearSwitcher : Module
 
     private static void SyncShellBindingWithLastPreset()
     {
+        if (!IsGloballyEnabled)
+        {
+            return;
+        }
+
         string lastPreset = NormalizeBuiltinPresetName(GetLastPresetName());
         if (string.IsNullOrEmpty(lastPreset))
         {
@@ -1044,6 +1217,7 @@ public sealed class GearSwitcher : Module
 
         if (!TryGetPreset(lastPreset, out GearPreset preset))
         {
+            ForceRestoreShellBinding();
             return;
         }
 
@@ -1062,24 +1236,43 @@ public sealed class GearSwitcher : Module
         ForceRestoreShellBinding();
     }
 
+    private static void RunStartupShellCleanup(GearPreset? startupPreset)
+    {
+        if (!IsGloballyEnabled)
+        {
+            return;
+        }
+
+        if (IsPantheonSequenceActive() && pantheonShellBound)
+        {
+            return;
+        }
+
+        bool shouldEnableShell = IsGloballyEnabled
+            && startupPreset != null
+            && GetPresetShellBindingState(startupPreset);
+        bool shellApplied = IsShellBindingApplied();
+        bool staleBossShellFlag = GetBossBindingFlag("BoundShell", "boundShell", "boundHeart");
+
+        if (shouldEnableShell)
+        {
+            if (!shellApplied)
+            {
+                SetBinding<ShellBinding>(true);
+            }
+
+            return;
+        }
+
+        if (shellApplied || staleBossShellFlag)
+        {
+            ForceRestoreShellBindingHard();
+        }
+    }
+
     private static void ForceRestoreShellBinding()
     {
         ForceRestoreShellBindingHard();
-    }
-
-    private static IEnumerator EnsureShellBindingRestored()
-    {
-        for (int attempt = 0; attempt < 3; attempt++)
-        {
-            yield return null;
-
-            if (!IsShellBindingApplied())
-            {
-                yield break;
-            }
-
-            SetBinding<ShellBinding>(false);
-        }
     }
 
     private static bool IsShellBindingApplied()
@@ -1120,110 +1313,142 @@ public sealed class GearSwitcher : Module
         ApplyNailInputImmediate(preset);
     }
 
-    private static IEnumerator ApplyWhenSafe()
+    private static IEnumerator ApplyWhenSafe(int generation)
     {
-        while (pendingApply || pendingSpellsApply || pendingNailArtsApply || pendingAbilitiesApply || pendingDreamNailApply || pendingBindingsApply || pendingStatsApply || pendingCharmCostApply || pendingNailInputApply || pendingOvercharmedApply)
+        try
         {
-            if (!IsGloballyEnabled)
+            while (
+                generation == coroutineGeneration
+                && (pendingApply || pendingSpellsApply || pendingNailArtsApply || pendingAbilitiesApply || pendingDreamNailApply || pendingBindingsApply || pendingStatsApply || pendingCharmCostApply || pendingNailInputApply || pendingOvercharmedApply)
+            )
             {
-                ClearPendingApplies();
-                break;
+                if (!IsGloballyEnabled)
+                {
+                    ClearPendingApplies();
+                    break;
+                }
+
+                if (IsSafeToApply())
+                {
+                    TryApplyPendingWhenSafe();
+                }
+
+                yield return null;
             }
-
-            if (IsSafeToApply())
-            {
-                if (pendingApply)
-                {
-                    pendingApply = false;
-                    ApplyPreset(pendingPresetName, false);
-                }
-
-                if (pendingStatsApply)
-                {
-                    pendingStatsApply = false;
-                    if (pendingStatsPreset != null)
-                    {
-                        ApplyStats(pendingStatsPreset);
-                    }
-                }
-
-                if (pendingSpellsApply)
-                {
-                    pendingSpellsApply = false;
-                    if (pendingSpellsPreset != null)
-                    {
-                        ApplySpells(pendingSpellsPreset);
-                    }
-                }
-
-                if (pendingNailArtsApply)
-                {
-                    pendingNailArtsApply = false;
-                    if (pendingNailArtsPreset != null)
-                    {
-                        ApplyNailArts(pendingNailArtsPreset);
-                    }
-                }
-
-                if (pendingAbilitiesApply)
-                {
-                    pendingAbilitiesApply = false;
-                    if (pendingAbilitiesPreset != null)
-                    {
-                        ApplyAbilities(pendingAbilitiesPreset);
-                    }
-                }
-
-                if (pendingDreamNailApply)
-                {
-                    pendingDreamNailApply = false;
-                    if (pendingDreamNailPreset != null)
-                    {
-                        ApplyDreamNail(pendingDreamNailPreset);
-                    }
-                }
-
-                if (pendingBindingsApply)
-                {
-                    pendingBindingsApply = false;
-                    if (pendingBindingsPreset != null)
-                    {
-                        ApplyBindings(pendingBindingsPreset);
-                    }
-                }
-
-                if (pendingNailInputApply)
-                {
-                    pendingNailInputApply = false;
-                    if (pendingNailInputPreset != null)
-                    {
-                        ApplyNailInput(pendingNailInputPreset);
-                    }
-                }
-
-                if (pendingOvercharmedApply)
-                {
-                    pendingOvercharmedApply = false;
-                    if (pendingOvercharmedPreset != null)
-                    {
-                        ApplyOvercharmed(pendingOvercharmedPreset);
-                    }
-                }
-
-                if (pendingCharmCostApply)
-                {
-                    pendingCharmCostApply = false;
-                    if (pendingCharmCostPreset != null)
-                    {
-                        ApplyCharmCosts(pendingCharmCostPreset);
-                    }
-                }
-            }
-
-            yield return null;
         }
+        finally
+        {
+            if (generation == coroutineGeneration)
+            {
+                pendingCoroutineRunning = false;
+            }
+        }
+    }
 
-        pendingCoroutineRunning = false;
+    private static void TryApplyPendingWhenSafe()
+    {
+        try
+        {
+            if (pendingApply)
+            {
+                pendingApply = false;
+                string presetToApply = pendingPresetName;
+                pendingPresetName = string.Empty;
+                ClearPendingComponentApplies();
+                if (!string.IsNullOrWhiteSpace(presetToApply))
+                {
+                    ApplyPreset(presetToApply, false);
+                }
+
+                return;
+            }
+
+            if (pendingStatsApply)
+            {
+                pendingStatsApply = false;
+                if (pendingStatsPreset != null)
+                {
+                    ApplyStats(pendingStatsPreset);
+                }
+            }
+
+            if (pendingSpellsApply)
+            {
+                pendingSpellsApply = false;
+                if (pendingSpellsPreset != null)
+                {
+                    ApplySpells(pendingSpellsPreset);
+                }
+            }
+
+            if (pendingNailArtsApply)
+            {
+                pendingNailArtsApply = false;
+                if (pendingNailArtsPreset != null)
+                {
+                    ApplyNailArts(pendingNailArtsPreset);
+                }
+            }
+
+            if (pendingAbilitiesApply)
+            {
+                pendingAbilitiesApply = false;
+                if (pendingAbilitiesPreset != null)
+                {
+                    ApplyAbilities(pendingAbilitiesPreset);
+                }
+            }
+
+            if (pendingDreamNailApply)
+            {
+                pendingDreamNailApply = false;
+                if (pendingDreamNailPreset != null)
+                {
+                    ApplyDreamNail(pendingDreamNailPreset);
+                }
+            }
+
+            if (pendingBindingsApply)
+            {
+                pendingBindingsApply = false;
+                if (pendingBindingsPreset != null)
+                {
+                    ApplyBindings(pendingBindingsPreset);
+                }
+            }
+
+            if (pendingNailInputApply)
+            {
+                pendingNailInputApply = false;
+                if (pendingNailInputPreset != null)
+                {
+                    ApplyNailInput(pendingNailInputPreset);
+                }
+            }
+
+            if (pendingOvercharmedApply)
+            {
+                pendingOvercharmedApply = false;
+                if (pendingOvercharmedPreset != null)
+                {
+                    ApplyOvercharmed(pendingOvercharmedPreset);
+                }
+            }
+
+            if (pendingCharmCostApply)
+            {
+                pendingCharmCostApply = false;
+                if (pendingCharmCostPreset != null)
+                {
+                    ApplyCharmCosts(pendingCharmCostPreset);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            LogError($"[GearSwitcher] ApplyWhenSafe failed: {ex}");
+            ClearPendingApplies();
+        }
     }
 
     private static string GetLastPresetName() =>
@@ -1240,15 +1465,14 @@ public sealed class GearSwitcher : Module
         reserveSoulGainOverride = ClampSoulGain(preset.ReserveSoulGain);
     }
 
-    private static int GetMainSoulGain() => mainSoulGainOverride;
-
-    private static int GetReserveSoulGain() => reserveSoulGainOverride;
-
-    private static int ClampSoulGain(int value) => Math.Max(0, Math.Min(198, value));
-
-    private static void SaveCurrentCharmsToLastPreset()
+    internal static void ReapplyLastPresetStats()
     {
-        string lastPreset = GetLastPresetName();
+        if (!IsGloballyEnabled)
+        {
+            return;
+        }
+
+        string lastPreset = NormalizeBuiltinPresetName(GetLastPresetName());
         if (string.IsNullOrEmpty(lastPreset))
         {
             return;
@@ -1259,8 +1483,14 @@ public sealed class GearSwitcher : Module
             return;
         }
 
-        preset.EquippedCharms = GetEquippedCharms();
+        ApplyStatsImmediate(preset);
     }
+
+    private static int GetMainSoulGain() => mainSoulGainOverride;
+
+    private static int GetReserveSoulGain() => reserveSoulGainOverride;
+
+    private static int ClampSoulGain(int value) => Math.Max(0, Math.Min(198, value));
 
     private static void ApplyStats(GearPreset preset)
     {
@@ -1270,7 +1500,9 @@ public sealed class GearSwitcher : Module
             return;
         }
 
-        int maxHealth = Math.Max(1, Math.Min(9, preset.MaxHealth));
+        bool alwaysFuriousHealthLock = AlwaysFurious.IsGearSwitcherHealthLockActive();
+
+        int maxHealth = alwaysFuriousHealthLock ? 1 : Math.Max(1, Math.Min(9, preset.MaxHealth));
         int charmSlots = Math.Max(3, Math.Min(999, preset.CharmSlots));
         int vessels = Math.Max(0, Math.Min(3, preset.SoulVessels));
         int rawNailDamage = Math.Max(-99999, Math.Min(99999, preset.NailDamage));
@@ -1296,9 +1528,21 @@ public sealed class GearSwitcher : Module
         pd.nailDamage = nailDamage;
         PlayMakerFSM.BroadcastEvent("UPDATE NAIL DAMAGE");
 
-        ApplyOvercharmed(preset);
-        ReapplyActiveBindings();
+        if (!IsApplyingPreset)
+        {
+            ApplyOvercharmed(preset);
+        }
+
+        ReapplyNonSoulActiveBindings();
         TryRefreshHud();
+
+        // Stats-only edits (for example soul vessel count changes from QuickMenu)
+        // must also settle soul/binding indicators; full preset apply handles this in ApplyBindings.
+        if (!IsApplyingPreset)
+        {
+            ResyncBindingHudIndicators();
+            ScheduleBindingHudResync();
+        }
     }
 
     private static void OnEnemyDamaged(On.HealthManager.orig_TakeDamage orig, HealthManager self, HitInstance hitInstance)
@@ -1338,12 +1582,11 @@ public sealed class GearSwitcher : Module
     private static bool IsNailAttack(HitInstance hitInstance) =>
         hitInstance.AttackType == AttackTypes.Nail || hitInstance.AttackType == AttackTypes.NailBeam;
 
-    private static void ReapplyActiveBindings()
+    private static void ReapplyNonSoulActiveBindings()
     {
         ReapplyBindingIfActive<NailBinding>();
         ReapplyBindingIfActive<ShellBinding>();
         ReapplyBindingIfActive<CharmsBinding>();
-        ReapplyBindingIfActive<SoulBinding>();
     }
 
     private static void ReapplyBindingIfActive<T>() where T : Binding
@@ -1488,10 +1731,12 @@ public sealed class GearSwitcher : Module
             }
 
             TryRefreshNailDamage();
+            ResyncBindingHudIndicators();
+            ScheduleBindingHudResync();
         }
-        catch
+        catch (Exception ex)
         {
-            // ignore binding errors
+            LogError($"[GearSwitcher] ApplyBindings failed: {ex}");
         }
     }
 
@@ -1862,7 +2107,10 @@ public sealed class GearSwitcher : Module
             PlayMakerFSM.BroadcastEvent("CHARM INDICATOR CHECK");
         }
 
-        ApplyOvercharmed(preset);
+        if (!IsApplyingPreset)
+        {
+            ApplyOvercharmed(preset);
+        }
     }
 
     private static void RefreshGrimmchildCharm(PlayerData data)
@@ -1910,14 +2158,23 @@ public sealed class GearSwitcher : Module
             yield return null;
         }
 
+        Transform? effects = null;
         try
         {
-            Transform? effects = HeroController.instance?.transform.Find("Charm Effects");
-            if (effects == null)
-            {
-                yield break;
-            }
+            effects = HeroController.instance?.transform.Find("Charm Effects");
+        }
+        catch
+        {
+            // ignore hierarchy lookup errors
+        }
 
+        if (effects == null)
+        {
+            yield break;
+        }
+
+        try
+        {
             PlayMakerFSM? fsm = effects.gameObject.LocateMyFSM("Spawn Grimmchild");
             fsm?.SendEvent("CHARM EQUIP CHECK");
         }
@@ -1979,27 +2236,6 @@ public sealed class GearSwitcher : Module
         return total > pd.charmSlots;
     }
 
-    private static void ApplyCharms(List<int>? charmIds)
-    {
-        if (charmIds == null)
-        {
-            return;
-        }
-
-        PlayerData? pd = PlayerData.instance;
-        if (pd == null)
-        {
-            return;
-        }
-
-        RemoveCharms(pd);
-        EquipCharms(pd, charmIds);
-
-        PlayMakerFSM.BroadcastEvent("CHARM EQUIP CHECK");
-        PlayMakerFSM.BroadcastEvent("CHARM INDICATOR CHECK");
-        PlayMakerFSM.BroadcastEvent("UPDATE BLUE HEALTH");
-    }
-
     private static void SetShellBinding(bool value)
     {
         if (value)
@@ -2015,29 +2251,42 @@ public sealed class GearSwitcher : Module
     {
         SetBinding<ShellBinding>(false);
 
+        if (IsGloballyEnabled)
+        {
+            pantheonShellBound = false;
+            if (ModuleManager.IsModuleLoaded<MemorizeBindings>())
+            {
+                MemorizeBindings.OverrideRecordedShellBinding(selected: false);
+            }
+        }
+
         bool preservePantheonSelection = IsPantheonSequenceActive() && pantheonShellBound;
         if (!preservePantheonSelection)
         {
             // Clear potential stale Godhome shell flags that can survive abrupt exits.
-            SetBossBindingFlag(false, "BoundShell", "boundHeart", "boundShell");
-            InvokeBossSequenceRestoreBindings();
+            SetBossBindingFlag(false, "BoundShell", "boundShell", "boundHeart");
         }
 
         TryRefreshHud();
-        _ = GlobalCoroutineExecutor.Start(EnsureShellBindingFullyRestored());
+        int generation = coroutineGeneration;
+        _ = GlobalCoroutineExecutor.Start(EnsureShellBindingFullyRestored(generation));
     }
 
-    private static IEnumerator EnsureShellBindingFullyRestored()
+    private static IEnumerator EnsureShellBindingFullyRestored(int generation)
     {
         for (int i = 0; i < 3; i++)
         {
+            if (generation != coroutineGeneration)
+            {
+                yield break;
+            }
+
             yield return null;
 
             bool preservePantheonSelection = IsPantheonSequenceActive() && pantheonShellBound;
             if (!preservePantheonSelection)
             {
-                SetBossBindingFlag(false, "BoundShell", "boundHeart", "boundShell");
-                InvokeBossSequenceRestoreBindings();
+                SetBossBindingFlag(false, "BoundShell", "boundShell", "boundHeart");
             }
 
             if (!IsShellBindingApplied())
@@ -2052,15 +2301,6 @@ public sealed class GearSwitcher : Module
         TryRefreshHud();
     }
 
-    private static bool IsGodhomeHubScene()
-    {
-        Scene active = USceneManager.GetActiveScene();
-        string name = active.name ?? string.Empty;
-        return string.Equals(name, "GG_Workshop", StringComparison.Ordinal)
-            || string.Equals(name, "GG_Atrium", StringComparison.Ordinal)
-            || string.Equals(name, "GG_Atrium_Roof", StringComparison.Ordinal);
-    }
-
     private static bool IsPantheonSequenceActive()
     {
         try
@@ -2071,7 +2311,9 @@ public sealed class GearSwitcher : Module
         {
             return false;
         }
-    }    private static void SetBinding<T>(bool value) where T : Binding, new()
+    }
+
+    private static void SetBinding<T>(bool value) where T : Binding, new()
     {
         try
         {
@@ -2084,64 +2326,11 @@ public sealed class GearSwitcher : Module
                 BindingManager.RestoreBinding<T>();
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // ignore binding errors
+            string action = value ? "apply" : "restore";
+            LogError($"[GearSwitcher] Failed to {action} binding {typeof(T).Name}: {ex.Message}");
         }
-    }
-
-    private static bool SetEquippedCharms(PlayerData pd, List<int> charmIds)
-    {
-        try
-        {
-            object? value = ReflectionHelper.GetField<PlayerData, object>(pd, "equippedCharms");
-            if (value is List<int> list)
-            {
-                list.Clear();
-                list.AddRange(charmIds);
-                return true;
-            }
-
-            if (value is int[] array)
-            {
-                Array.Clear(array, 0, array.Length);
-                for (int i = 0; i < array.Length && i < charmIds.Count; i++)
-                {
-                    array[i] = charmIds[i];
-                }
-                return true;
-            }
-
-            if (value is IList listObj)
-            {
-                listObj.Clear();
-                foreach (int charm in charmIds)
-                {
-                    listObj.Add(charm);
-                }
-                return true;
-            }
-
-            if (value is bool[] bools)
-            {
-                Array.Clear(bools, 0, bools.Length);
-                foreach (int charm in charmIds)
-                {
-                    int index = charm - 1;
-                    if (index >= 0 && index < bools.Length)
-                    {
-                        bools[index] = true;
-                    }
-                }
-                return true;
-            }
-        }
-        catch
-        {
-            // ignore charm errors
-        }
-
-        return false;
     }
 
     private static void RemoveCharms(PlayerData pd)
@@ -2349,9 +2538,6 @@ public sealed class GearSwitcher : Module
                 hud.SetActive(false);
                 hud.SetActive(true);
             }
-
-            Ref.GC?.soulOrbFSM?.SendEvent("MP GAIN SPA");
-            Ref.GC?.soulVesselFSM?.SendEvent("MP RESERVE UP");
         }
         catch
         {
@@ -2371,19 +2557,253 @@ public sealed class GearSwitcher : Module
         }
     }
 
+    private static void ResyncBindingHudIndicators()
+    {
+        try
+        {
+            bool nailApplied = IsBindingApplied<NailBinding>();
+            bool charmsApplied = IsBindingApplied<CharmsBinding>();
+            bool soulApplied = IsBindingApplied<SoulBinding>();
+
+            EventRegister.SendEvent(nailApplied ? ShowBoundNailEvent : HideBoundNailEvent);
+            EventRegister.SendEvent(charmsApplied ? ShowBoundCharmsEvent : HideBoundCharmsEvent);
+            TryResyncSoulBindingIndicator(soulApplied);
+
+            PlayMakerFSM.BroadcastEvent(CharmIndicatorCheckEvent);
+            PlayMakerFSM.BroadcastEvent(UpdateBlueHealthEvent);
+        }
+        catch
+        {
+            // ignore indicator sync errors
+        }
+    }
+
+    private static void TryResyncSoulBindingIndicator(bool soulApplied)
+    {
+        try
+        {
+            GameManager? gm = GameManager.instance;
+            gm?.soulOrb_fsm?.SendEvent(MPLoseEvent);
+            if (soulApplied)
+            {
+                gm?.soulVessel_fsm?.SendEvent(MPReserveDownEvent);
+                if (IsHudEventRegistered(BindVesselOrbEvent))
+                {
+                    EventRegister.SendEvent(BindVesselOrbEvent);
+                    return;
+                }
+
+                ScheduleDelayedSoulBindingIndicatorResync(soulApplied: true);
+            }
+            else
+            {
+                gm?.soulVessel_fsm?.SendEvent(MPReserveUpEvent);
+                if (IsHudEventRegistered(UnbindVesselOrbEvent))
+                {
+                    EventRegister.SendEvent(UnbindVesselOrbEvent);
+                    return;
+                }
+
+                ScheduleDelayedSoulBindingIndicatorResync(soulApplied: false);
+            }
+        }
+        catch
+        {
+            // ignore soul indicator sync errors
+        }
+    }
+
+    private static void ScheduleDelayedSoulBindingIndicatorResync(bool soulApplied)
+    {
+        int generation = coroutineGeneration;
+        int token = ++soulBindingHudResyncToken;
+        _ = GlobalCoroutineExecutor.Start(WaitForSoulBindingHudEventAndResync(generation, token, soulApplied));
+    }
+
+    private static IEnumerator WaitForSoulBindingHudEventAndResync(int generation, int token, bool soulApplied)
+    {
+        string eventName = soulApplied ? BindVesselOrbEvent : UnbindVesselOrbEvent;
+        for (int i = 0; i < SoulHudIndicatorResyncMaxFrames; i++)
+        {
+            if (generation != coroutineGeneration || token != soulBindingHudResyncToken)
+            {
+                yield break;
+            }
+
+            if (IsHudEventRegistered(eventName))
+            {
+                break;
+            }
+
+            yield return null;
+        }
+
+        if (generation != coroutineGeneration || token != soulBindingHudResyncToken)
+        {
+            yield break;
+        }
+
+        if (!IsHudEventRegistered(eventName))
+        {
+            yield break;
+        }
+
+        try
+        {
+            GameManager? gm = GameManager.instance;
+            gm?.soulOrb_fsm?.SendEvent(MPLoseEvent);
+            if (soulApplied)
+            {
+                gm?.soulVessel_fsm?.SendEvent(MPReserveDownEvent);
+                EventRegister.SendEvent(BindVesselOrbEvent);
+            }
+            else
+            {
+                gm?.soulVessel_fsm?.SendEvent(MPReserveUpEvent);
+                EventRegister.SendEvent(UnbindVesselOrbEvent);
+            }
+        }
+        catch
+        {
+            // ignore delayed soul indicator sync errors
+        }
+    }
+
+    private static bool IsHudEventRegistered(string eventName)
+    {
+        try
+        {
+            return !string.IsNullOrEmpty(eventName)
+                && EventRegister.eventRegister != null
+                && EventRegister.eventRegister.ContainsKey(eventName);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool IsBindingApplied<T>() where T : Binding
+    {
+        try
+        {
+            return BindingManager.TryGetBinding<T>(out T? binding) && binding != null && binding.IsApplied;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static void ScheduleBindingHudResync()
+    {
+        int generation = coroutineGeneration;
+        int token = ++bindingHudResyncToken;
+        _ = GlobalCoroutineExecutor.Start(DelayedBindingHudResync(generation, token));
+    }
+
+    private static IEnumerator DelayedBindingHudResync(int generation, int token)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            if (generation != coroutineGeneration || token != bindingHudResyncToken)
+            {
+                yield break;
+            }
+
+            yield return null;
+        }
+
+        if (generation != coroutineGeneration || token != bindingHudResyncToken)
+        {
+            yield break;
+        }
+
+        ResyncBindingHudIndicators();
+
+        for (int i = 0; i < 12; i++)
+        {
+            if (generation != coroutineGeneration || token != bindingHudResyncToken)
+            {
+                yield break;
+            }
+
+            yield return null;
+        }
+
+        if (generation != coroutineGeneration || token != bindingHudResyncToken)
+        {
+            yield break;
+        }
+
+        ResyncBindingHudIndicators();
+
+        for (int i = 0; i < 30; i++)
+        {
+            if (generation != coroutineGeneration || token != bindingHudResyncToken)
+            {
+                yield break;
+            }
+
+            yield return null;
+        }
+
+        if (generation != coroutineGeneration || token != bindingHudResyncToken)
+        {
+            yield break;
+        }
+
+        ResyncBindingHudIndicators();
+
+        for (int i = 0; i < 90; i++)
+        {
+            if (generation != coroutineGeneration || token != bindingHudResyncToken)
+            {
+                yield break;
+            }
+
+            yield return null;
+        }
+
+        if (generation != coroutineGeneration || token != bindingHudResyncToken)
+        {
+            yield break;
+        }
+
+        ResyncBindingHudIndicators();
+
+        for (int i = 0; i < 180; i++)
+        {
+            if (generation != coroutineGeneration || token != bindingHudResyncToken)
+            {
+                yield break;
+            }
+
+            yield return null;
+        }
+
+        if (generation != coroutineGeneration || token != bindingHudResyncToken)
+        {
+            yield break;
+        }
+
+        ResyncBindingHudIndicators();
+    }
+
     private static bool IsSafeToApply()
     {
-        if (Ref.GM == null || Ref.GM.gameState != GameState.PLAYING)
+        GameManager? manager = GameManager.instance;
+        if (manager == null || manager.gameState != GameState.PLAYING)
         {
             return false;
         }
 
-        if (Ref.GM.IsInSceneTransition)
+        if (manager.IsInSceneTransition)
         {
             return false;
         }
 
-        HeroController? hero = Ref.HC;
+        HeroController? hero = HeroController.instance;
         if (hero == null)
         {
             return false;

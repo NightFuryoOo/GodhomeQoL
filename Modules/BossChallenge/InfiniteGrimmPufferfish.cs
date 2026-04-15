@@ -11,20 +11,39 @@ public sealed class InfiniteGrimmPufferfish : Module
     private const string GrimmBossName = "Grimm Boss";
     private const string NightmareBossName = "Nightmare Grimm Boss";
     private const string ControlFsm = "Control";
-    private const string PatchFlag = "GodhomeQoL_InfiniteGrimmPufferfish_Patched";
+
+    private sealed class GrimmFsmSnapshot
+    {
+        public PlayMakerFSM? Fsm { get; init; }
+        public int FsmId { get; init; }
+        public bool ModifiedOutPause { get; set; }
+        public bool ModifiedMoveChoice { get; set; }
+        public string? OutPauseFinishedTarget { get; set; }
+        public string? MoveChoiceBalloonTarget { get; set; }
+        public FsmStateAction[] MoveChoiceActions { get; set; } = Array.Empty<FsmStateAction>();
+    }
+
+    private sealed class GrimmPatchMarker : MonoBehaviour
+    {
+        public int patchedFsmId;
+    }
 
     private static bool enteredFromWorkshop;
+    private static readonly Dictionary<int, GrimmFsmSnapshot> patchedFsms = [];
 
     private protected override void Load()
     {
+        patchedFsms.Clear();
         ModHooks.BeforeSceneLoadHook += BeforeSceneLoad;
         On.PlayMakerFSM.Start += ModifyFSM;
+        TryPatchExistingFsms();
     }
 
     private protected override void Unload()
     {
         ModHooks.BeforeSceneLoadHook -= BeforeSceneLoad;
         On.PlayMakerFSM.Start -= ModifyFSM;
+        RestorePatchedFsms();
         enteredFromWorkshop = false;
     }
 
@@ -50,54 +69,153 @@ public sealed class InfiniteGrimmPufferfish : Module
     {
         orig(self);
 
+        if (!ShouldPatchFsm(self, out bool isNightmare))
+        {
+            return;
+        }
+
+        if (TryPatch(self, isNightmare))
+        {
+            LogDebug(isNightmare ? "Grimm FSM modified (Move Choice)" : "Grimm FSM modified");
+        }
+    }
+
+    private static void TryPatchExistingFsms()
+    {
+        foreach (PlayMakerFSM fsm in UObject.FindObjectsOfType<PlayMakerFSM>())
+        {
+            if (fsm == null)
+            {
+                continue;
+            }
+
+            if (!ShouldPatchFsm(fsm, out bool isNightmare))
+            {
+                continue;
+            }
+
+            if (TryPatch(fsm, isNightmare))
+            {
+                LogDebug(isNightmare ? "Grimm FSM modified (Move Choice)" : "Grimm FSM modified");
+            }
+        }
+    }
+
+    private static bool ShouldPatchFsm(PlayMakerFSM fsm, out bool isNightmare)
+    {
+        isNightmare = false;
+
         if (BossSequenceController.IsInSequence)
         {
-            return;
+            return false;
         }
 
-        string sceneName = self.gameObject.scene.name;
+        string sceneName = fsm.gameObject.scene.name;
         if (sceneName != GrimmScene && sceneName != NightmareScene)
         {
-            return;
+            return false;
         }
 
-        if (self.FsmName != ControlFsm)
+        if (fsm.FsmName != ControlFsm)
         {
-            return;
+            return false;
         }
 
-        bool isNightmare = sceneName == NightmareScene;
+        isNightmare = sceneName == NightmareScene;
         if (isNightmare)
         {
             if (!enteredFromWorkshop)
             {
-                return;
+                return false;
             }
 
-            if (self.gameObject.name != NightmareBossName && self.gameObject.name != GrimmBossName)
-            {
-                return;
-            }
-        }
-        else if (self.gameObject.name != GrimmBossName)
-        {
-            return;
+            return fsm.gameObject.name == NightmareBossName || fsm.gameObject.name == GrimmBossName;
         }
 
-        if (isNightmare)
-        {
-            if (!TryPatchMoveChoice(self))
-            {
-                TryPatchOutPause(self);
-            }
-        }
-        else
-        {
-            TryPatchOutPause(self);
-        }
+        return fsm.gameObject.name == GrimmBossName;
     }
 
-    private static bool TryPatchOutPause(PlayMakerFSM fsm)
+    private static bool TryPatch(PlayMakerFSM fsm, bool isNightmare)
+    {
+        int fsmId = fsm.GetInstanceID();
+        if (patchedFsms.ContainsKey(fsmId))
+        {
+            return false;
+        }
+
+        GrimmPatchMarker? marker = fsm.gameObject.GetComponent<GrimmPatchMarker>();
+        if (marker != null && marker.patchedFsmId == fsmId)
+        {
+            return false;
+        }
+
+        GrimmFsmSnapshot snapshot = new()
+        {
+            Fsm = fsm,
+            FsmId = fsmId
+        };
+
+        bool patched = isNightmare
+            ? TryPatchMoveChoice(fsm, snapshot) || TryPatchOutPause(fsm, snapshot)
+            : TryPatchOutPause(fsm, snapshot);
+        if (!patched)
+        {
+            return false;
+        }
+
+        patchedFsms[fsmId] = snapshot;
+
+        if (marker == null)
+        {
+            marker = fsm.gameObject.AddComponent<GrimmPatchMarker>();
+        }
+
+        marker.patchedFsmId = fsmId;
+        return true;
+    }
+
+    private static void RestorePatchedFsms()
+    {
+        foreach ((_, GrimmFsmSnapshot snapshot) in patchedFsms)
+        {
+            PlayMakerFSM? fsm = snapshot.Fsm;
+            if (fsm == null)
+            {
+                continue;
+            }
+
+            string? outPauseTarget = snapshot.OutPauseFinishedTarget;
+            if (snapshot.ModifiedOutPause && !string.IsNullOrEmpty(outPauseTarget))
+            {
+                TrySetTransition(fsm, "Out Pause", FsmEvent.Finished.Name, outPauseTarget!);
+            }
+
+            if (snapshot.ModifiedMoveChoice)
+            {
+                FsmState? moveChoice = fsm.Fsm.GetState("Move Choice");
+                if (moveChoice != null)
+                {
+                    moveChoice.Actions = snapshot.MoveChoiceActions.ToArray();
+                }
+
+                string? moveChoiceTarget = snapshot.MoveChoiceBalloonTarget;
+                if (!string.IsNullOrEmpty(moveChoiceTarget))
+                {
+                    TrySetTransition(fsm, "Move Choice", "BALLOON", moveChoiceTarget!);
+                }
+            }
+
+            GrimmPatchMarker? marker = fsm.gameObject.GetComponent<GrimmPatchMarker>();
+            if (marker != null && marker.patchedFsmId == snapshot.FsmId)
+            {
+                UObject.Destroy(marker);
+            }
+        }
+
+        patchedFsms.Clear();
+    }
+
+    private static bool TryPatchOutPause(PlayMakerFSM fsm, GrimmFsmSnapshot snapshot)
     {
         FsmState? outPause = fsm.Fsm.GetState("Out Pause");
         if (outPause == null)
@@ -105,12 +223,19 @@ public sealed class InfiniteGrimmPufferfish : Module
             return false;
         }
 
+        string? originalTarget = GetTransitionTarget(outPause, FsmEvent.Finished.Name);
+        if (string.IsNullOrEmpty(originalTarget))
+        {
+            return false;
+        }
+
+        snapshot.OutPauseFinishedTarget = originalTarget;
         outPause.ChangeTransition(FsmEvent.Finished.Name, "Balloon Pos");
-        LogDebug("Grimm FSM modified");
+        snapshot.ModifiedOutPause = true;
         return true;
     }
 
-    private static bool TryPatchMoveChoice(PlayMakerFSM fsm)
+    private static bool TryPatchMoveChoice(PlayMakerFSM fsm, GrimmFsmSnapshot snapshot)
     {
         FsmState? moveChoice = fsm.Fsm.GetState("Move Choice");
         if (moveChoice == null)
@@ -118,46 +243,42 @@ public sealed class InfiniteGrimmPufferfish : Module
             return false;
         }
 
-        moveChoice.ChangeTransition("BALLOON", "Balloon Pos");
-
-        if (!IsPatched(fsm))
+        string? originalTarget = GetTransitionTarget(moveChoice, "BALLOON");
+        if (string.IsNullOrEmpty(originalTarget))
         {
-            moveChoice.InsertCustomAction(() => fsm.SendEvent("BALLOON"), 0);
-            MarkPatched(fsm);
+            return false;
         }
 
-        LogDebug("Grimm FSM modified (Move Choice)");
+        snapshot.MoveChoiceBalloonTarget = originalTarget;
+        snapshot.MoveChoiceActions = moveChoice.Actions?.ToArray() ?? Array.Empty<FsmStateAction>();
+        moveChoice.ChangeTransition("BALLOON", "Balloon Pos");
+        moveChoice.InsertCustomAction(() => fsm.SendEvent("BALLOON"), 0);
+        snapshot.ModifiedMoveChoice = true;
         return true;
     }
 
-    private static bool IsPatched(PlayMakerFSM fsm)
+    private static string? GetTransitionTarget(FsmState state, string eventName)
     {
-        FsmBool? flag = FindFsmBool(fsm, PatchFlag);
-        return flag != null && flag.Value;
-    }
-
-    private static void MarkPatched(PlayMakerFSM fsm)
-    {
-        FsmBool? flag = FindFsmBool(fsm, PatchFlag);
-        if (flag == null)
+        foreach (FsmTransition transition in state.Transitions)
         {
-            flag = new FsmBool(PatchFlag);
-            fsm.FsmVariables.BoolVariables = fsm.FsmVariables.BoolVariables.Append(flag).ToArray();
-        }
-
-        flag.Value = true;
-    }
-
-    private static FsmBool? FindFsmBool(PlayMakerFSM fsm, string name)
-    {
-        foreach (FsmBool variable in fsm.FsmVariables.BoolVariables)
-        {
-            if (variable.Name == name)
+            if (transition.EventName == eventName)
             {
-                return variable;
+                return transition.ToState;
             }
         }
 
         return null;
+    }
+
+    private static void TrySetTransition(PlayMakerFSM fsm, string stateName, string eventName, string targetState)
+    {
+        try
+        {
+            fsm.ChangeTransition(stateName, eventName, targetState);
+        }
+        catch
+        {
+            // ignore missing states or transitions
+        }
     }
 }

@@ -17,14 +17,42 @@ public sealed partial class GodhomeQoL
     {
         private static bool dirty = true;
         private static Menu? menu;
+        private static bool hooksInstalled;
+        private static On.Language.Language.hook_DoSwitch? doSwitchHook;
 
         internal static void MarkDirty() => dirty = true;
 
-        static ModMenu() => On.Language.Language.DoSwitch += (orig, self) =>
+        internal static void InstallHooks()
         {
+            if (hooksInstalled)
+            {
+                return;
+            }
+
+            doSwitchHook ??= (orig, self) =>
+            {
+                dirty = true;
+                orig(self);
+            };
+            On.Language.Language.DoSwitch += doSwitchHook;
+            hooksInstalled = true;
+        }
+
+        internal static void UninstallHooks()
+        {
+            if (!hooksInstalled)
+            {
+                return;
+            }
+
+            if (doSwitchHook != null)
+            {
+                On.Language.Language.DoSwitch -= doSwitchHook;
+            }
+            hooksInstalled = false;
             dirty = true;
-            orig(self);
-        };
+            menu = null;
+        }
 
         internal static MenuScreen GetMenuScreen(MenuScreen modListMenu, ModToggleDelegates? toggleDelegates)
         {
@@ -46,11 +74,7 @@ public sealed partial class GodhomeQoL
                 .Values
                 .Filter(module =>
                     !module.Hidden
-                    && module is not CollectorPhases
-                    && module is not FastReload
                     && module.Category != "Bugfix"
-                    && module.Category != nameof(Modules.QoL)
-                    && module.Category != nameof(Modules.BossChallenge)
                     && module.Category != "Tools"
                 )
                 .GroupBy(module => module.Category)
@@ -124,6 +148,12 @@ public sealed partial class GodhomeQoL
                 })
                 .ForEach(menu.AddElement);
 
+            menu.AddElement(Blueprints.NavigateToMenu(
+                "ResetModules".Localize(),
+                "",
+                () => ResetMenu(menu.menuScreen)
+            ));
+
             menu.AddElement(new MenuButton(
                 "QuickMenu/ResetFreeMenu".Localize(),
                 "",
@@ -150,15 +180,16 @@ public sealed partial class GodhomeQoL
             elements.AddRange(CollectorPhases.MenuElements());
         }
 
-        if (category == "Dreamshield")
-        {
-            elements.AddRange(DreamshieldStartAngle.MenuElements());
-        }
-
         if (category == nameof(Modules.QoL))
         {
             elements.Add(BossAnimationSkipping(parent));
             elements.Add(MenuAnimationSkipping(parent));
+            elements.AddRange(DreamshieldStartAngle.MenuElements());
+            elements.Add(Blueprints.NavigateToMenu(
+                "Modules/TeleportKit".Localize(),
+                "",
+                () => TeleportKitMenu(parent())
+            ));
         }
 
         if (category == nameof(Modules.BossChallenge))
@@ -206,13 +237,8 @@ public sealed partial class GodhomeQoL
             () => Modules.BossChallenge.InfiniteChallenge.restartFightAndMusic
         ));
 
-        // P5 options
-        AddModuleToggle<Modules.BossChallenge.P5Health>();
+        // Segment options
         AddModuleToggle<Modules.BossChallenge.SegmentedP5>();
-
-        // Halve Damage (HoG)
-        AddModuleToggle<Modules.BossChallenge.HalveDamageHoGAscendedOrAbove>();
-        AddModuleToggle<Modules.BossChallenge.HalveDamageHoGAttuned>();
 
         // Lifeblood and Soul with manual input
         AddModuleToggle<Modules.BossChallenge.AddLifeblood>();
@@ -299,6 +325,8 @@ public sealed partial class GodhomeQoL
                     {
                         module.Enabled = val;
                     }
+
+                    QuickMenu.InvalidateMenuAnimationSnapshotFromExternal();
                 },
                 () => module?.Enabled ?? false
             ));
@@ -313,19 +341,31 @@ public sealed partial class GodhomeQoL
         elements.Add(Blueprints.HorizontalBoolOption(
             "Settings/AutoSkipCinematics".Localize(),
             "",
-            b => Modules.QoL.SkipCutscenes.AutoSkipCinematics = b,
+            b =>
+            {
+                Modules.QoL.SkipCutscenes.AutoSkipCinematics = b;
+                QuickMenu.InvalidateMenuAnimationSnapshotFromExternal();
+            },
             () => Modules.QoL.SkipCutscenes.AutoSkipCinematics
         ));
         elements.Add(Blueprints.HorizontalBoolOption(
             "Settings/AllowSkippingNonskippable".Localize(),
             "",
-            b => Modules.QoL.SkipCutscenes.AllowSkippingNonskippable = b,
+            b =>
+            {
+                Modules.QoL.SkipCutscenes.AllowSkippingNonskippable = b;
+                QuickMenu.InvalidateMenuAnimationSnapshotFromExternal();
+            },
             () => Modules.QoL.SkipCutscenes.AllowSkippingNonskippable
         ));
         elements.Add(Blueprints.HorizontalBoolOption(
             "Settings/SkipCutscenesWithoutPrompt".Localize(),
             "",
-            b => Modules.QoL.SkipCutscenes.SkipCutscenesWithoutPrompt = b,
+            b =>
+            {
+                Modules.QoL.SkipCutscenes.SkipCutscenesWithoutPrompt = b;
+                QuickMenu.InvalidateMenuAnimationSnapshotFromExternal();
+            },
             () => Modules.QoL.SkipCutscenes.SkipCutscenesWithoutPrompt
         ));
 
@@ -340,7 +380,7 @@ public sealed partial class GodhomeQoL
     {
         List<Element> elements = [];
 
-        void AddModuleToggle<T>() where T : Module
+        void AddModuleToggle<T>(Action onChanged) where T : Module
         {
             _ = ModuleManager.TryGetModule(typeof(T), out Module? module);
             elements.Add(Blueprints.HorizontalBoolOption(
@@ -352,54 +392,84 @@ public sealed partial class GodhomeQoL
                     {
                         module.Enabled = val;
                     }
+
+                    onChanged();
                 },
                 () => module?.Enabled ?? false
             ));
         }
 
-        AddModuleToggle<Modules.QoL.FastDreamWarp>();
-        AddModuleToggle<Modules.QoL.ShortDeathAnimation>();
+        AddModuleToggle<Modules.QoL.FastDreamWarp>(QuickMenu.InvalidateQolSnapshotFromExternal);
+        AddModuleToggle<Modules.QoL.ShortDeathAnimation>(QuickMenu.InvalidateQolSnapshotFromExternal);
 
         elements.Add(Blueprints.HorizontalBoolOption(
             "Settings/HallOfGodsStatues".Localize(),
             "",
-            b => Modules.QoL.SkipCutscenes.HallOfGodsStatues = b,
+            b =>
+            {
+                Modules.QoL.SkipCutscenes.HallOfGodsStatues = b;
+                QuickMenu.InvalidateBossAnimationSnapshotFromExternal();
+            },
             () => Modules.QoL.SkipCutscenes.HallOfGodsStatues
         ));
         elements.Add(Blueprints.HorizontalBoolOption(
             "Settings/AbsoluteRadiance".Localize(),
             "",
-            b => Modules.QoL.SkipCutscenes.AbsoluteRadiance = b,
+            b =>
+            {
+                Modules.QoL.SkipCutscenes.AbsoluteRadiance = b;
+                QuickMenu.InvalidateBossAnimationSnapshotFromExternal();
+            },
             () => Modules.QoL.SkipCutscenes.AbsoluteRadiance
         ));
         elements.Add(Blueprints.HorizontalBoolOption(
             "Settings/PureVesselRoar".Localize(),
             "",
-            b => Modules.QoL.SkipCutscenes.PureVesselRoar = b,
+            b =>
+            {
+                Modules.QoL.SkipCutscenes.PureVesselRoar = b;
+                QuickMenu.InvalidateBossAnimationSnapshotFromExternal();
+            },
             () => Modules.QoL.SkipCutscenes.PureVesselRoar
         ));
         elements.Add(Blueprints.HorizontalBoolOption(
             "Settings/GrimmNightmare".Localize(),
             "",
-            b => Modules.QoL.SkipCutscenes.GrimmNightmare = b,
+            b =>
+            {
+                Modules.QoL.SkipCutscenes.GrimmNightmare = b;
+                QuickMenu.InvalidateBossAnimationSnapshotFromExternal();
+            },
             () => Modules.QoL.SkipCutscenes.GrimmNightmare
         ));
         elements.Add(Blueprints.HorizontalBoolOption(
             "Settings/GreyPrinceZote".Localize(),
             "",
-            b => Modules.QoL.SkipCutscenes.GreyPrinceZote = b,
+            b =>
+            {
+                Modules.QoL.SkipCutscenes.GreyPrinceZote = b;
+                QuickMenu.InvalidateBossAnimationSnapshotFromExternal();
+            },
             () => Modules.QoL.SkipCutscenes.GreyPrinceZote
         ));
         elements.Add(Blueprints.HorizontalBoolOption(
             "Settings/Collector".Localize(),
             "",
-            b => Modules.QoL.SkipCutscenes.Collector = b,
+            b =>
+            {
+                Modules.QoL.SkipCutscenes.Collector = b;
+                QuickMenu.InvalidateBossAnimationSnapshotFromExternal();
+            },
             () => Modules.QoL.SkipCutscenes.Collector
         ));
         elements.Add(Blueprints.HorizontalBoolOption(
             "Settings/SoulMasterPhaseTransitionSkip".Localize(),
             "",
-            b => Modules.QoL.SkipCutscenes.SoulMasterPhaseTransitionSkip = b,
+            b =>
+            {
+                Modules.QoL.SkipCutscenes.SoulMasterPhaseTransitionSkip = b;
+                QuickMenu.InvalidateBossAnimationSnapshotFromExternal();
+            },
             () => Modules.QoL.SkipCutscenes.SoulMasterPhaseTransitionSkip
         ));
         return Blueprints.NavigateToMenu(
@@ -578,6 +648,11 @@ public sealed partial class GodhomeQoL
         // FastSuperDash внутренние тумблеры (видимы в меню)
         Modules.QoL.FastSuperDash.instantSuperDash = false;
         Modules.QoL.FastSuperDash.fastSuperDashEverywhere = false;
+        Modules.QoL.FastSuperDash.fastSuperDashSpeedMultiplier = 1f;
+
+        QuickMenu.InvalidateQolSnapshotFromExternal();
+        QuickMenu.InvalidateMenuAnimationSnapshotFromExternal();
+        QuickMenu.InvalidateBossAnimationSnapshotFromExternal();
     }
 
     private static MenuScreen ResetMenu(MenuScreen parent) =>

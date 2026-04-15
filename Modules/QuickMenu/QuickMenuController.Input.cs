@@ -81,20 +81,31 @@ public sealed partial class QuickMenu : Module
                 UpdateGearSwitcherBaseNailDamage();
             }
 
-            if (!wasRebinding && !IsAnyRebinding() && !IsHotkeyInputBlocked() && !suppressHotkeysThisFrame)
+            bool teleportKitGameplayMenuVisible = IsTeleportKitGameplayMenuVisible();
+            bool anyUiVisible = IsAnyUiVisible();
+
+            if (!wasRebinding
+                && !IsAnyRebinding()
+                && !IsHotkeyInputBlocked()
+                && !suppressHotkeysThisFrame
+                && !teleportKitGameplayMenuVisible)
             {
-                HandleFastDreamWarpHotkey();
-                HandleCheatsKillAllHotkey();
+                if (!anyUiVisible)
+                {
+                    HandleFastDreamWarpHotkey();
+                    HandleCheatsKillAllHotkey();
+                }
+
                 HandleOverlayHotkeys();
             }
 
             KeyCode toggleKey = GetQuickMenuToggleKey();
-            if (!wasRebinding && !IsHotkeyInputBlocked() && !suppressHotkeysThisFrame && toggleKey != KeyCode.None && Input.GetKeyDown(toggleKey))
+            if (!wasRebinding && !IsHotkeyInputBlocked() && !suppressHotkeysThisFrame && !teleportKitGameplayMenuVisible && toggleKey != KeyCode.None && Input.GetKeyDown(toggleKey))
             {
                 ToggleMenu();
             }
 
-            if (quickVisible || quickSettingsVisible || overlayVisible || collectorVisible || fastReloadVisible || dreamshieldVisible || showHpOnDeathVisible || maskDamageVisible || freezeHitboxesVisible || speedChangerVisible || teleportKitVisible || bossChallengeVisible || randomPantheonsVisible || trueBossRushVisible || cheatsVisible || alwaysFuriousVisible || gearSwitcherVisible || gearSwitcherCharmCostVisible || gearSwitcherPresetVisible || qolVisible || menuAnimationVisible || bossAnimationVisible || zoteHelperVisible)
+            if (quickVisible || quickSettingsVisible || overlayVisible || collectorVisible || fastReloadVisible || dreamshieldVisible || showHpOnDeathVisible || maskDamageVisible || freezeHitboxesVisible || speedChangerVisible || teleportKitVisible || bossChallengeVisible || randomPantheonsVisible || trueBossRushVisible || cheatsVisible || alwaysFuriousVisible || gearSwitcherVisible || gearSwitcherCharmCostVisible || gearSwitcherPresetVisible || qolVisible || menuAnimationVisible || bossAnimationVisible || zoteHelperVisible || gruzHelperVisible || hornetHelperVisible || mawlekHelperVisible || massiveMossHelperVisible || crystalGuardianHelperVisible || enragedGuardianHelperVisible || hornetSentinelHelperVisible || IsAnyAdditionalGhostHelperVisible() || bossManipulateVisible || bossManipulateOtherRoomsVisible || gruzMotherP1HelperVisible || vengeflyKingP1HelperVisible || broodingMawlekP1HelperVisible || noskP2HelperVisible || uumuuP3HelperVisible || soulWarriorP1HelperVisible || noEyesP4HelperVisible || marmuP2HelperVisible || xeroP2HelperVisible || markothP4HelperVisible || gorbP1HelperVisible)
             {
                 MaintainUiInteraction();
             }
@@ -104,7 +115,7 @@ public sealed partial class QuickMenu : Module
 
         private void LateUpdate()
         {
-            if (quickVisible || quickSettingsVisible || overlayVisible || collectorVisible || fastReloadVisible || dreamshieldVisible || showHpOnDeathVisible || maskDamageVisible || speedChangerVisible || teleportKitVisible || bossChallengeVisible || randomPantheonsVisible || trueBossRushVisible || cheatsVisible || alwaysFuriousVisible || gearSwitcherVisible || gearSwitcherCharmCostVisible || gearSwitcherPresetVisible || qolVisible || menuAnimationVisible || bossAnimationVisible || zoteHelperVisible)
+            if (quickVisible || quickSettingsVisible || overlayVisible || collectorVisible || fastReloadVisible || dreamshieldVisible || showHpOnDeathVisible || maskDamageVisible || freezeHitboxesVisible || speedChangerVisible || teleportKitVisible || bossChallengeVisible || randomPantheonsVisible || trueBossRushVisible || cheatsVisible || alwaysFuriousVisible || gearSwitcherVisible || gearSwitcherCharmCostVisible || gearSwitcherPresetVisible || qolVisible || menuAnimationVisible || bossAnimationVisible || zoteHelperVisible || gruzHelperVisible || hornetHelperVisible || mawlekHelperVisible || massiveMossHelperVisible || crystalGuardianHelperVisible || enragedGuardianHelperVisible || hornetSentinelHelperVisible || IsAnyAdditionalGhostHelperVisible() || bossManipulateVisible || bossManipulateOtherRoomsVisible || gruzMotherP1HelperVisible || vengeflyKingP1HelperVisible || broodingMawlekP1HelperVisible || noskP2HelperVisible || uumuuP3HelperVisible || soulWarriorP1HelperVisible || noEyesP4HelperVisible || marmuP2HelperVisible || xeroP2HelperVisible || markothP4HelperVisible || gorbP1HelperVisible)
             {
                 MaintainUiInteraction();
             }
@@ -140,7 +151,28 @@ public sealed partial class QuickMenu : Module
                 || qolVisible
                 || menuAnimationVisible
                 || bossAnimationVisible
-                || zoteHelperVisible;
+                || zoteHelperVisible
+                || gruzHelperVisible
+                || hornetHelperVisible
+                || mawlekHelperVisible
+                || massiveMossHelperVisible
+                || crystalGuardianHelperVisible
+                || enragedGuardianHelperVisible
+                || hornetSentinelHelperVisible
+                || IsAnyAdditionalGhostHelperVisible()
+                || bossManipulateOtherRoomsVisible
+                || gruzMotherP1HelperVisible
+                || vengeflyKingP1HelperVisible
+                || broodingMawlekP1HelperVisible
+                || noskP2HelperVisible
+                || uumuuP3HelperVisible
+                || soulWarriorP1HelperVisible
+                || noEyesP4HelperVisible
+                || marmuP2HelperVisible
+                || xeroP2HelperVisible
+                || markothP4HelperVisible
+                || gorbP1HelperVisible
+                || bossManipulateVisible;
         }
 
         private void UpdateManualHighlight()

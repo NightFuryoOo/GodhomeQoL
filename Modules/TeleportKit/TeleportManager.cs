@@ -26,12 +26,19 @@ internal sealed class TeleportManager : IDisposable
     {
         ModHooks.BeforeSceneLoadHook -= OnSceneChange;
         isBusy = false;
+        pendingUiReset = false;
     }
 
     internal void StartTeleport(Vector3 position, string scene)
     {
         if (isBusy || GameManager.instance.IsGamePaused())
         {
+            return;
+        }
+
+        if (SpeedChanger.IsTimeScaleFrozen || FreezeHitboxes.IsFreezeActive())
+        {
+            mod.Log.Write("Teleport blocked: Freeze Hitboxes is active.");
             return;
         }
 
@@ -50,7 +57,14 @@ internal sealed class TeleportManager : IDisposable
             yield break;
         }
 
-        bool timeScaleOverridden = SpeedChanger.TryBeginTimeScaleOverride(1f, out float previousTimeScale);
+        if (SpeedChanger.IsTimeScaleFrozen || FreezeHitboxes.IsFreezeActive())
+        {
+            isBusy = false;
+            mod.Log.Write("Teleport aborted - Freeze Hitboxes is active");
+            yield break;
+        }
+
+        bool timeScaleOverridden = SpeedChanger.TryBeginTimeScaleOverride(1f, out int timeScaleOverrideHandle);
 
         try
         {
@@ -65,7 +79,6 @@ internal sealed class TeleportManager : IDisposable
 
             bool isSameScene = GameManager.instance.sceneName == scene;
             bool isDreamRoom = scene == "Dream_Room_Believer_Shrine";
-            bool isPOP45 = scene == "White_Palace_06" && targetPos == new Vector3(9.735f, 7.408f, 0f);
             bool isPOP46 = scene == "White_Palace_20" && targetPos == new Vector3(19.5625f, 169.4081f, 0f);
             bool isPantheonI = (scene == "GG_Atrium") && targetPos == new Vector3(97.15343f, 35.40812f, 0f);
             bool isPantheonII = (scene == "GG_Atrium") && targetPos == new Vector3(108.4116f, 35.40812f, 0f);
@@ -220,14 +233,23 @@ internal sealed class TeleportManager : IDisposable
         }
         finally
         {
+            isBusy = false;
             if (timeScaleOverridden)
             {
-                _ = GameManager.instance.StartCoroutine(RestoreTimeScaleAfterTeleport(previousTimeScale));
+                GameManager? manager = GameManager.instance;
+                if (manager != null)
+                {
+                    _ = manager.StartCoroutine(RestoreTimeScaleAfterTeleport(timeScaleOverrideHandle));
+                }
+                else
+                {
+                    SpeedChanger.EndTimeScaleOverride(timeScaleOverrideHandle);
+                }
             }
         }
     }
 
-    private static IEnumerator RestoreTimeScaleAfterTeleport(float previousTimeScale)
+    private static IEnumerator RestoreTimeScaleAfterTeleport(int timeScaleOverrideHandle)
     {
         yield return null;
 
@@ -238,13 +260,12 @@ internal sealed class TeleportManager : IDisposable
 
         yield return new WaitForSecondsRealtime(0.5f);
 
-        SpeedChanger.EndTimeScaleOverride(previousTimeScale);
+        SpeedChanger.EndTimeScaleOverride(timeScaleOverrideHandle);
     }
 
     private static void CleanSceneState()
     {
         UIManager.instance.UIClosePauseMenu();
-        Time.timeScale = 1f;
         GameManager.instance.FadeSceneIn();
         GameManager.instance.isPaused = false;
         GameCameras.instance.ResumeCameraShake();
@@ -265,7 +286,6 @@ internal sealed class TeleportManager : IDisposable
         }
 
         MenuButtonList.ClearAllLastSelected();
-        TimeController.GenericTimeScale = 1f;
         GameManager.instance.actorSnapshotUnpaused.TransitionTo(0f);
         GameManager.instance.ui.AudioGoToGameplay(0.2f);
         PlayerData.instance.atBench = false;

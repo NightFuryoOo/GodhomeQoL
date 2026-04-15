@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using InControl;
 using UnityEngine;
@@ -11,32 +12,50 @@ namespace GodhomeQoL.Modules.Tools;
 public sealed partial class QuickMenu : Module
 {
     private sealed partial class QuickMenuController
-    {        private void OnSpeedChanged(float value)
+    {
+        private void FlushFastSuperDashSpeedSaveIfDirty()
+        {
+            if (!fastSuperDashSpeedDirty)
+            {
+                return;
+            }
+
+            fastSuperDashSpeedDirty = false;
+            GodhomeQoL.SaveGlobalSettingsSafe();
+        }
+
+        private void OnSpeedChanged(float value)
         {
             float rounded = RoundToTenth(value);
             Modules.QoL.FastSuperDash.fastSuperDashSpeedMultiplier = rounded;
             UpdateSpeedValueText(rounded);
+            if (!suppressFastSuperDashSpeedCallback)
+            {
+                fastSuperDashSpeedDirty = true;
+            }
         }
 
         private void OnDreamshieldDelayChanged(float value)
         {
             float rounded = (float)Math.Round(value, 2);
-            Modules.QoL.DreamshieldStartAngle.rotationDelay = rounded;
-            UpdateFloatValueText(dreamshieldDelayValue, rounded, 2);
-            if (dreamshieldDelaySlider != null && Math.Abs(dreamshieldDelaySlider.value - rounded) > 0.0001f)
+            Modules.QoL.DreamshieldStartAngle.SetRotationDelay(rounded);
+            float current = Modules.QoL.DreamshieldStartAngle.rotationDelay;
+            UpdateFloatValueText(dreamshieldDelayValue, current, 2);
+            if (dreamshieldDelaySlider != null && Math.Abs(dreamshieldDelaySlider.value - current) > 0.0001f)
             {
-                dreamshieldDelaySlider.value = rounded;
+                dreamshieldDelaySlider.value = current;
             }
         }
 
         private void OnDreamshieldSpeedChanged(float value)
         {
             float rounded = (float)Math.Round(value, 2);
-            Modules.QoL.DreamshieldStartAngle.rotationSpeed = rounded;
-            UpdateFloatValueText(dreamshieldSpeedValue, rounded, 2);
-            if (dreamshieldSpeedSlider != null && Math.Abs(dreamshieldSpeedSlider.value - rounded) > 0.0001f)
+            Modules.QoL.DreamshieldStartAngle.SetRotationSpeed(rounded);
+            float current = Modules.QoL.DreamshieldStartAngle.rotationSpeed;
+            UpdateFloatValueText(dreamshieldSpeedValue, current, 2);
+            if (dreamshieldSpeedSlider != null && Math.Abs(dreamshieldSpeedSlider.value - current) > 0.0001f)
             {
-                dreamshieldSpeedSlider.value = rounded;
+                dreamshieldSpeedSlider.value = current;
             }
         }
 
@@ -114,6 +133,24 @@ public sealed partial class QuickMenu : Module
             }
         }
 
+        private static string FormatFloatInputValue(float value)
+        {
+            if (Math.Abs(value - Mathf.Round(value)) < 0.0001f)
+            {
+                return Mathf.RoundToInt(value).ToString(CultureInfo.InvariantCulture);
+            }
+
+            return value.ToString("0.##", CultureInfo.InvariantCulture);
+        }
+
+        private void UpdateFloatInputValue(InputField? field, float value)
+        {
+            if (field != null)
+            {
+                field.text = FormatFloatInputValue(value);
+            }
+        }
+
         private void AdjustIntValue(
             Func<int> getter,
             Action<int> setter,
@@ -181,6 +218,60 @@ public sealed partial class QuickMenu : Module
             parsed = Mathf.Clamp(parsed, minValue, maxValue);
             setter(parsed);
             UpdateIntInputValue(field, getter());
+        }
+
+        private static bool TryParseFloatInput(string rawValue, out float parsed)
+        {
+            string trimmed = rawValue?.Trim() ?? string.Empty;
+            if (trimmed.Length == 0)
+            {
+                parsed = 0f;
+                return false;
+            }
+
+            if (float.TryParse(trimmed, NumberStyles.Float, CultureInfo.InvariantCulture, out parsed))
+            {
+                return true;
+            }
+
+            return float.TryParse(trimmed, NumberStyles.Float, CultureInfo.CurrentCulture, out parsed);
+        }
+
+        private void AdjustFloatInputValue(
+            Func<float> getter,
+            Action<float> setter,
+            InputField? valueField,
+            int direction,
+            float minValue,
+            float maxValue,
+            float baseStep)
+        {
+            float current = getter();
+            float step = baseStep * GetStepMultiplier();
+            float next = current + direction * step;
+            next = Mathf.Clamp(next, minValue, maxValue);
+
+            setter(next);
+            UpdateFloatInputValue(valueField, getter());
+        }
+
+        private void ApplyFloatInputValue(
+            string rawValue,
+            Func<float> getter,
+            Action<float> setter,
+            InputField? field,
+            float minValue,
+            float maxValue)
+        {
+            if (!TryParseFloatInput(rawValue, out float parsed))
+            {
+                UpdateFloatInputValue(field, getter());
+                return;
+            }
+
+            parsed = Mathf.Clamp(parsed, minValue, maxValue);
+            setter(parsed);
+            UpdateFloatInputValue(field, getter());
         }
 
         private static int GetStepMultiplier()

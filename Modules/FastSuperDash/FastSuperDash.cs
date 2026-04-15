@@ -8,13 +8,25 @@ namespace GodhomeQoL.Modules.QoL;
 
 public sealed class FastSuperDash : Module {
 	private static readonly GameObjectRef knightRef = new(GameObjectRef.DONT_DESTROY_ON_LOAD, "Knight");
+	private static readonly string[] requiredStateNames = ["Wall Charge", "Ground Charge", "Left", "Right", "Dash Start", "Dashing", "Air Cancel", "Hit Wall"];
+	private static readonly Dictionary<int, PatchedFsmSnapshot> patchedFsms = [];
+
+	private sealed class PatchedFsmSnapshot {
+		public PlayMakerFSM fsm = null!;
+		public int fsmId;
+		public List<(string stateName, FsmStateAction action)> addedActions = [];
+	}
+
+	private sealed class SuperDashPatchMarker : MonoBehaviour {
+		public int patchedFsmId;
+	}
 
 	[GlobalSetting]
 	[BoolOption]
 	public static bool instantSuperDash = false;
 
 	[GlobalSetting]
-	[FloatOption(1.0f, 2.0f, 0.1f)]
+	[FloatOption(1.0f, 10.0f, 0.1f)]
 	public static float fastSuperDashSpeedMultiplier = 1f;
 
 	[GlobalSetting]
@@ -23,75 +35,208 @@ public sealed class FastSuperDash : Module {
 
 	public override bool DefaultEnabled => false;
 
-	public FastSuperDash() =>
+	private protected override void Load() {
+		patchedFsms.Clear();
 		On.PlayMakerFSM.Start += ModifySuperDashFSM;
+		TryPatchExistingSuperDashFSM();
+	}
+
+	private protected override void Unload() {
+		On.PlayMakerFSM.Start -= ModifySuperDashFSM;
+		RestorePatchedFsms();
+	}
 
 	private void ModifySuperDashFSM(On.PlayMakerFSM.orig_Start orig, PlayMakerFSM self) {
 		orig(self);
 
 		if (self.FsmName == "Superdash" && knightRef.MatchGameObject(self.gameObject)) {
-			ModifySuperDashFSM(self);
-
-			LogDebug("Superdash FSM modified");
+			if (TryPatchSuperDashFSM(self)) {
+				LogDebug("Superdash FSM modified");
+			}
 		}
 	}
 
-	private void ModifySuperDashFSM(PlayMakerFSM fsm) {
-		bool shouldActivate() => Loaded && (
-			fastSuperDashEverywhere
-			|| Ref.GM.sceneName is "GG_Workshop" or "GG_Atrium" or "GG_Atrium_Roof"
-			|| (PlayerDataR.bossRushMode && Ref.GM.sceneName == "Room_Colosseum_01")
-		);
+	private void TryPatchExistingSuperDashFSM() {
+		GameObject? knight = GameObject.Find("Knight");
+		if (knight == null) {
+			return;
+		}
+
+		PlayMakerFSM? fsm = knight
+			.GetComponents<PlayMakerFSM>()
+			.FirstOrDefault(candidate => candidate != null && candidate.FsmName == "Superdash");
+		if (fsm != null && TryPatchSuperDashFSM(fsm)) {
+			LogDebug("Superdash FSM patched from existing knight instance");
+		}
+	}
+
+	private static bool HasState(PlayMakerFSM fsm, string stateName) =>
+		fsm.Fsm.GetState(stateName) != null;
+
+	private static bool TryCreateSnapshot(PlayMakerFSM fsm, int fsmId, out PatchedFsmSnapshot snapshot) {
+		snapshot = new PatchedFsmSnapshot {
+			fsm = fsm,
+			fsmId = fsmId
+		};
+
+		foreach (string stateName in requiredStateNames) {
+			FsmState? state = fsm.Fsm.GetState(stateName);
+			if (state == null) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	private static void RestorePatchedFsms() {
+		foreach ((_, PatchedFsmSnapshot snapshot) in patchedFsms) {
+			PlayMakerFSM fsm = snapshot.fsm;
+			if (fsm == null) {
+				continue;
+			}
+
+			foreach ((string stateName, FsmStateAction action) in snapshot.addedActions) {
+				FsmState? state = fsm.Fsm.GetState(stateName);
+				if (state == null || state.Actions == null) {
+					continue;
+				}
+
+				List<FsmStateAction> actions = [.. state.Actions];
+				_ = actions.RemoveAll(item => ReferenceEquals(item, action));
+				state.Actions = [.. actions];
+			}
+
+			SuperDashPatchMarker? marker = fsm.gameObject.GetComponent<SuperDashPatchMarker>();
+			if (marker != null && marker.patchedFsmId == snapshot.fsmId) {
+				UObject.Destroy(marker);
+			}
+		}
+
+		patchedFsms.Clear();
+	}
+
+	private bool TryPatchSuperDashFSM(PlayMakerFSM fsm) {
+		int currentFsmId = fsm.GetInstanceID();
+		if (patchedFsms.ContainsKey(currentFsmId)) {
+			return false;
+		}
+
+		SuperDashPatchMarker? marker = fsm.gameObject.GetComponent<SuperDashPatchMarker>();
+		if (marker != null && marker.patchedFsmId == currentFsmId) {
+			return false;
+		}
+
+		if (!requiredStateNames.All(stateName => HasState(fsm, stateName))) {
+			LogWarn("FastSuperDash: required states are missing, patch skipped.");
+			return false;
+		}
+
+		FsmFloat? speedVar = fsm.GetVariable<FsmFloat>("Current SD Speed");
+		if (speedVar == null) {
+			LogWarn("FastSuperDash: missing \"Current SD Speed\" variable, patch skipped.");
+			return false;
+		}
+
+		if (!TryCreateSnapshot(fsm, currentFsmId, out PatchedFsmSnapshot snapshot)) {
+			LogWarn("FastSuperDash: failed to snapshot FSM state actions, patch skipped.");
+			return false;
+		}
+
+		FsmFloat speed = speedVar;
+		float currentDashBaseSpeed = speed.Value;
+		bool dashBaseCaptured = false;
+
+		bool shouldActivate() {
+			if (!Loaded) {
+				return false;
+			}
+
+			if (fastSuperDashEverywhere) {
+				return true;
+			}
+
+			GameManager? manager = GameManager.instance;
+			if (manager == null) {
+				return false;
+			}
+
+			string scene = manager.sceneName ?? string.Empty;
+			return scene is "GG_Workshop" or "GG_Atrium" or "GG_Atrium_Roof"
+				|| (PlayerDataR.bossRushMode && scene == "Room_Colosseum_01");
+		}
 		bool shouldRemoveWinding() => shouldActivate() && instantSuperDash;
+		void prepareDashBase() {
+			dashBaseCaptured = false;
+		}
+		void applySpeedMultiplier() {
+			if (!shouldActivate()) {
+				return;
+			}
+			if (!dashBaseCaptured) {
+				currentDashBaseSpeed = speed.Value;
+				dashBaseCaptured = true;
+			}
+
+			float multiplier = Mathf.Max(0f, fastSuperDashSpeedMultiplier);
+			speed.Value = currentDashBaseSpeed * multiplier;
+		}
 
 		FsmEvent skipEvent = FsmEvent.GetFsmEvent("WAIT");
 
-		fsm.AddAction("Wall Charge", new InvokePredicate(shouldRemoveWinding) {
-			trueEvent = skipEvent
-		});
-		fsm.AddAction("Ground Charge", new InvokePredicate(shouldRemoveWinding) {
-			trueEvent = skipEvent
-		});
-
-		FsmFloat speed = fsm.GetVariable<FsmFloat>("Current SD Speed");
-		fsm.Intercept(new TransitionInterceptor() {
-			fromState = "Left",
-			eventName = FsmEvent.Finished.Name,
-			toStateDefault = "Dash Start",
-			toStateCustom = "Dash Start",
-			shouldIntercept = shouldActivate,
-			onIntercept = (_, _) => speed.Value *= fastSuperDashSpeedMultiplier
-		});
-		fsm.Intercept(new TransitionInterceptor() {
-			fromState = "Right",
-			eventName = FsmEvent.Finished.Name,
-			toStateDefault = "Dash Start",
-			toStateCustom = "Dash Start",
-			shouldIntercept = shouldActivate,
-			onIntercept = (_, _) => speed.Value *= fastSuperDashSpeedMultiplier
-		});
-
-		fsm.AddAction("Dashing", new InvokePredicate(shouldRemoveWinding) {
-			trueEvent = skipEvent
-		});
-		fsm.AddAction("Air Cancel", new InvokePredicate(shouldRemoveWinding) {
-			trueEvent = FsmEvent.Finished
-		});
-		fsm.AddAction("Hit Wall", new InvokePredicate(shouldRemoveWinding) {
-			trueEvent = FsmEvent.Finished
-		});
-
-		// Fire skip event immediately on entering charge states to remove wind-up when enabled.
-		fsm.AddAction("Wall Charge", new InvokeMethod(() => {
+		InvokeMethod wallChargeAction = new(() => {
+			prepareDashBase();
 			if (shouldRemoveWinding()) {
 				fsm.SendEvent(skipEvent.Name);
 			}
-		}));
-		fsm.AddAction("Ground Charge", new InvokeMethod(() => {
+		});
+		fsm.InsertAction("Wall Charge", wallChargeAction, 0);
+		snapshot.addedActions.Add(("Wall Charge", wallChargeAction));
+
+		InvokeMethod groundChargeAction = new(() => {
+			prepareDashBase();
 			if (shouldRemoveWinding()) {
 				fsm.SendEvent(skipEvent.Name);
 			}
-		}));
+		});
+		fsm.InsertAction("Ground Charge", groundChargeAction, 0);
+		snapshot.addedActions.Add(("Ground Charge", groundChargeAction));
+
+		InvokeMethod dashStartResetAction = new(prepareDashBase);
+		fsm.InsertAction("Dash Start", dashStartResetAction, 0);
+		snapshot.addedActions.Add(("Dash Start", dashStartResetAction));
+
+		// Keep deterministic result for this module by normalizing speed on dash entry too.
+		InvokeMethod dashStartAction = new(applySpeedMultiplier);
+		fsm.AddAction("Dash Start", dashStartAction);
+		snapshot.addedActions.Add(("Dash Start", dashStartAction));
+
+		InvokeMethod dashingSpeedAction = new(applySpeedMultiplier);
+		fsm.AddAction("Dashing", dashingSpeedAction);
+		snapshot.addedActions.Add(("Dashing", dashingSpeedAction));
+
+		InvokePredicate dashingAction = new(shouldRemoveWinding) {
+			trueEvent = skipEvent
+		};
+		fsm.AddAction("Dashing", dashingAction);
+		snapshot.addedActions.Add(("Dashing", dashingAction));
+
+		InvokePredicate airCancelAction = new(shouldRemoveWinding) {
+			trueEvent = FsmEvent.Finished
+		};
+		fsm.AddAction("Air Cancel", airCancelAction);
+		snapshot.addedActions.Add(("Air Cancel", airCancelAction));
+
+		InvokePredicate hitWallAction = new(shouldRemoveWinding) {
+			trueEvent = FsmEvent.Finished
+		};
+		fsm.AddAction("Hit Wall", hitWallAction);
+		snapshot.addedActions.Add(("Hit Wall", hitWallAction));
+
+		marker ??= fsm.gameObject.AddComponent<SuperDashPatchMarker>();
+		marker.patchedFsmId = currentFsmId;
+		patchedFsms[currentFsmId] = snapshot;
+		return true;
 	}
 
 	internal static IEnumerable<Element> MenuElements() {
@@ -101,20 +246,28 @@ public sealed class FastSuperDash : Module {
 		Element instantToggle = Blueprints.HorizontalBoolOption(
 			"Settings/instantSuperDash".Localize(),
 			"",
-			b => instantSuperDash = b,
+			b => {
+				instantSuperDash = b;
+				GodhomeQoL.SaveGlobalSettingsSafe();
+			},
 			() => instantSuperDash
 		);
 
 		Element everywhereToggle = Blueprints.HorizontalBoolOption(
 			"Settings/fastSuperDashEverywhere".Localize(),
 			"",
-			b => fastSuperDashEverywhere = b,
+			b => {
+				fastSuperDashEverywhere = b;
+				GodhomeQoL.SaveGlobalSettingsSafe();
+			},
 			() => fastSuperDashEverywhere
 		);
 
 		CustomSlider speedSlider = new(
 			"Settings/fastSuperDashSpeedMultiplier".Localize(),
-			val => fastSuperDashSpeedMultiplier = (float) Math.Round(val, 2),
+			val => {
+				fastSuperDashSpeedMultiplier = (float) Math.Round(val, 2);
+			},
 			() => (float) Math.Round(fastSuperDashSpeedMultiplier, 2),
 			1f,
 			10f,
@@ -127,6 +280,7 @@ public sealed class FastSuperDash : Module {
 			val => {
 				if (module != null) {
 					module.Enabled = val;
+					GodhomeQoL.SaveGlobalSettingsSafe();
 				}
 			},
 			() => module?.Enabled ?? menuEnabled

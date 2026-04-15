@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Reflection;
 using UnityEngine;
 
@@ -25,19 +26,26 @@ namespace ToggleableBindings.Utility
         {
             try
             {
-                var asm = Assembly.GetCallingAssembly();
-                using (var stream = asm.GetManifestResourceStream($"{nameof(ToggleableBindings)}.Assets.{assetPath}"))
+                Assembly asm = typeof(EmbeddedAssetLoader).Assembly;
+                string resourceName = $"{nameof(ToggleableBindings)}.Assets.{assetPath}";
+
+                using Stream? stream = asm.GetManifestResourceStream(resourceName);
+                if (stream == null)
                 {
-                    byte[] data = new byte[stream.Length];
-                    stream.Read(data, 0, data.Length);
-
-                    Texture2D texture2D = new Texture2D(2, 2);
-                    bool success = texture2D.LoadImage(data);
-                    if (!success)
-                        throw new Exception("ImageConversion.LoadImage() failed.");
-
-                    return texture2D;
+                    throw new FileNotFoundException(
+                        $"Embedded resource '{resourceName}' was not found in assembly '{asm.FullName}'.");
                 }
+
+                using MemoryStream ms = new();
+                stream.CopyTo(ms);
+                byte[] data = ms.ToArray();
+
+                Texture2D texture2D = new Texture2D(2, 2);
+                bool success = texture2D.LoadImage(data);
+                if (!success)
+                    throw new Exception("ImageConversion.LoadImage() failed.");
+
+                return texture2D;
             }
             catch (Exception ex)
             {

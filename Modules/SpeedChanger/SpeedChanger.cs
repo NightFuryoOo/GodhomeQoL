@@ -36,25 +36,23 @@ public sealed class SpeedChanger : Module {
 	).ToArray();
 
 	internal static SpeedChanger? Instance { get; private set; }
-	private static bool timeScaleOverrideActive;
-	private static float timeScaleOverrideValue = 1f;
+	private static readonly Dictionary<int, float> timeScaleOverrideValues = new();
+	private static readonly HashSet<int> timeScaleFreezeLocks = new();
+	private static int nextTimeScaleOverrideHandle;
+	private static int nextFreezeLockHandle;
 
 	public override bool DefaultEnabled => false;
 	public override bool Hidden => true;
+	public override bool AlwaysEnabled => true;
 
 	[GlobalSetting] public static bool globalSwitch = false;
 	[GlobalSetting] public static bool restrictToggleToRooms = false;
 	[GlobalSetting] public static bool unlimitedSpeed = false;
 	[GlobalSetting] public static int displayStyle = 0;
-	[GlobalSetting] public static string speedUpKeybind = string.Empty;
-	[GlobalSetting] public static string slowDownKeybind = string.Empty;
 	[GlobalSetting] public static string toggleKeybind = string.Empty;
 	[GlobalSetting] public static string inputSpeedKeybind = string.Empty;
-	[GlobalSetting] public static float step = 0.05f;
 	[GlobalSetting] public static float speed = 1f;
 
-	private KeyCode speedUpKey;
-	private KeyCode slowDownKey;
 	private KeyCode toggleKey;
 	private KeyCode inputSpeedKey;
 	private static KeyCode suppressToggleKey = KeyCode.None;
@@ -72,16 +70,9 @@ public sealed class SpeedChanger : Module {
 	private KeyCode currentInputKeyBeforeRebind;
 	private static readonly string[] inputMenuValues = new string[1];
 
-	private bool waitingForSpeedUpRebind;
-	private KeyCode currentSpeedUpKeyBeforeRebind;
-	private static readonly string[] speedUpMenuValues = new string[1];
-
-	private bool waitingForSpeedDownRebind;
-	private KeyCode currentSpeedDownKeyBeforeRebind;
-	private static readonly string[] speedDownMenuValues = new string[1];
-
 	private bool waitingForSpeedInput;
 	private string speedInputBuffer = string.Empty;
+	private bool wasPausedLastTick;
 
 	private bool isLoaded;
 	private ILHook[]? coroutineHooks;
@@ -89,14 +80,13 @@ public sealed class SpeedChanger : Module {
 
 	private static HorizontalOption? toggleOption;
 	private static HorizontalOption? inputOption;
-	private static HorizontalOption? speedUpOption;
-	private static HorizontalOption? speedDownOption;
 
 	public SpeedChanger() => Instance = this;
 
 	private protected override void Load() {
 		RefreshKeybinds();
 		EnsureRebindListener();
+		wasPausedLastTick = IsGamePausedNow();
 		ChangeGlobalSwitchState(globalSwitch, true);
 	}
 
@@ -114,8 +104,6 @@ public sealed class SpeedChanger : Module {
 	}
 
 	private void RefreshKeybinds() {
-		speedUpKey = ParseKeycode(speedUpKeybind, KeyCode.Alpha9);
-		slowDownKey = ParseKeycode(slowDownKeybind, KeyCode.Alpha8);
 		toggleKey = ParseKeycode(toggleKeybind, KeyCode.F10);
 		inputSpeedKey = ParseKeycode(inputSpeedKeybind, KeyCode.F11);
 	}
@@ -143,6 +131,16 @@ public sealed class SpeedChanger : Module {
 	}
 
 	private static float NormalizeSpeed(float value) => (float)Math.Round(value, 2);
+	private static bool IsFinitePositive(float value) => value > 0f && !float.IsNaN(value) && !float.IsInfinity(value);
+
+	private static float SanitizeSpeed(float value, float fallback = 1f) {
+		if (!IsFinitePositive(value)) {
+			return fallback;
+		}
+
+		float normalized = NormalizeSpeed(value);
+		return IsFinitePositive(normalized) ? normalized : fallback;
+	}
 
 	private float SpeedMultiplier {
 		get => globalSwitch ? speed : 1f;
@@ -151,37 +149,52 @@ public sealed class SpeedChanger : Module {
 				return;
 			}
 
+			float normalized = SanitizeSpeed(value);
+
 			if (Time.timeScale != 0f) {
-				Time.timeScale = value;
+				Time.timeScale = normalized;
 			}
 
-			speed = NormalizeSpeed(value);
+			speed = normalized;
 		}
 	}
 
-	internal static bool TryBeginTimeScaleOverride(float value, out float previousTimeScale) {
-		previousTimeScale = Time.timeScale;
+	internal static bool IsTimeScaleFrozen => timeScaleFreezeLocks.Count > 0;
 
-		if (timeScaleOverrideActive) {
+	internal static bool TryBeginTimeScaleOverride(float value, out int handle) {
+		handle = 0;
+
+		if (value <= 0f || float.IsNaN(value) || float.IsInfinity(value)) {
 			return false;
 		}
 
-		timeScaleOverrideValue = value;
-		timeScaleOverrideActive = true;
-		ApplyTimeScaleOverride();
+		handle = ++nextTimeScaleOverrideHandle;
+		timeScaleOverrideValues[handle] = value;
+		ApplyResolvedTimeScale();
 		return true;
 	}
 
-	internal static void EndTimeScaleOverride(float previousTimeScale) {
-		if (!timeScaleOverrideActive) {
+	internal static void EndTimeScaleOverride(int handle) {
+		if (handle == 0 || !timeScaleOverrideValues.Remove(handle)) {
 			return;
 		}
 
-		timeScaleOverrideActive = false;
+		ApplyResolvedTimeScale();
+	}
 
-		if (Time.timeScale != 0f) {
-			Time.timeScale = previousTimeScale;
+	internal static int BeginTimeScaleFreezeLock() {
+		int handle = ++nextFreezeLockHandle;
+		timeScaleFreezeLocks.Add(handle);
+		ApplyResolvedTimeScale();
+		return handle;
+	}
+
+	internal static void EndTimeScaleFreezeLock(int handle) {
+		if (handle == 0 || !timeScaleFreezeLocks.Remove(handle)) {
+			return;
 		}
+
+		ApplyResolvedTimeScale();
 	}
 
 	internal static void SuppressToggleUntilRelease(KeyCode key) {
@@ -192,13 +205,79 @@ public sealed class SpeedChanger : Module {
 		suppressInputKey = key;
 	}
 
-	private static void ApplyTimeScaleOverride() {
-		if (Time.timeScale != 0f) {
-			Time.timeScale = timeScaleOverrideValue;
+	private static bool HasTimeScaleOverride => timeScaleOverrideValues.Count > 0;
+	private static bool HasManagedTimeScale => timeScaleFreezeLocks.Count > 0 || HasTimeScaleOverride;
+	internal static bool HasManagedTimeScaleControl => HasManagedTimeScale;
+
+	private static float GetLatestOverrideScale() {
+		int latestHandle = int.MinValue;
+		float scale = 1f;
+
+		foreach ((int handle, float value) in timeScaleOverrideValues) {
+			if (handle > latestHandle) {
+				latestHandle = handle;
+				scale = value;
+			}
 		}
+
+		return scale;
 	}
 
-	private static float GetFreezeScale() => timeScaleOverrideActive ? 1f : speed;
+	private static bool IsGamePausedNow() =>
+		GameManager.instance != null && GameManager.instance.IsGamePaused();
+
+	private static void ApplyResolvedTimeScale() {
+		if (timeScaleFreezeLocks.Count > 0) {
+			Time.timeScale = 0f;
+			return;
+		}
+
+		if (IsGamePausedNow()) {
+			return;
+		}
+
+		if (HasTimeScaleOverride) {
+			Time.timeScale = GetLatestOverrideScale();
+			return;
+		}
+
+		SpeedChanger? instance = Instance;
+		if (instance == null || !instance.isLoaded) {
+			Time.timeScale = 1f;
+			return;
+		}
+
+		if (instance.togglePaused || !globalSwitch) {
+			Time.timeScale = 1f;
+			return;
+		}
+
+		float baseSpeed = SanitizeSpeed(speed);
+		if (!Mathf.Approximately(baseSpeed, speed)) {
+			speed = baseSpeed;
+		}
+
+		Time.timeScale = baseSpeed;
+	}
+
+	private static bool IsFreezeScalingActive() {
+		if (HasManagedTimeScale) {
+			return false;
+		}
+
+		SpeedChanger? instance = Instance;
+		if (instance == null || !instance.isLoaded) {
+			return false;
+		}
+
+		if (!globalSwitch || instance.togglePaused) {
+			return false;
+		}
+
+		return IsFinitePositive(speed);
+	}
+
+	private static float GetFreezeScale() => IsFreezeScalingActive() ? speed : 1f;
 
 	private void EnableSpeedChanger() {
 		if (isLoaded) {
@@ -207,7 +286,7 @@ public sealed class SpeedChanger : Module {
 
 		isLoaded = true;
 		RefreshKeybinds();
-		speed = NormalizeSpeed(speed);
+		speed = SanitizeSpeed(speed);
 		SpeedMultiplier = speed;
 
 		ModHooks.HeroUpdateHook += OnHeroUpdate;
@@ -241,15 +320,18 @@ public sealed class SpeedChanger : Module {
 		}
 
 		ModHooks.HeroUpdateHook -= OnHeroUpdate;
+		wasPausedLastTick = IsGamePausedNow();
 
-		if (Time.timeScale != 0f) {
+		if (!HasManagedTimeScale && Time.timeScale != 0f) {
 			Time.timeScale = 1f;
+		} else {
+			ApplyResolvedTimeScale();
 		}
 	}
 
 	private void OnHeroUpdate() {
-		if (timeScaleOverrideActive) {
-			ApplyTimeScaleOverride();
+		if (HasManagedTimeScale) {
+			ApplyResolvedTimeScale();
 			return;
 		}
 
@@ -263,26 +345,12 @@ public sealed class SpeedChanger : Module {
 		UpdateSpeedDisplay();
 		SpeedMultiplier = SpeedMultiplier;
 
-		if (QuickMenu.IsHotkeyInputBlocked()) {
+		if (QuickMenu.IsHotkeyInputBlocked() || QuickMenu.IsAnyUiVisible()) {
 			return;
-		}
-
-		if (speedUpKey != KeyCode.None && Input.GetKeyDown(speedUpKey)) {
-			SpeedMultiplier += step;
-		} else if (slowDownKey != KeyCode.None && Input.GetKeyDown(slowDownKey)) {
-			SpeedMultiplier -= step;
 		}
 	}
 
 	private void ListenForToggle() {
-		if (HandleToggleRebind()) {
-			return;
-		}
-
-		if (HandleInputRebind()) {
-			return;
-		}
-
 		if (toggleKey != KeyCode.None && toggleKey == suppressToggleKey) {
 			if (Input.GetKey(toggleKey)) {
 				return;
@@ -304,11 +372,11 @@ public sealed class SpeedChanger : Module {
 
 			togglePaused = !togglePaused;
 
-			if (togglePaused) {
-				togglePrevOverlayVisible = QuickMenu.IsSpeedChangerOverlayVisible();
-				if (togglePrevOverlayVisible) {
-					QuickMenu.SetSpeedChangerOverlayVisible(false);
-				}
+				if (togglePaused) {
+					togglePrevOverlayVisible = QuickMenu.IsSpeedChangerOverlayVisible();
+					if (togglePrevOverlayVisible) {
+						QuickMenu.SetSpeedChangerOverlayVisible(false);
+					}
 
 				togglePrevDisplayVisible = ModDisplay.Instance != null;
 				if (togglePrevDisplayVisible) {
@@ -316,11 +384,15 @@ public sealed class SpeedChanger : Module {
 					ModDisplay.Instance = null;
 				}
 
-				if (Time.timeScale != 0f) {
-					Time.timeScale = 1f;
-				}
-			} else {
-				SpeedMultiplier = speed;
+					if (!HasManagedTimeScale && Time.timeScale != 0f) {
+						Time.timeScale = 1f;
+					}
+				} else {
+					if (!HasManagedTimeScale) {
+						SpeedMultiplier = speed;
+					} else {
+						ApplyResolvedTimeScale();
+					}
 
 				if (togglePrevDisplayVisible && displayStyle != 2) {
 					ModDisplay.Instance ??= new ModDisplay();
@@ -395,11 +467,15 @@ public sealed class SpeedChanger : Module {
 				return true;
 			}
 
-			if (key == currentToggleKeyBeforeRebind) {
-				toggleKeybind = string.Empty;
-			} else {
-				string keyName = key.ToString();
-				toggleKeybind = IsKeyInUse(keyName, "toggle") ? string.Empty : keyName;
+			if (!TryApplyRebindKey(
+				key,
+				currentToggleKeyBeforeRebind,
+				"SpeedChanger/ToggleKey".Localize(),
+				"toggle",
+				value => toggleKeybind = value,
+				() => UpdateToggleButton("Set Key...")
+			)) {
+				return true;
 			}
 
 			RefreshKeybinds();
@@ -449,11 +525,15 @@ public sealed class SpeedChanger : Module {
 				return true;
 			}
 
-			if (key == currentInputKeyBeforeRebind) {
-				inputSpeedKeybind = string.Empty;
-			} else {
-				string keyName = key.ToString();
-				inputSpeedKeybind = IsKeyInUse(keyName, "input") ? string.Empty : keyName;
+			if (!TryApplyRebindKey(
+				key,
+				currentInputKeyBeforeRebind,
+				"SpeedChanger/InputKey".Localize(),
+				"input",
+				value => inputSpeedKeybind = value,
+				() => UpdateInputButton("Set Key...")
+			)) {
+				return true;
 			}
 
 			RefreshKeybinds();
@@ -484,19 +564,27 @@ public sealed class SpeedChanger : Module {
 
 		GameObject go = new("SGQOL_SpeedChanger_RebindListener");
 		UObject.DontDestroyOnLoad(go);
-		rebindListener = go.AddComponent<RebindListener>();
-		rebindListener.Tick = () => {
-			if (QuickMenu.IsHotkeyInputBlocked()) {
-				UpdateSpeedDisplay();
-				return;
+			rebindListener = go.AddComponent<RebindListener>();
+			rebindListener.Tick = () => {
+				bool isPausedNow = IsGamePausedNow();
+				if (wasPausedLastTick && !isPausedNow) {
+					ApplyResolvedTimeScale();
+				}
+				wasPausedLastTick = isPausedNow;
+
+				if (QuickMenu.IsHotkeyInputBlocked() || QuickMenu.IsAnyUiVisible()) {
+					UpdateSpeedDisplay();
+					return;
+				}
+
+			bool consumedInput = HandleToggleRebind()
+				|| HandleInputRebind()
+				|| HandleSpeedEntry();
+
+			if (!consumedInput) {
+				ListenForToggle();
 			}
 
-			HandleToggleRebind();
-			HandleInputRebind();
-			HandleSpeedUpRebind();
-			HandleSpeedDownRebind();
-			HandleSpeedEntry();
-			ListenForToggle();
 			UpdateSpeedDisplay();
 		};
 	}
@@ -524,10 +612,43 @@ public sealed class SpeedChanger : Module {
 
 		bool inToggle = !except.Equals("toggle", StringComparison.OrdinalIgnoreCase) && string.Equals(toggleKeybind, keyName, StringComparison.OrdinalIgnoreCase);
 		bool inInput = !except.Equals("input", StringComparison.OrdinalIgnoreCase) && string.Equals(inputSpeedKeybind, keyName, StringComparison.OrdinalIgnoreCase);
-		bool inUp = !except.Equals("up", StringComparison.OrdinalIgnoreCase) && string.Equals(speedUpKeybind, keyName, StringComparison.OrdinalIgnoreCase);
-		bool inDown = !except.Equals("down", StringComparison.OrdinalIgnoreCase) && string.Equals(slowDownKeybind, keyName, StringComparison.OrdinalIgnoreCase);
 
-		return inToggle || inInput || inUp || inDown;
+		return inToggle || inInput;
+	}
+
+	private static string FormatRuntimeKeyLabel(KeyCode key) => key == KeyCode.None
+		? "SpeedChanger/NotSet".Localize()
+		: key.ToString();
+
+	private bool TryApplyRebindKey(
+		KeyCode key,
+		KeyCode previousKey,
+		string selfOwner,
+		string internalSlot,
+		Action<string> applyKeybind,
+		Action onConflict
+	) {
+		if (key == previousKey) {
+			applyKeybind(string.Empty);
+			return true;
+		}
+
+		string keyName = key.ToString();
+		if (IsKeyInUse(keyName, internalSlot)) {
+			applyKeybind(string.Empty);
+			return true;
+		}
+
+		if (QuickMenu.TryGetHotkeyConflictOwnersExceptSelf(key, selfOwner, out string owners)) {
+			if (ModDisplay.Instance != null && displayStyle != 2) {
+				ModDisplay.Instance.Display($"HOTKEY {FormatRuntimeKeyLabel(key)} occupied by: {owners}");
+			}
+			onConflict();
+			return false;
+		}
+
+		applyKeybind(keyName);
+		return true;
 	}
 
 	private bool IsInAllowedRoom() {
@@ -554,6 +675,13 @@ public sealed class SpeedChanger : Module {
 	private bool HandleSpeedEntry() {
 		if (!waitingForSpeedInput) {
 			return false;
+		}
+
+		if (inputSpeedKey != KeyCode.None && Input.GetKeyDown(inputSpeedKey)) {
+			waitingForSpeedInput = false;
+			speedInputBuffer = string.Empty;
+			ModDisplay.Instance?.HideInput();
+			return true;
 		}
 
 		if (Input.GetKeyDown(KeyCode.Escape)) {
@@ -629,123 +757,24 @@ public sealed class SpeedChanger : Module {
 		ModDisplay.Instance!.Display($"Game Speed: {speedString}");
 	}
 
-	private void StartSpeedUpRebind() {
-		speedUpMenuValues[0] = "Set Key...";
-		UpdateSpeedUpButton(speedUpMenuValues[0]);
-		waitingForSpeedUpRebind = true;
-		currentSpeedUpKeyBeforeRebind = speedUpKey;
-		if (ModDisplay.Instance != null && displayStyle != 2) {
-			ModDisplay.Instance.Display("Press a key for Speed Up (Esc to cancel)");
-		}
-	}
-
-	private bool HandleSpeedUpRebind() {
-		if (!waitingForSpeedUpRebind) {
-			return false;
-		}
-
-		foreach (KeyCode key in Enum.GetValues(typeof(KeyCode))) {
-			if (!Input.GetKeyDown(key)) {
-				continue;
-			}
-
-			if (key == KeyCode.Escape) {
-				waitingForSpeedUpRebind = false;
-				UpdateSpeedUpButton(FormatKeyLabel(speedUpKeybind));
-				return true;
-			}
-
-			if (key == currentSpeedUpKeyBeforeRebind) {
-				speedUpKeybind = string.Empty;
-			} else {
-				string keyName = key.ToString();
-				speedUpKeybind = IsKeyInUse(keyName, "up") ? string.Empty : keyName;
-			}
-
-			RefreshKeybinds();
-			waitingForSpeedUpRebind = false;
-
-			string prev = speedUpMenuValues[0];
-			speedUpMenuValues[0] = FormatKeyLabel(speedUpKeybind);
-			UpdateSpeedUpButton(speedUpMenuValues[0], prev);
-
-			if (ModDisplay.Instance != null && displayStyle != 2) {
-				ModDisplay.Instance.Display(string.IsNullOrEmpty(speedUpKeybind)
-					? "Speed Up key cleared"
-					: $"Speed Up key set to {speedUpKeybind}");
-			}
-
-			GodhomeQoL.MarkMenuDirty();
-			return true;
-		}
-
-		return true;
-	}
-
-	private void StartSpeedDownRebind() {
-		speedDownMenuValues[0] = "Set Key...";
-		UpdateSpeedDownButton(speedDownMenuValues[0]);
-		waitingForSpeedDownRebind = true;
-		currentSpeedDownKeyBeforeRebind = slowDownKey;
-		if (ModDisplay.Instance != null && displayStyle != 2) {
-			ModDisplay.Instance.Display("Press a key for Slow Down (Esc to cancel)");
-		}
-	}
-
-	private bool HandleSpeedDownRebind() {
-		if (!waitingForSpeedDownRebind) {
-			return false;
-		}
-
-		foreach (KeyCode key in Enum.GetValues(typeof(KeyCode))) {
-			if (!Input.GetKeyDown(key)) {
-				continue;
-			}
-
-			if (key == KeyCode.Escape) {
-				waitingForSpeedDownRebind = false;
-				UpdateSpeedDownButton(FormatKeyLabel(slowDownKeybind));
-				return true;
-			}
-
-			if (key == currentSpeedDownKeyBeforeRebind) {
-				slowDownKeybind = string.Empty;
-			} else {
-				string keyName = key.ToString();
-				slowDownKeybind = IsKeyInUse(keyName, "down") ? string.Empty : keyName;
-			}
-
-			RefreshKeybinds();
-			waitingForSpeedDownRebind = false;
-
-			string prev = speedDownMenuValues[0];
-			speedDownMenuValues[0] = FormatKeyLabel(slowDownKeybind);
-			UpdateSpeedDownButton(speedDownMenuValues[0], prev);
-
-			if (ModDisplay.Instance != null && displayStyle != 2) {
-				ModDisplay.Instance.Display(string.IsNullOrEmpty(slowDownKeybind)
-					? "Slow Down key cleared"
-					: $"Slow Down key set to {slowDownKeybind}");
-			}
-
-			GodhomeQoL.MarkMenuDirty();
-			return true;
-		}
-
-		return true;
-	}
-
 	private void ScaleFreeze(ILContext il) {
 		ILCursor cursor = new(il);
 
-		cursor.GotoNext(
+		if (!cursor.TryGotoNext(
 			MoveType.After,
 			x => x.MatchLdfld(out _),
 			x => x.MatchCall<Time>("get_unscaledDeltaTime")
-		);
+		)) {
+			LogWarn("SpeedChanger: Freeze scaling IL pattern not found, skipped one FreezeMoment coroutine.");
+			return;
+		}
 
-		cursor.EmitDelegate<Func<float>>(GetFreezeScale);
-		cursor.Emit(OpCodes.Mul);
+		try {
+			cursor.EmitDelegate<Func<float>>(GetFreezeScale);
+			cursor.Emit(OpCodes.Mul);
+		} catch (Exception e) {
+			LogWarn($"SpeedChanger: Failed to inject freeze scaling IL hook - {e.Message}");
+		}
 	}
 
 	private void EnsureDisplay() {
@@ -760,8 +789,6 @@ public sealed class SpeedChanger : Module {
 
 	private static string ToggleLabel => "SpeedChanger/ToggleKey".Localize();
 	private static string InputLabel => "SpeedChanger/InputKey".Localize();
-	private static string SpeedUpLabel => string.Format("SpeedChanger/SpeedUp".Localize(), step);
-	private static string SpeedDownLabel => string.Format("SpeedChanger/SpeedDown".Localize(), step);
 
 	private static void UpdateHorizontalOption(HorizontalOption? option, string label, string[] values) {
 		if (option == null) {
@@ -785,16 +812,6 @@ public sealed class SpeedChanger : Module {
 		UpdateHorizontalOption(inputOption, InputLabel, inputMenuValues);
 	}
 
-	private static void UpdateSpeedUpButton(string value, string? previousValue = null) {
-		speedUpMenuValues[0] = value;
-		UpdateHorizontalOption(speedUpOption, SpeedUpLabel, speedUpMenuValues);
-	}
-
-	private static void UpdateSpeedDownButton(string value, string? previousValue = null) {
-		speedDownMenuValues[0] = value;
-		UpdateHorizontalOption(speedDownOption, SpeedDownLabel, speedDownMenuValues);
-	}
-
 	private sealed class RebindListener : MonoBehaviour {
 		public Action? Tick;
 
@@ -814,8 +831,6 @@ public sealed class SpeedChanger : Module {
 
 		toggleMenuValues[0] = KeyLabel(toggleKeybind);
 		inputMenuValues[0] = KeyLabel(inputSpeedKeybind);
-		speedUpMenuValues[0] = KeyLabel(speedUpKeybind);
-		speedDownMenuValues[0] = KeyLabel(slowDownKeybind);
 
 		toggleOption = new HorizontalOption(
 			ToggleLabel,
@@ -835,28 +850,6 @@ public sealed class SpeedChanger : Module {
 			_ => mod?.StartInputRebind(),
 			() => {
 				inputMenuValues[0] = KeyLabel(inputSpeedKeybind);
-				return 0;
-			}
-		);
-
-		speedUpOption = new HorizontalOption(
-			SpeedUpLabel,
-			"SpeedChanger/SpeedUpDesc".Localize(),
-			speedUpMenuValues,
-			_ => mod?.StartSpeedUpRebind(),
-			() => {
-				speedUpMenuValues[0] = KeyLabel(speedUpKeybind);
-				return 0;
-			}
-		);
-
-		speedDownOption = new HorizontalOption(
-			SpeedDownLabel,
-			"SpeedChanger/SpeedDownDesc".Localize(),
-			speedDownMenuValues,
-			_ => mod?.StartSpeedDownRebind(),
-			() => {
-				speedDownMenuValues[0] = KeyLabel(slowDownKeybind);
 				return 0;
 			}
 		);
@@ -885,9 +878,9 @@ public sealed class SpeedChanger : Module {
 				() => unlimitedSpeed ? 1 : 0
 			),
 			inputOption,
-			new HorizontalOption(
-				displayLabel,
-				"",
+				new HorizontalOption(
+					displayLabel,
+					"",
 				new[] { "#.##", "%", "Off" },
 				opt => {
 					displayStyle = opt;
@@ -897,12 +890,10 @@ public sealed class SpeedChanger : Module {
 					} else if (opt != 2) {
 						ModDisplay.Instance ??= new ModDisplay();
 					}
-				},
-				() => displayStyle
-			),
-			speedDownOption,
-			speedUpOption
-		]);
+					},
+					() => displayStyle
+				)
+			]);
 
 		return menu.GetMenuScreen(parent);
 	}
@@ -920,7 +911,6 @@ internal sealed class ModDisplay {
 	internal static ModDisplay? Instance;
 
 	private string DisplayText = "";
-	private readonly TimeSpan DisplayDuration = TimeSpan.FromSeconds(6);
 	private Vector2 TextSize = new(800, 500);
 	private Vector2 TextPosition = new(0.22f, 0.243f);
 	private Vector2 InputTextSize = new(500, 80);
@@ -996,7 +986,6 @@ internal sealed class ModDisplay {
 
 	public void Display(string value) {
 		DisplayText = value.Trim();
-		_ = DateTime.Now + DisplayDuration;
 		Update();
 	}
 }

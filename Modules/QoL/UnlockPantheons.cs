@@ -29,6 +29,8 @@ public sealed class UnlockPantheons : Module
             return;
         }
 
+        List<PersistentBoolData>? items = Ref.SD?.persistentBoolItems;
+
         if (!PlayerDataR.bossDoorCageUnlocked)
         {
             PlayerDataR.bossDoorCageUnlocked = true;
@@ -38,11 +40,16 @@ public sealed class UnlockPantheons : Module
         if (!PlayerDataR.finalBossDoorUnlocked)
         {
             PlayerDataR.finalBossDoorUnlocked = true;
-            Ref.SD.persistentBoolItems.Set("GG_Atrium", "gg_roof_lever", true);
+            items?.Set("GG_Atrium", "gg_roof_lever", true);
             LogDebug("P5 unlocked");
         }
 
-        List<PersistentBoolData>? items = Ref.SD.persistentBoolItems;
+        if (items == null)
+        {
+            LogDebug("UnlockPantheons: persistentBoolItems not available yet, skipping roof object activation");
+            return;
+        }
+
         atriumRoofObjects.ForEach(tuple =>
         {
             if (!items.IsActivated("GG_Atrium_Roof", tuple.goName))
