@@ -24,7 +24,7 @@ internal sealed class TeleportData
         (17, "Traitor Lord", new Vector3(186.6932f, 6.408124f, 0f), "GG_Workshop"),
         (18, "Grey Prince Zote", new Vector3(197.9937f, 6.408124f, 0f), "GG_Workshop"),
 
-        // Page 2: Hall of Gods [2 Floor] (19-37)
+        // Page 2: Hall of Gods [2 Floor] (19-36)
         (19, "Soul Warrior", new Vector3(33.99411f, 36.40812f, 0f), "GG_Workshop"),
         (20, "Soul Master/Soul Tyrant", new Vector3(44.98816f, 36.40812f, 0f), "GG_Workshop"),
         (21, "Dung Defender/White Defender", new Vector3(57.45609f, 36.40812f, 0f), "GG_Workshop"),
@@ -45,7 +45,7 @@ internal sealed class TeleportData
         (36, "The Eternal Ordeal", new Vector3(197.8246f, 63.40812f, 0f), "GG_Workshop"),
         (37, "HoG Bench", new Vector3(11.0521f, 36.40812f, 0f), "GG_Workshop"),
 
-        // Page 3: Pantheon's (38-44)
+        // Page 3: Pantheon's (37-44)
         (38, "Pantheon I", new Vector3(97.15343f, 35.40812f, 0f), "GG_Atrium"),
         (39, "Pantheon II", new Vector3(108.4116f, 35.40812f, 0f), "GG_Atrium"),
         (40, "Pantheon III", new Vector3(120.2336f, 35.40812f, 0f), "GG_Atrium"),

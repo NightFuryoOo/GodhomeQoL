@@ -5,6 +5,11 @@ namespace GodhomeQoL.Modules.BossChallenge;
 
 public sealed class InfiniteChallenge : Module
 {
+    private const string WorkshopScene = "GG_Workshop";
+    private const string AtriumScene = "GG_Atrium";
+    private const string AtriumRoofScene = "GG_Atrium_Roof";
+    private const string SpaScene = "GG_Spa";
+
     [GlobalSetting]
     [BoolOption]
     public static bool restartFightOnSuccess = false;
@@ -19,6 +24,8 @@ public sealed class InfiniteChallenge : Module
     ];
     private static readonly Dictionary<int, Func<GameManager.SceneLoadInfo, bool>> externalReturnScenePredicates = [];
     private static int nextExternalReturnScenePredicateHandle;
+    private static bool pendingDeathRestart;
+    private static string? pendingDeathSceneName;
 
     public override ToggleableLevel ToggleableLevel => ToggleableLevel.ChangeScene;
 
@@ -123,13 +130,20 @@ public sealed class InfiniteChallenge : Module
     private protected override void Load()
     {
         On.BossSceneController.Awake += RecordSetupEvent;
+        On.HeroController.Die += RecordBossDeath;
         On.GameManager.BeginSceneTransition += RestartFight;
+        pendingDeathRestart = false;
+        pendingDeathSceneName = null;
+        BossFightRestartCompatibility.RecordCurrentSetupEvent();
     }
 
     private protected override void Unload()
     {
         On.BossSceneController.Awake -= RecordSetupEvent;
+        On.HeroController.Die -= RecordBossDeath;
         On.GameManager.BeginSceneTransition -= RestartFight;
+        pendingDeathRestart = false;
+        pendingDeathSceneName = null;
     }
 
     private static void RecordSetupEvent(On.BossSceneController.orig_Awake orig, BossSceneController self)
@@ -139,8 +153,30 @@ public sealed class InfiniteChallenge : Module
         BossFightRestartCompatibility.RecordCurrentSetupEvent();
     }
 
+    private static IEnumerator RecordBossDeath(On.HeroController.orig_Die orig, HeroController self)
+    {
+        if (BossSceneController.IsBossScene && !BossSequenceController.IsInSequence)
+        {
+            pendingDeathRestart = true;
+            pendingDeathSceneName = GameManager.instance?.sceneName;
+        }
+
+        IEnumerator enumerator = orig(self);
+        while (enumerator.MoveNext())
+        {
+            yield return enumerator.Current;
+        }
+    }
+
     private static void RestartFight(On.GameManager.orig_BeginSceneTransition orig, GameManager self, GameManager.SceneLoadInfo info)
     {
+        string? targetSceneName = info.SceneName;
+        if (IsBossFightScene(targetSceneName))
+        {
+            // Capture setup event before the transition consumes/clears it.
+            BossFightRestartCompatibility.RecordCurrentSetupEvent(targetSceneName);
+        }
+
         if (BossFightRestartCompatibility.IsFastReloadTransitionInProgress)
         {
             orig(self, info);
@@ -149,29 +185,41 @@ public sealed class InfiniteChallenge : Module
 
         try
         {
-            string currentSceneName = self.sceneName;
+            string currentSceneName = self.sceneName ?? string.Empty;
             BossFightRestartCompatibility.RecordCurrentSetupEvent();
-
-            if (
-                BossSceneController.IsBossScene
-                && MatchesReturnScenePredicate(info)
-                && (
-                    Ref.HC.heroDeathPrefab.activeSelf
-                    ||
-                        restartFightOnSuccess
-                        && StaticVariableList.GetValue<bool>("finishedBossReturning")
-
-                )
-            )
+            bool matchedReturnScene = MatchesReturnScenePredicate(info);
+            bool trackedBossDeath = pendingDeathRestart || !string.IsNullOrEmpty(pendingDeathSceneName);
+            bool liveBossDeath = BossSceneController.IsBossScene
+                && !BossSequenceController.IsInSequence
+                && Ref.HC.heroDeathPrefab.activeSelf;
+            bool deathRestartRequested = trackedBossDeath || liveBossDeath;
+            string restartSceneName = currentSceneName;
+            if (deathRestartRequested && !string.IsNullOrEmpty(pendingDeathSceneName))
             {
-                if (!BossFightRestartCompatibility.TryApplySetupEventForScene(currentSceneName))
+                restartSceneName = pendingDeathSceneName!;
+            }
+            bool inBossContext = BossSceneController.IsBossScene || deathRestartRequested;
+            bool successRestartRequested =
+                inBossContext
+                && matchedReturnScene
+                && restartFightOnSuccess
+                && StaticVariableList.GetValue<bool>("finishedBossReturning");
+            bool shouldRestart = deathRestartRequested || successRestartRequested;
+
+            if (shouldRestart)
+            {
+                if (!BossFightRestartCompatibility.TryApplySetupEventForScene(restartSceneName))
                 {
-                    LogError($"InfiniteChallenge: setup event is not available for scene {currentSceneName}");
+                    LogError($"InfiniteChallenge: setup event is not available for scene {restartSceneName}");
+                    pendingDeathRestart = false;
+                    pendingDeathSceneName = null;
                     orig(self, info);
                     return;
                 }
 
                 StaticVariableList.SetValue("finishedBossReturning", false);
+                pendingDeathRestart = false;
+                pendingDeathSceneName = null;
 
                 _ = GlobalCoroutineExecutor.Start(DelayedEnableRenderer());
                 Ref.HC.EnterWithoutInput(true);
@@ -185,15 +233,35 @@ public sealed class InfiniteChallenge : Module
                     CarefreeMelodyReset.TryResetNow(ignoreBossScene: true);
                 }
 
-                info.SceneName = currentSceneName;
+                info.SceneName = restartSceneName;
                 info.EntryGateName = "door_dreamEnter";
 
                 _ = GlobalCoroutineExecutor.Start(SetAudio(restartFightAndMusic));
+            }
+            else if (pendingDeathRestart)
+            {
+                pendingDeathRestart = false;
+                pendingDeathSceneName = null;
             }
         }
         catch (Exception e) { LogError(e.Message); }
 
         orig(self, info);
+    }
+
+    private static bool IsBossFightScene(string? sceneName)
+    {
+        string scene = sceneName ?? string.Empty;
+        if (scene.Length == 0)
+        {
+            return false;
+        }
+
+        return scene.StartsWith("GG_", StringComparison.Ordinal)
+            && scene != WorkshopScene
+            && scene != AtriumScene
+            && scene != AtriumRoofScene
+            && scene != SpaScene;
     }
 
     private static IEnumerator DelayedEnableRenderer()

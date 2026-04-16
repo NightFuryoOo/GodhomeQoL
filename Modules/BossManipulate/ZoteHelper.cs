@@ -237,12 +237,10 @@ public sealed class ZoteHelper : Module
                 }
 
                 PruneZotelings();
-                if (!zoteUseCustomSummonLimit)
-                {
-                    return;
-                }
-
-                if (activeZotelings.Count >= Math.Max(0, zoteSummonLimit))
+                int summonLimit = zoteUseCustomSummonLimit
+                    ? Math.Max(0, zoteSummonLimit)
+                    : DefaultSummonLimit;
+                if (activeZotelings.Count >= summonLimit)
                 {
                     fsm.SendEvent("CANCEL");
                 }

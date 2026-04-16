@@ -76,46 +76,15 @@ public sealed partial class GodhomeQoL
                     !module.Hidden
                     && module.Category != "Bugfix"
                     && module.Category != "Tools"
+                    && !ShouldHideCategoryFromMainMenu(module.Category)
                 )
                 .GroupBy(module => module.Category)
                 .OrderBy(group => group.Key)
                 .Map(group =>
-                {
-                    Func<MenuScreen> builder = group.Key switch
-                    {
-                        nameof(Modules.BossChallenge) => () => BossChallengeMenu(menu!.menuScreen),
-                        nameof(Modules.QoL) => () =>
-                        {
-                            Menu qlMenu = new($"Categories/{group.Key}".Localize(), []);
-                            // Base QoL elements
-                            group
-                                .Filter(ShouldShowInMainList)
-                                .Map(module =>
-                                    Blueprints.HorizontalBoolOption(
-                                        $"Modules/{module.Name}".Localize(),
-                                        module.Suppressed
-                                            ? string.Format(
-                                                "Suppression".Localize(),
-                                                module.suppressorMap.Values.Distinct().Join(", ")
-                                            )
-                                            : $"ToggleableLevel/{module.ToggleableLevel}".Localize(),
-                                        val => module.Enabled = val,
-                                        () => module.Enabled
-                                    )
-                                )
-                                .ForEach(qlMenu.AddElement);
-
-                            Setting.Global.GetMenuElements(group.Key).ForEach(qlMenu.AddElement);
-                            Setting.Local.GetMenuElements(group.Key).ForEach(qlMenu.AddElement);
-
-                            // Add custom submenus; parent will be set after screen creation
-                            var deferred = CustomMenuElements(group.Key, () => qlMenu.GetMenuScreen(menu!.menuScreen)).ToList();
-                            deferred.ForEach(qlMenu.AddElement);
-
-                            // Build screen once after all elements are in place
-                            return qlMenu.GetMenuScreen(menu!.menuScreen);
-                        },
-                        _ => () => new Menu(
+                    Blueprints.NavigateToMenu(
+                        $"Categories/{group.Key}".Localize(),
+                        "",
+                        () => new Menu(
                             $"Categories/{group.Key}".Localize(),
                             [
                                 ..group
@@ -134,25 +103,12 @@ public sealed partial class GodhomeQoL
                                         )
                                     ),
                                 ..Setting.Global.GetMenuElements(group.Key),
-                                ..Setting.Local.GetMenuElements(group.Key),
-                                ..CustomMenuElements(group.Key, () => menu!.menuScreen)
+                                ..Setting.Local.GetMenuElements(group.Key)
                             ]
                         ).GetMenuScreen(menu!.menuScreen)
-                    };
-
-                    return Blueprints.NavigateToMenu(
-                        $"Categories/{group.Key}".Localize(),
-                        "",
-                        builder
-                    );
-                })
+                    )
+                )
                 .ForEach(menu.AddElement);
-
-            menu.AddElement(Blueprints.NavigateToMenu(
-                "ResetModules".Localize(),
-                "",
-                () => ResetMenu(menu.menuScreen)
-            ));
 
             menu.AddElement(new MenuButton(
                 "QuickMenu/ResetFreeMenu".Localize(),
@@ -164,6 +120,15 @@ public sealed partial class GodhomeQoL
             dirty = false;
             return menu.GetMenuScreen(modListMenu);
         }
+    }
+
+    private static bool ShouldHideCategoryFromMainMenu(string category)
+    {
+        return category == nameof(Modules.BossChallenge)
+            || category == nameof(Modules.QoL)
+            || category == nameof(FastReload)
+            || category == "BossManipulate"
+            || category == "CollectorPhases";
     }
 
     private static IEnumerable<Element> CustomMenuElements(string category, Func<MenuScreen> parent)

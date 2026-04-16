@@ -156,8 +156,8 @@ internal sealed class TeleportMenuGUI : IDisposable
         return mod.Input.CurrentPage switch
         {
             1 => (0, 18),   // IDs 1-18
-            2 => (18, 37),  // IDs 19-37
-            3 => (37, 44),  // IDs 38-44
+            2 => (18, 36),  // IDs 19-36
+            3 => (36, 44),  // IDs 37-44
             4 => (44, 46),  // IDs 45-46
             _ => (0, 0)
         };
