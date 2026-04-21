@@ -108,6 +108,11 @@ public sealed partial class QuickMenu : Module
                 return;
             }
 
+            if (!CanUseSettingsUiHotkeys())
+            {
+                return;
+            }
+
             SetQuickVisible(true);
         }
 

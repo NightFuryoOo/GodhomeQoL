@@ -267,7 +267,6 @@ public sealed partial class QuickMenu : Module
             UpdateToggleValue(menuAnimEnableValue, GetMenuAnimationMasterEnabled());
             UpdateToggleIcon(menuAnimEnableIcon, GetMenuAnimationMasterEnabled());
             UpdateToggleValue(menuAnimDoorDefaultValue, GetDoorDefaultBeginEnabled());
-            UpdateToggleValue(menuAnimMemorizeBindingsValue, GetMemorizeBindingsEnabled());
             UpdateToggleValue(menuAnimFasterLoadsValue, GetFasterLoadsEnabled());
             UpdateToggleValue(menuAnimFastMenusValue, GetFastMenusEnabled());
             UpdateToggleValue(menuAnimFastTextValue, GetFastTextEnabled());

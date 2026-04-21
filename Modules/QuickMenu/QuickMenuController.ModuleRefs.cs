@@ -375,16 +375,6 @@ public sealed partial class QuickMenu : Module
             return doorDefaultBeginModule;
         }
 
-        private Module? GetMemorizeBindingsModule()
-        {
-            if (memorizeBindingsModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.QoL.MemorizeBindings), out memorizeBindingsModule);
-            }
-
-            return memorizeBindingsModule;
-        }
-
         private Module? GetFasterLoadsModule()
         {
             if (fasterLoadsModule == null)

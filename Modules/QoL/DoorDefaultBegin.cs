@@ -13,13 +13,8 @@ public sealed class DoorDefaultBegin : Module {
 			yield return routine.Current;
 		}
 
-		// Let other ShowSequence post-processing (e.g. MemorizeBindings) settle first.
+		// Let ShowSequence post-processing settle first.
 		yield return null;
-		int waitFrames = 0;
-		while (MemorizeBindings.IsApplyingBindingStates && waitFrames < 10) {
-			waitFrames++;
-			yield return null;
-		}
 
 		SelectBegin(self);
 	}

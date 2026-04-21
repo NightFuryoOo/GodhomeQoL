@@ -1385,6 +1385,11 @@ public sealed partial class QuickMenu : Module
 
         private void HandleOverlayHotkeys()
         {
+            if (!CanUseSettingsUiHotkeys())
+            {
+                return;
+            }
+
             if (IsOverlayHotkeySuppressed())
             {
                 return;

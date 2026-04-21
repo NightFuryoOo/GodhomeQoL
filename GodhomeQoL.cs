@@ -39,7 +39,7 @@ public sealed partial class GodhomeQoL : Mod, ITogglableMod, ICustomMenuMod
     {
         try
         {
-            ForceDisableAlwaysFuriousForNextSession();
+            ForceDisableSessionScopedModesForNextSession();
         }
         finally
         {
@@ -47,27 +47,87 @@ public sealed partial class GodhomeQoL : Mod, ITogglableMod, ICustomMenuMod
         }
     }
 
-    private static void ForceDisableAlwaysFuriousForNextSession()
+    private static void ForceDisableSessionScopedModesForNextSession()
     {
-        string moduleName = typeof(global::GodhomeQoL.Modules.BossChallenge.AlwaysFurious).Name;
-        if (!Setting.Global.Modules.TryGetValue(moduleName, out bool isEnabledInSettings) || !isEnabledInSettings)
+        bool changed = false;
+        changed |= ForceDisableAlwaysFuriousForNextSession();
+        changed |= ForceDisablePantheonOrderModesForNextSession();
+        if (changed)
         {
-            return;
+            SaveGlobalSettingsSafe();
         }
-
-        if (ModuleManager.TryGetModule(moduleName, out Module? module))
-        {
-            module.Enabled = false;
-        }
-        else
-        {
-            Setting.Global.Modules[moduleName] = false;
-        }
-
-        SaveGlobalSettingsSafe();
     }
 
     internal static void SaveGlobalSettingsSafe() => Instance?.SaveGlobalSettings();
 
     internal static void MarkMenuDirty() => ModMenu.MarkDirty();
+
+    private static bool ForceDisableAlwaysFuriousForNextSession()
+    {
+        string moduleName = typeof(global::GodhomeQoL.Modules.BossChallenge.AlwaysFurious).Name;
+        return ForceDisableModuleForNextSession(moduleName);
+    }
+
+    private static bool ForceDisablePantheonOrderModesForNextSession()
+    {
+        bool changed = false;
+
+        bool hadRandomPantheonsEnabled = global::GodhomeQoL.Modules.BossChallenge.RandomPantheons.AnyPantheonEnabled;
+        if (hadRandomPantheonsEnabled)
+        {
+            global::GodhomeQoL.Modules.BossChallenge.RandomPantheons.Pantheon1Enabled = false;
+            global::GodhomeQoL.Modules.BossChallenge.RandomPantheons.Pantheon2Enabled = false;
+            global::GodhomeQoL.Modules.BossChallenge.RandomPantheons.Pantheon3Enabled = false;
+            global::GodhomeQoL.Modules.BossChallenge.RandomPantheons.Pantheon4Enabled = false;
+            global::GodhomeQoL.Modules.BossChallenge.RandomPantheons.Pantheon5Enabled = false;
+            changed = true;
+        }
+
+        bool hadTrueBossRushEnabled = global::GodhomeQoL.Modules.BossChallenge.TrueBossRush.AnyPantheonEnabled;
+        if (hadTrueBossRushEnabled)
+        {
+            global::GodhomeQoL.Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon1Enabled = false;
+            global::GodhomeQoL.Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon2Enabled = false;
+            global::GodhomeQoL.Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon3Enabled = false;
+            global::GodhomeQoL.Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon4Enabled = false;
+            global::GodhomeQoL.Modules.BossChallenge.TrueBossRush.TrueBossRushPantheon5Enabled = false;
+            changed = true;
+        }
+
+        changed |= ForceDisableModuleForNextSession(typeof(global::GodhomeQoL.Modules.BossChallenge.RandomPantheons).Name);
+        changed |= ForceDisableModuleForNextSession(typeof(global::GodhomeQoL.Modules.BossChallenge.TrueBossRush).Name);
+
+        QuickMenuMasterSettings settings = GlobalSettings.QuickMenuMasters ??= new QuickMenuMasterSettings();
+        if (settings.RandomPantheonsEnabled)
+        {
+            settings.RandomPantheonsEnabled = false;
+            changed = true;
+        }
+
+        if (settings.TrueBossRushEnabled)
+        {
+            settings.TrueBossRushEnabled = false;
+            changed = true;
+        }
+
+        return changed;
+    }
+
+    private static bool ForceDisableModuleForNextSession(string moduleName)
+    {
+        bool changed = false;
+        if (!Setting.Global.Modules.TryGetValue(moduleName, out bool isEnabledInSettings) || isEnabledInSettings)
+        {
+            Setting.Global.Modules[moduleName] = false;
+            changed = true;
+        }
+
+        if (ModuleManager.TryGetModule(moduleName, out Module? module) && module.Enabled)
+        {
+            module.Enabled = false;
+            changed = true;
+        }
+
+        return changed;
+    }
 }

@@ -31,7 +31,6 @@ public sealed class QuickMenuMasterSettings
     public bool MenuAnimEnabled { get; set; } = true;
     public bool MenuAnimHasSnapshot { get; set; }
     public bool MenuAnimSavedDoorDefaultBegin { get; set; }
-    public bool MenuAnimSavedMemorizeBindings { get; set; }
     public bool MenuAnimSavedFasterLoads { get; set; }
     public bool MenuAnimSavedFastMenus { get; set; }
     public bool MenuAnimSavedFastText { get; set; }

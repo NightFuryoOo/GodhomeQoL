@@ -93,7 +93,6 @@ public sealed partial class QuickMenu : Module
             menuAnimMasterEnabled = settings.MenuAnimEnabled;
             menuAnimMasterHasSnapshot = settings.MenuAnimHasSnapshot;
             menuAnimSavedDoorDefaultBegin = settings.MenuAnimSavedDoorDefaultBegin;
-            menuAnimSavedMemorizeBindings = settings.MenuAnimSavedMemorizeBindings;
             menuAnimSavedFasterLoads = settings.MenuAnimSavedFasterLoads;
             menuAnimSavedFastMenus = settings.MenuAnimSavedFastMenus;
             menuAnimSavedFastText = settings.MenuAnimSavedFastText;

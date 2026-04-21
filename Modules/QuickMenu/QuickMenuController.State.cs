@@ -282,26 +282,10 @@ public sealed partial class QuickMenu : Module
             }
         }
 
-        private bool GetMemorizeBindingsEnabled()
-        {
-            Module? module = GetMemorizeBindingsModule();
-            return module?.Enabled ?? false;
-        }
-
-        private void SetMemorizeBindingsEnabled(bool value)
-        {
-            Module? module = GetMemorizeBindingsModule();
-            if (module != null)
-            {
-                module.Enabled = value;
-            }
-        }
-
         private void CaptureMenuAnimationSnapshot()
         {
             menuAnimMasterHasSnapshot = true;
             menuAnimSavedDoorDefaultBegin = GetDoorDefaultBeginEnabled();
-            menuAnimSavedMemorizeBindings = GetMemorizeBindingsEnabled();
             menuAnimSavedFasterLoads = GetFasterLoadsEnabled();
             menuAnimSavedFastMenus = GetFastMenusEnabled();
             menuAnimSavedFastText = GetFastTextEnabled();
@@ -318,7 +302,6 @@ public sealed partial class QuickMenu : Module
             }
 
             SetDoorDefaultBeginEnabled(menuAnimSavedDoorDefaultBegin);
-            SetMemorizeBindingsEnabled(menuAnimSavedMemorizeBindings);
             SetFasterLoadsEnabled(menuAnimSavedFasterLoads);
             SetFastMenusEnabled(menuAnimSavedFastMenus);
             SetFastTextEnabled(menuAnimSavedFastText);
@@ -330,7 +313,6 @@ public sealed partial class QuickMenu : Module
         private void SetMenuAnimationAll(bool value)
         {
             SetDoorDefaultBeginEnabled(value);
-            SetMemorizeBindingsEnabled(value);
             SetFasterLoadsEnabled(value);
             SetFastMenusEnabled(value);
             SetFastTextEnabled(value);

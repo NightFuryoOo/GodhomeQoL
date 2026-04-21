@@ -24,6 +24,8 @@ public sealed class RandomPantheons : Module
     private static readonly Dictionary<BossSequence, BossScene[]> OriginalSequences = new();
     private static readonly Dictionary<BossSequence, List<BossSequenceDoor>> SequenceDoors = new();
     private static readonly FieldInfo BossScenesField = typeof(BossSequence).GetField("bossScenes", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!;
+    private const int FirstSceneSyncRetryFrames = 120;
+    private static readonly Dictionary<int, int> DoorFirstSceneSyncGenerations = new();
 
     private static readonly Dictionary<Pantheon, string[]> DefaultPantheonOrder = new()
     {
@@ -214,6 +216,11 @@ public sealed class RandomPantheons : Module
         On.BossSequenceController.SetupNewSequence += ApplySequenceToStart;
         On.PlayMakerFSM.Start += ModifyRadiance;
         USceneManager.activeSceneChanged += OnSceneChange;
+        CacheLiveSequenceDoors();
+        if (AnyPantheonEnabled)
+        {
+            RefreshAllPantheons();
+        }
     }
 
     private protected override void Unload()
@@ -227,7 +234,7 @@ public sealed class RandomPantheons : Module
         On.BossSequenceController.SetupNewSequence -= ApplySequenceToStart;
         On.PlayMakerFSM.Start -= ModifyRadiance;
         USceneManager.activeSceneChanged -= OnSceneChange;
-        RestoreCachedSequences();
+        RestoreAllKnownSequencesOnDisable();
         ClearSequenceCaches();
     }
 
@@ -296,6 +303,17 @@ public sealed class RandomPantheons : Module
         }
     }
 
+    private static void RestoreAllKnownSequencesOnDisable()
+    {
+        foreach (BossSequence sequence in EnumerateKnownSequences().ToArray())
+        {
+            TryRestoreDisabledSequence(sequence);
+        }
+
+        // Fallback to cached originals for any sequence that failed default reconstruction.
+        RestoreCachedSequences();
+    }
+
     private void OnSceneChange(Scene prev, Scene next)
     {
         if (Ref.GM == null || !VanishedHud.Contains(prev.name))
@@ -334,47 +352,96 @@ public sealed class RandomPantheons : Module
         string playerData
     )
     {
-        orig(sequence, bindings, playerData);
-
-        if (PantheonSequenceCompatibility.ShouldSkipRandomPantheons())
+        if (!PantheonSequenceCompatibility.ShouldSkipRandomPantheons())
         {
-            return;
+            if (!AnyPantheonEnabled)
+            {
+                TryRestoreDisabledSequence(sequence);
+            }
+            else
+            {
+                try
+                {
+                    ApplySequence(sequence);
+                }
+                catch (Exception ex)
+                {
+                    LogError($"RandomPantheons failed: {ex}");
+                }
+            }
         }
 
-        if (!AnyPantheonEnabled)
+        orig(sequence, bindings, playerData);
+    }
+
+    private static void CacheSequenceDoor(On.BossSequenceDoor.orig_Start orig, BossSequenceDoor self)
+    {
+        orig(self);
+
+        CacheSequenceDoorEntry(self);
+        if (Instance == null || self.bossSequence == null || PantheonSequenceCompatibility.ShouldSkipRandomPantheons())
         {
-            TryRestoreDisabledSequence(sequence);
             return;
         }
 
         try
         {
-            ApplySequence(sequence);
+            if (AnyPantheonEnabled)
+            {
+                Instance.ApplySequence(self.bossSequence);
+            }
+            else
+            {
+                TryRestoreDisabledSequence(self.bossSequence);
+            }
         }
-        catch (Exception ex)
+        catch
         {
-            LogError($"RandomPantheons failed: {ex}");
+            // ignore first-load door sync failures
         }
     }
 
-    private static void CacheSequenceDoor(On.BossSequenceDoor.orig_Start orig, BossSequenceDoor self)
+    private static void CacheLiveSequenceDoors()
     {
-        if (self.bossSequence != null)
+        try
         {
-            if (!SequenceDoors.TryGetValue(self.bossSequence, out List<BossSequenceDoor>? doors))
+            foreach (BossSequenceDoor door in UObject.FindObjectsOfType<BossSequenceDoor>())
             {
-                doors = new List<BossSequenceDoor>();
-                SequenceDoors[self.bossSequence] = doors;
-            }
-
-            doors.RemoveAll(door => door == null);
-            if (!doors.Contains(self))
-            {
-                doors.Add(self);
+                CacheSequenceDoorEntry(door);
             }
         }
+        catch
+        {
+            // ignore door discovery failures
+        }
+    }
 
-        orig(self);
+    private static void CacheSequenceDoorEntry(BossSequenceDoor? door)
+    {
+        if (door == null || door.bossSequence == null)
+        {
+            return;
+        }
+
+        if (!SequenceDoors.TryGetValue(door.bossSequence, out List<BossSequenceDoor>? doors))
+        {
+            doors = new List<BossSequenceDoor>();
+            SequenceDoors[door.bossSequence] = doors;
+        }
+
+        doors.RemoveAll(cachedDoor => cachedDoor == null);
+        if (!doors.Contains(door))
+        {
+            doors.Add(door);
+        }
+    }
+
+    private static void RefreshAllPantheons()
+    {
+        for (int i = 1; i <= 5; i++)
+        {
+            RefreshPantheon(i);
+        }
     }
 
     private void ApplySequence(BossSequence? sequence)
@@ -433,6 +500,7 @@ public sealed class RandomPantheons : Module
             return;
         }
 
+        CacheLiveSequenceDoors();
         bool anyEnabled = AnyPantheonEnabled;
         BossSequence[] sequences = EnumerateKnownSequences().ToArray();
         foreach (BossSequence sequence in sequences)
@@ -466,9 +534,15 @@ public sealed class RandomPantheons : Module
         }
     }
 
+    internal static void ForceRestoreNow()
+    {
+        RestoreAllKnownSequencesOnDisable();
+    }
+
     private static IEnumerable<BossSequence> EnumerateKnownSequences()
     {
         PruneSequenceCaches();
+        CacheLiveSequenceDoors();
 
         HashSet<BossSequence> knownSequences = new();
         foreach (BossSequence sequence in SequenceDoors.Keys)
@@ -485,6 +559,21 @@ public sealed class RandomPantheons : Module
             {
                 _ = knownSequences.Add(sequence);
             }
+        }
+
+        try
+        {
+            foreach (BossSequence sequence in Resources.FindObjectsOfTypeAll<BossSequence>())
+            {
+                if (sequence != null)
+                {
+                    _ = knownSequences.Add(sequence);
+                }
+            }
+        }
+        catch
+        {
+            // ignore global sequence discovery failures
         }
 
         return knownSequences;
@@ -662,30 +751,39 @@ public sealed class RandomPantheons : Module
             return false;
         }
 
-        if (scenes.Count != defaultOrder.Length)
-        {
-            rebuiltArray = Array.Empty<BossScene>();
-            return false;
-        }
-
-        BossScene? spaTemplate = scenes.FirstOrDefault(scene => IsSpa(scene.sceneName));
-        if (spaTemplate == null)
-        {
-            rebuiltArray = Array.Empty<BossScene>();
-            return false;
-        }
-
         Dictionary<string, BossScene> sceneMap = new(StringComparer.OrdinalIgnoreCase);
         foreach (BossScene scene in scenes)
         {
-            if (IsSpa(scene.sceneName))
-            {
-                continue;
-            }
-
             if (!sceneMap.ContainsKey(scene.sceneName))
             {
                 sceneMap[scene.sceneName] = scene;
+            }
+        }
+
+        try
+        {
+            foreach (BossScene scene in Resources.FindObjectsOfTypeAll<BossScene>())
+            {
+                if (scene == null || string.IsNullOrEmpty(scene.sceneName) || sceneMap.ContainsKey(scene.sceneName))
+                {
+                    continue;
+                }
+
+                sceneMap[scene.sceneName] = scene;
+            }
+        }
+        catch
+        {
+            // ignore global scene discovery failures
+        }
+
+        if (!sceneMap.TryGetValue("GG_Spa", out BossScene? spaTemplate))
+        {
+            spaTemplate = scenes.FirstOrDefault(scene => IsSpa(scene.sceneName));
+            if (spaTemplate == null)
+            {
+                rebuiltArray = Array.Empty<BossScene>();
+                return false;
             }
         }
 
@@ -818,29 +916,128 @@ public sealed class RandomPantheons : Module
     {
         try
         {
-            BossSequenceControllerR.bossIndex = -1;
-            BossSequenceControllerR.IncrementBossIndex();
+            CacheLiveSequenceDoors();
+            if (!TryGetFirstSceneName(sequence, out string firstScene))
+            {
+                return;
+            }
+            HashSet<int> syncedDoors = new();
 
             if (SequenceDoors.TryGetValue(sequence, out List<BossSequenceDoor>? doors))
             {
-                int firstSceneIndex = BossSequenceController.BossIndex;
-                string firstScene = sequence.GetSceneAt(firstSceneIndex);
-
                 doors.RemoveAll(door => door == null);
                 foreach (BossSequenceDoor door in doors)
                 {
-                    if (door.challengeFSM == null)
+                    if (door == null)
                     {
                         continue;
                     }
 
-                    door.challengeFSM.GetVariable<FsmString>("To Scene").Value = firstScene;
+                    _ = syncedDoors.Add(door.GetInstanceID());
+                    TrySetDoorFirstScene(door, firstScene);
                 }
             }
+
+            foreach (BossSequenceDoor door in Resources.FindObjectsOfTypeAll<BossSequenceDoor>())
+            {
+                if (door == null || door.bossSequence != sequence)
+                {
+                    continue;
+                }
+
+                if (syncedDoors.Contains(door.GetInstanceID()))
+                {
+                    continue;
+                }
+
+                TrySetDoorFirstScene(door, firstScene);
+            }
+        }
+        catch (Exception ex)
+        {
+            LogDebug($"RandomPantheons: failed to sync first scene - {ex.Message}");
+        }
+    }
+
+    private static bool TryGetFirstSceneName(BossSequence sequence, out string firstScene)
+    {
+        firstScene = string.Empty;
+
+        try
+        {
+            if (sequence == null || sequence.Count <= 0)
+            {
+                return false;
+            }
+
+            string sceneName = sequence.GetSceneAt(0);
+            if (string.IsNullOrEmpty(sceneName))
+            {
+                return false;
+            }
+
+            firstScene = sceneName;
+            return true;
         }
         catch
         {
-            // ignore sync failures
+            return false;
+        }
+    }
+
+    private static void TrySetDoorFirstScene(BossSequenceDoor door, string firstScene)
+    {
+        int doorId = door.GetInstanceID();
+        int generation = DoorFirstSceneSyncGenerations.TryGetValue(doorId, out int current) ? current + 1 : 1;
+        DoorFirstSceneSyncGenerations[doorId] = generation;
+
+        try
+        {
+            PlayMakerFSM? challengeFsm = door.challengeFSM;
+            if (challengeFsm != null)
+            {
+                challengeFsm.GetVariable<FsmString>("To Scene").Value = firstScene;
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            LogDebug($"RandomPantheons: failed to set door first scene immediately - {ex.Message}");
+        }
+
+        _ = GlobalCoroutineExecutor.Start(RetrySetDoorFirstScene(door, doorId, firstScene, generation));
+    }
+
+    private static IEnumerator RetrySetDoorFirstScene(BossSequenceDoor door, int doorId, string firstScene, int generation)
+    {
+        for (int frame = 0; frame < FirstSceneSyncRetryFrames; frame++)
+        {
+            if (door == null)
+            {
+                yield break;
+            }
+
+            if (!DoorFirstSceneSyncGenerations.TryGetValue(doorId, out int activeGeneration) || activeGeneration != generation)
+            {
+                yield break;
+            }
+
+            PlayMakerFSM? challengeFsm = door.challengeFSM;
+            if (challengeFsm != null)
+            {
+                try
+                {
+                    challengeFsm.GetVariable<FsmString>("To Scene").Value = firstScene;
+                }
+                catch (Exception ex)
+                {
+                    LogDebug($"RandomPantheons: failed to set door first scene on retry - {ex.Message}");
+                }
+
+                yield break;
+            }
+
+            yield return null;
         }
     }
 }

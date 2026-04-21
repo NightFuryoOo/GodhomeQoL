@@ -193,19 +193,12 @@ public sealed class GearSwitcher : Module
             yield return origEnum.Current;
         }
 
-        // MemorizeBindings is the single owner of persisted pantheon UI states.
-        // GearSwitcher only consumes that state and applies runtime overrides.
         UpdatePantheonShellBindingState();
     }
 
     private static void UpdatePantheonShellBindingState()
     {
         if (!IsGloballyEnabled)
-        {
-            return;
-        }
-
-        if (ModuleManager.IsModuleLoaded<MemorizeBindings>() && MemorizeBindings.IsApplyingBindingStates)
         {
             return;
         }
@@ -229,12 +222,6 @@ public sealed class GearSwitcher : Module
         if (IsGloballyEnabled)
         {
             return false;
-        }
-
-        if (ModuleManager.IsModuleLoaded<MemorizeBindings>()
-            && MemorizeBindings.TryGetRecordedShellBinding(out bool selected))
-        {
-            return selected;
         }
 
         // Fallback to the BossSequenceController backing fields (not the BoundShell property),
@@ -2254,10 +2241,6 @@ public sealed class GearSwitcher : Module
         if (IsGloballyEnabled)
         {
             pantheonShellBound = false;
-            if (ModuleManager.IsModuleLoaded<MemorizeBindings>())
-            {
-                MemorizeBindings.OverrideRecordedShellBinding(selected: false);
-            }
         }
 
         bool preservePantheonSelection = IsPantheonSequenceActive() && pantheonShellBound;

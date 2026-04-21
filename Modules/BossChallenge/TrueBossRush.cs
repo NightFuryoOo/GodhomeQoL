@@ -28,6 +28,8 @@ public sealed class TrueBossRush : Module
     private static readonly Dictionary<BossSequence, BossScene[]> OriginalSequences = new();
     private static readonly Dictionary<BossSequence, List<BossSequenceDoor>> SequenceDoors = new();
     private static readonly FieldInfo BossScenesField = typeof(BossSequence).GetField("bossScenes", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!;
+    private const int FirstSceneSyncRetryFrames = 120;
+    private static readonly Dictionary<int, int> DoorFirstSceneSyncGenerations = new();
 
     private static readonly HashSet<string> BenchScenes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -72,6 +74,11 @@ public sealed class TrueBossRush : Module
         On.BossSequenceDoor.Start += CacheSequenceDoor;
         On.BossSequenceController.SetupNewSequence += ApplySequenceToStart;
         USceneManager.activeSceneChanged += OnSceneChange;
+        CacheLiveSequenceDoors();
+        if (AnyPantheonEnabled)
+        {
+            RefreshAllPantheons();
+        }
     }
 
     private protected override void Unload()
@@ -84,7 +91,7 @@ public sealed class TrueBossRush : Module
         On.BossSequenceDoor.Start -= CacheSequenceDoor;
         On.BossSequenceController.SetupNewSequence -= ApplySequenceToStart;
         USceneManager.activeSceneChanged -= OnSceneChange;
-        RestoreCachedSequences();
+        RestoreAllKnownSequencesOnDisable();
         ClearSequenceCaches();
     }
 
@@ -153,6 +160,17 @@ public sealed class TrueBossRush : Module
         }
     }
 
+    private static void RestoreAllKnownSequencesOnDisable()
+    {
+        foreach (BossSequence sequence in EnumerateKnownSequences().ToArray())
+        {
+            TryRestoreDisabledSequence(sequence);
+        }
+
+        // Keep a direct original restore pass as a safety fallback.
+        RestoreCachedSequences();
+    }
+
     private void OnSceneChange(Scene prev, Scene next)
     {
         GameManager? manager = GameManager.instance;
@@ -176,22 +194,140 @@ public sealed class TrueBossRush : Module
 
     private static void CacheSequenceDoor(On.BossSequenceDoor.orig_Start orig, BossSequenceDoor self)
     {
-        if (self.bossSequence != null)
-        {
-            if (!SequenceDoors.TryGetValue(self.bossSequence, out List<BossSequenceDoor>? doors))
-            {
-                doors = new List<BossSequenceDoor>();
-                SequenceDoors[self.bossSequence] = doors;
-            }
+        orig(self);
 
-            doors.RemoveAll(door => door == null);
-            if (!doors.Contains(self))
+        CacheSequenceDoorEntry(self);
+        if (Instance == null || self.bossSequence == null || PantheonSequenceCompatibility.ShouldSkipTrueBossRush() || !AnyPantheonEnabled)
+        {
+            return;
+        }
+
+        try
+        {
+            Instance.ApplySequence(self.bossSequence);
+        }
+        catch
+        {
+            // ignore first-load door sync failures
+        }
+    }
+
+    private static void CacheLiveSequenceDoors()
+    {
+        try
+        {
+            foreach (BossSequenceDoor door in UObject.FindObjectsOfType<BossSequenceDoor>())
             {
-                doors.Add(self);
+                CacheSequenceDoorEntry(door);
+            }
+        }
+        catch
+        {
+            // ignore door discovery failures
+        }
+    }
+
+    private static void CacheSequenceDoorEntry(BossSequenceDoor? door)
+    {
+        if (door == null || door.bossSequence == null)
+        {
+            return;
+        }
+
+        if (!SequenceDoors.TryGetValue(door.bossSequence, out List<BossSequenceDoor>? doors))
+        {
+            doors = new List<BossSequenceDoor>();
+            SequenceDoors[door.bossSequence] = doors;
+        }
+
+        doors.RemoveAll(cachedDoor => cachedDoor == null);
+        if (!doors.Contains(door))
+        {
+            doors.Add(door);
+        }
+    }
+
+    private static void RefreshAllPantheons()
+    {
+        for (int i = 1; i <= 5; i++)
+        {
+            RefreshPantheon(i);
+        }
+    }
+
+    internal static void ForceRestoreNow()
+    {
+        RestoreAllKnownSequencesOnDisable();
+    }
+
+    private static IEnumerable<BossSequence> EnumerateKnownSequences()
+    {
+        PruneSequenceCaches();
+        CacheLiveSequenceDoors();
+
+        HashSet<BossSequence> knownSequences = new();
+        foreach (BossSequence sequence in SequenceDoors.Keys)
+        {
+            if (sequence != null)
+            {
+                _ = knownSequences.Add(sequence);
             }
         }
 
-        orig(self);
+        foreach (BossSequence sequence in OriginalSequences.Keys)
+        {
+            if (sequence != null)
+            {
+                _ = knownSequences.Add(sequence);
+            }
+        }
+
+        try
+        {
+            foreach (BossSequence sequence in Resources.FindObjectsOfTypeAll<BossSequence>())
+            {
+                if (sequence != null)
+                {
+                    _ = knownSequences.Add(sequence);
+                }
+            }
+        }
+        catch
+        {
+            // ignore global sequence discovery failures
+        }
+
+        return knownSequences;
+    }
+
+    private static void TryRestoreDisabledSequence(BossSequence? sequence)
+    {
+        if (sequence == null)
+        {
+            return;
+        }
+
+        try
+        {
+            BossScene[]? bossScenes = GetBossScenes(sequence);
+            if (bossScenes == null || bossScenes.Length <= 1)
+            {
+                return;
+            }
+
+            List<BossScene> scenes = bossScenes.ToList();
+            Pantheon pantheon = GetPantheon(scenes);
+            if (!IsPantheonEnabled(pantheon)
+                && TryRestoreOriginalSequence(sequence, out BossScene[] restored)
+                && SetBossScenes(sequence, restored))
+            {
+                SyncFirstScene(sequence);
+            }
+        }
+        catch
+        {
+            // ignore restore failures for unloaded/changed sequences
+        }
     }
 
     private void ApplySequenceToStart(
@@ -201,26 +337,19 @@ public sealed class TrueBossRush : Module
         string playerData
     )
     {
+        if (!PantheonSequenceCompatibility.ShouldSkipTrueBossRush() && AnyPantheonEnabled)
+        {
+            try
+            {
+                ApplySequence(sequence);
+            }
+            catch (Exception ex)
+            {
+                LogError($"TrueBossRush failed: {ex}");
+            }
+        }
+
         orig(sequence, bindings, playerData);
-
-        if (PantheonSequenceCompatibility.ShouldSkipTrueBossRush())
-        {
-            return;
-        }
-
-        if (!AnyPantheonEnabled)
-        {
-            return;
-        }
-
-        try
-        {
-            ApplySequence(sequence);
-        }
-        catch (Exception ex)
-        {
-            LogError($"TrueBossRush failed: {ex}");
-        }
     }
 
     private void ApplySequence(BossSequence? sequence)
@@ -292,8 +421,7 @@ public sealed class TrueBossRush : Module
             return;
         }
 
-        PruneSequenceCaches();
-        BossSequence[] sequences = SequenceDoors.Keys.ToArray();
+        BossSequence[] sequences = EnumerateKnownSequences().ToArray();
         foreach (BossSequence sequence in sequences)
         {
             try
@@ -429,29 +557,128 @@ public sealed class TrueBossRush : Module
     {
         try
         {
-            BossSequenceControllerR.bossIndex = -1;
-            BossSequenceControllerR.IncrementBossIndex();
+            CacheLiveSequenceDoors();
+            if (!TryGetFirstSceneName(sequence, out string firstScene))
+            {
+                return;
+            }
+            HashSet<int> syncedDoors = new();
 
             if (SequenceDoors.TryGetValue(sequence, out List<BossSequenceDoor>? doors))
             {
-                int firstSceneIndex = BossSequenceController.BossIndex;
-                string firstScene = sequence.GetSceneAt(firstSceneIndex);
-
                 doors.RemoveAll(door => door == null);
                 foreach (BossSequenceDoor door in doors)
                 {
-                    if (door.challengeFSM == null)
+                    if (door == null)
                     {
                         continue;
                     }
 
-                    door.challengeFSM.GetVariable<FsmString>("To Scene").Value = firstScene;
+                    _ = syncedDoors.Add(door.GetInstanceID());
+                    TrySetDoorFirstScene(door, firstScene);
                 }
             }
+
+            foreach (BossSequenceDoor door in Resources.FindObjectsOfTypeAll<BossSequenceDoor>())
+            {
+                if (door == null || door.bossSequence != sequence)
+                {
+                    continue;
+                }
+
+                if (syncedDoors.Contains(door.GetInstanceID()))
+                {
+                    continue;
+                }
+
+                TrySetDoorFirstScene(door, firstScene);
+            }
+        }
+        catch (Exception ex)
+        {
+            LogDebug($"TrueBossRush: failed to sync first scene - {ex.Message}");
+        }
+    }
+
+    private static bool TryGetFirstSceneName(BossSequence sequence, out string firstScene)
+    {
+        firstScene = string.Empty;
+
+        try
+        {
+            if (sequence == null || sequence.Count <= 0)
+            {
+                return false;
+            }
+
+            string sceneName = sequence.GetSceneAt(0);
+            if (string.IsNullOrEmpty(sceneName))
+            {
+                return false;
+            }
+
+            firstScene = sceneName;
+            return true;
         }
         catch
         {
-            // Ignore sync failures.
+            return false;
+        }
+    }
+
+    private static void TrySetDoorFirstScene(BossSequenceDoor door, string firstScene)
+    {
+        int doorId = door.GetInstanceID();
+        int generation = DoorFirstSceneSyncGenerations.TryGetValue(doorId, out int current) ? current + 1 : 1;
+        DoorFirstSceneSyncGenerations[doorId] = generation;
+
+        try
+        {
+            PlayMakerFSM? challengeFsm = door.challengeFSM;
+            if (challengeFsm != null)
+            {
+                challengeFsm.GetVariable<FsmString>("To Scene").Value = firstScene;
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            LogDebug($"TrueBossRush: failed to set door first scene immediately - {ex.Message}");
+        }
+
+        _ = GlobalCoroutineExecutor.Start(RetrySetDoorFirstScene(door, doorId, firstScene, generation));
+    }
+
+    private static IEnumerator RetrySetDoorFirstScene(BossSequenceDoor door, int doorId, string firstScene, int generation)
+    {
+        for (int frame = 0; frame < FirstSceneSyncRetryFrames; frame++)
+        {
+            if (door == null)
+            {
+                yield break;
+            }
+
+            if (!DoorFirstSceneSyncGenerations.TryGetValue(doorId, out int activeGeneration) || activeGeneration != generation)
+            {
+                yield break;
+            }
+
+            PlayMakerFSM? challengeFsm = door.challengeFSM;
+            if (challengeFsm != null)
+            {
+                try
+                {
+                    challengeFsm.GetVariable<FsmString>("To Scene").Value = firstScene;
+                }
+                catch (Exception ex)
+                {
+                    LogDebug($"TrueBossRush: failed to set door first scene on retry - {ex.Message}");
+                }
+
+                yield break;
+            }
+
+            yield return null;
         }
     }
 }

@@ -800,7 +800,6 @@ public sealed partial class QuickMenu : Module
             menuAnimMasterEnabled = true;
             menuAnimMasterHasSnapshot = false;
             SetDoorDefaultBeginEnabled(true);
-            SetMemorizeBindingsEnabled(true);
             SetFasterLoadsEnabled(true);
             SetFastMenusEnabled(true);
             SetFastTextEnabled(true);

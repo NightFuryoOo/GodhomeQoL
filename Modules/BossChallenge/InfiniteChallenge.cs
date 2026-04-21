@@ -9,6 +9,10 @@ public sealed class InfiniteChallenge : Module
     private const string AtriumScene = "GG_Atrium";
     private const string AtriumRoofScene = "GG_Atrium_Roof";
     private const string SpaScene = "GG_Spa";
+    private const string HealthHudChildName = "Health";
+    private const string BlueHealthControlFsmName = "Blue Health Control";
+    private const string UpdateBlueHealthEvent = "UPDATE BLUE HEALTH";
+    private const string LastHpAddedEvent = "LAST HP ADDED";
 
     [GlobalSetting]
     [BoolOption]
@@ -314,5 +318,40 @@ public sealed class InfiniteChallenge : Module
 
         Ref.HC.ClearMP();
         Ref.HC.ClearMPSendEvents();
+        RefreshBlueHealthHud();
+
+        // HUD blue-mask FSM can initialize a frame later after forced restart.
+        yield return null;
+        RefreshBlueHealthHud();
+
+        yield return null;
+        RefreshBlueHealthHud();
+    }
+
+    private static void RefreshBlueHealthHud()
+    {
+        try
+        {
+            PlayMakerFSM.BroadcastEvent(UpdateBlueHealthEvent);
+        }
+        catch
+        {
+            // Ignore HUD broadcast issues during scene transition.
+        }
+
+        try
+        {
+            PlayMakerFSM? blueHealthControl = Ref.GC?.hudCanvas?
+                .Child(HealthHudChildName)?
+                .LocateMyFSM(BlueHealthControlFsmName);
+            if (blueHealthControl is { ActiveStateName: "Wait" })
+            {
+                blueHealthControl.SendEvent(LastHpAddedEvent);
+            }
+        }
+        catch
+        {
+            // Ignore blue health FSM readiness errors.
+        }
     }
 }

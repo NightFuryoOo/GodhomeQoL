@@ -2733,6 +2733,7 @@ public sealed partial class QuickMenu : Module
                 GetGearSwitcherBaseNailDamageDisplay,
                 out gearSwitcherBaseNailDamageValue
             );
+            CreateGearSwitcherBaseNailDamageEffectIcons();
 
             lastY = rowY;
             rowY += GearSwitcherRowSpacing;
@@ -3311,18 +3312,6 @@ public sealed partial class QuickMenu : Module
                 GetDoorDefaultBeginEnabled,
                 SetDoorDefaultBeginEnabled,
                 out menuAnimDoorDefaultValue
-            );
-
-            lastY = rowY;
-            rowY += RowSpacing;
-            CreateToggleRow(
-                content,
-                "MenuAnimMemorizeBindingsRow",
-                "Modules/MemorizeBindings".Localize(),
-                rowY,
-                GetMemorizeBindingsEnabled,
-                SetMemorizeBindingsEnabled,
-                out menuAnimMemorizeBindingsValue
             );
 
             lastY = rowY;

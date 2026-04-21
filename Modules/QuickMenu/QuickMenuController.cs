@@ -225,6 +225,8 @@ public sealed partial class QuickMenu : Module
         private static Sprite? kingsoulSprite;
         private static Sprite? grimmchildSprite;
         private static Sprite? carefreeMelodySprite;
+        private static Sprite? furyOfTheFallenSprite;
+        private static Sprite? unbreakableStrengthSprite;
 
         private GameObject? quickRoot;
         private RectTransform? quickPanelRect;
@@ -471,6 +473,11 @@ public sealed partial class QuickMenu : Module
         private Text? gearSwitcherSelectedPresetValue;
         private InputField? gearSwitcherNailDamageField;
         private Text? gearSwitcherBaseNailDamageValue;
+        private Text? gearSwitcherBaseNailDamageClosingParenValue;
+        private Image? gearSwitcherBaseNailDamageFuryIcon;
+        private Image? gearSwitcherBaseNailDamageStrengthIcon;
+        private Image? gearSwitcherBaseNailDamageRightStrengthIcon;
+        private Image? gearSwitcherBaseNailDamageNailBindingIcon;
         private InputField? gearSwitcherCharmSlotsField;
         private InputField? gearSwitcherMainSoulGainField;
         private InputField? gearSwitcherReserveSoulGainField;
@@ -657,7 +664,6 @@ public sealed partial class QuickMenu : Module
         private bool qolSavedInvincibleIndicator;
         private bool qolSavedScreenShake;
         private Text? menuAnimDoorDefaultValue;
-        private Text? menuAnimMemorizeBindingsValue;
         private Text? menuAnimFasterLoadsValue;
         private Text? menuAnimFastMenusValue;
         private Text? menuAnimFastTextValue;
@@ -669,7 +675,6 @@ public sealed partial class QuickMenu : Module
         private bool menuAnimMasterEnabled = true;
         private bool menuAnimMasterHasSnapshot;
         private bool menuAnimSavedDoorDefaultBegin;
-        private bool menuAnimSavedMemorizeBindings;
         private bool menuAnimSavedFasterLoads;
         private bool menuAnimSavedFastMenus;
         private bool menuAnimSavedFastText;
@@ -774,7 +779,6 @@ public sealed partial class QuickMenu : Module
         private Module? unlockRadianceModule;
         private Module? unlockRadiantModule;
         private Module? doorDefaultBeginModule;
-        private Module? memorizeBindingsModule;
         private Module? fasterLoadsModule;
         private Module? fastMenusModule;
         private Module? fastTextModule;

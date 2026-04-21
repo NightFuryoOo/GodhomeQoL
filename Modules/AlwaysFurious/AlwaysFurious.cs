@@ -15,6 +15,8 @@ public sealed class AlwaysFurious : Module
     private static bool pendingApply;
     private static bool pendingRestore;
     private static bool healthActionCoroutineRunning;
+    private static bool disablingFromMainMenuTransition;
+    private const string MainMenuSceneName = "Menu_Title";
 
     private sealed class FuryFsmSnapshot
     {
@@ -35,6 +37,7 @@ public sealed class AlwaysFurious : Module
         On.PlayMakerFSM.OnEnable += OnFsmEnable;
         On.HutongGames.PlayMaker.Actions.PlayerDataBoolTest.OnEnter += OnPlayerDataBoolTestAction;
         On.HeroController.CharmUpdate += OnCharmUpdate;
+        USceneManager.activeSceneChanged += OnSceneChanged;
         wasFuryEquippedOnLastCharmUpdate = IsFuryEquipped();
         TryModifyExistingFsm();
         if (IsFuryEquipped())
@@ -55,6 +58,7 @@ public sealed class AlwaysFurious : Module
         On.PlayMakerFSM.OnEnable -= OnFsmEnable;
         On.HutongGames.PlayMaker.Actions.PlayerDataBoolTest.OnEnter -= OnPlayerDataBoolTestAction;
         On.HeroController.CharmUpdate -= OnCharmUpdate;
+        USceneManager.activeSceneChanged -= OnSceneChanged;
         RestoreModifiedFsms();
         bool restoredImmediately = TryRestoreForcedHealth(allowDeferredWhenUnsafe: true, ignoreSafetyChecks: true);
         TryForceDisableFuryEffectIfUnequipped();
@@ -69,6 +73,30 @@ public sealed class AlwaysFurious : Module
         CancelPendingRefresh();
         GearSwitcher.ReapplyLastPresetStats();
         QuickMenu.RefreshQuickMenuEntryColors();
+    }
+
+    private void OnSceneChanged(Scene from, Scene to)
+    {
+        if (!Loaded || disablingFromMainMenuTransition)
+        {
+            return;
+        }
+
+        if (!string.Equals(to.name, MainMenuSceneName, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        try
+        {
+            disablingFromMainMenuTransition = true;
+            Enabled = false;
+            GodhomeQoL.SaveGlobalSettingsSafe();
+        }
+        finally
+        {
+            disablingFromMainMenuTransition = false;
+        }
     }
 
     private void OnPlayerDataBoolTestAction(

@@ -83,12 +83,21 @@ public sealed partial class QuickMenu : Module
 
             bool teleportKitGameplayMenuVisible = IsTeleportKitGameplayMenuVisible();
             bool anyUiVisible = IsAnyUiVisible();
+            bool canUseSettingsUiHotkeys = CanUseSettingsUiHotkeys();
+
+            if (!canUseSettingsUiHotkeys && anyUiVisible)
+            {
+                // Never allow mod settings UI to stay open in non-gameplay scenes (e.g. main menu).
+                ToggleMenu();
+                anyUiVisible = IsAnyUiVisible();
+            }
 
             if (!wasRebinding
                 && !IsAnyRebinding()
                 && !IsHotkeyInputBlocked()
                 && !suppressHotkeysThisFrame
-                && !teleportKitGameplayMenuVisible)
+                && !teleportKitGameplayMenuVisible
+                && canUseSettingsUiHotkeys)
             {
                 if (!anyUiVisible)
                 {
@@ -100,7 +109,13 @@ public sealed partial class QuickMenu : Module
             }
 
             KeyCode toggleKey = GetQuickMenuToggleKey();
-            if (!wasRebinding && !IsHotkeyInputBlocked() && !suppressHotkeysThisFrame && !teleportKitGameplayMenuVisible && toggleKey != KeyCode.None && Input.GetKeyDown(toggleKey))
+            if (!wasRebinding
+                && !IsHotkeyInputBlocked()
+                && !suppressHotkeysThisFrame
+                && !teleportKitGameplayMenuVisible
+                && canUseSettingsUiHotkeys
+                && toggleKey != KeyCode.None
+                && Input.GetKeyDown(toggleKey))
             {
                 ToggleMenu();
             }
@@ -111,6 +126,12 @@ public sealed partial class QuickMenu : Module
             }
 
             UpdateStatusMessage();
+        }
+
+        private static bool CanUseSettingsUiHotkeys()
+        {
+            GameManager? manager = GameManager.instance;
+            return manager != null && manager.IsGameplayScene();
         }
 
         private void LateUpdate()

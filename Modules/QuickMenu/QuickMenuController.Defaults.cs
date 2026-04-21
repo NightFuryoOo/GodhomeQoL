@@ -134,7 +134,6 @@ public sealed partial class QuickMenu : Module
             GodhomeQoL.GlobalSettings.GearSwitcher.Enabled = false;
 
             SetModuleEnabled<Modules.QoL.DoorDefaultBegin>(true);
-            SetModuleEnabled<Modules.QoL.MemorizeBindings>(true);
             SetModuleEnabled<Modules.QoL.FasterLoads>(true);
             SetModuleEnabled<Modules.QoL.FastMenus>(true);
             SetModuleEnabled<Modules.QoL.FastText>(true);
@@ -232,7 +231,7 @@ public sealed partial class QuickMenu : Module
             Modules.CollectorPhases.CollectorPhases.CollectorImmortal = false;
             Modules.CollectorPhases.CollectorPhases.IgnoreInitialJarLimit = false;
             Modules.CollectorPhases.CollectorPhases.DisableSummonLimit = false;
-            Modules.CollectorPhases.CollectorPhases.CustomSummonLimit = 20;
+            Modules.CollectorPhases.CollectorPhases.CustomSummonLimit = 4;
         }
 
         private static void ResetZoteHelperDefaults()
@@ -1247,7 +1246,6 @@ public sealed partial class QuickMenu : Module
             settings.MenuAnimEnabled = menuAnimMasterEnabled;
             settings.MenuAnimHasSnapshot = menuAnimMasterHasSnapshot;
             settings.MenuAnimSavedDoorDefaultBegin = menuAnimSavedDoorDefaultBegin;
-            settings.MenuAnimSavedMemorizeBindings = menuAnimSavedMemorizeBindings;
             settings.MenuAnimSavedFasterLoads = menuAnimSavedFasterLoads;
             settings.MenuAnimSavedFastMenus = menuAnimSavedFastMenus;
             settings.MenuAnimSavedFastText = menuAnimSavedFastText;
@@ -1314,10 +1312,20 @@ public sealed partial class QuickMenu : Module
 
         private void SetRandomPantheonsEnabled(bool value)
         {
+            if (!value)
+            {
+                Modules.BossChallenge.RandomPantheons.ForceRestoreNow();
+            }
+
             Module? module = GetRandomPantheonsModule();
             if (module != null)
             {
                 module.Enabled = value;
+            }
+
+            if (!value)
+            {
+                Modules.BossChallenge.RandomPantheons.ForceRestoreNow();
             }
 
             UpdateQuickMenuEntryStateColors();
@@ -1463,10 +1471,22 @@ public sealed partial class QuickMenu : Module
 
         private void SetTrueBossRushEnabled(bool value)
         {
+            if (!value)
+            {
+                Modules.BossChallenge.TrueBossRush.ForceRestoreNow();
+                Modules.BossChallenge.RandomPantheons.ForceRestoreNow();
+            }
+
             Module? module = GetTrueBossRushModule();
             if (module != null)
             {
                 module.Enabled = value;
+            }
+
+            if (!value)
+            {
+                Modules.BossChallenge.TrueBossRush.ForceRestoreNow();
+                Modules.BossChallenge.RandomPantheons.ForceRestoreNow();
             }
 
             UpdateQuickMenuEntryStateColors();

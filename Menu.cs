@@ -250,7 +250,6 @@ public sealed partial class GodhomeQoL
             || module is TeleportKit
             || module is Modules.QoL.FastDreamWarp
             || module is Modules.QoL.DoorDefaultBegin
-            || module is Modules.QoL.MemorizeBindings
             || module is Modules.QoL.FasterLoads
             || module is Modules.QoL.FastMenus
             || module is Modules.QoL.FastText
@@ -298,7 +297,6 @@ public sealed partial class GodhomeQoL
         }
 
         AddModuleToggle<Modules.QoL.DoorDefaultBegin>();
-        AddModuleToggle<Modules.QoL.MemorizeBindings>();
         AddModuleToggle<Modules.QoL.FasterLoads>();
         AddModuleToggle<Modules.QoL.FastMenus>();
         AddModuleToggle<Modules.QoL.FastText>();

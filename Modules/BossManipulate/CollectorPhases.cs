@@ -17,6 +17,7 @@ public sealed class CollectorPhases : Module
     private const int DefaultBuzzerHp = 26;
     private const int DefaultRollerHp = 26;
     private const int DefaultSpitterHp = 26;
+    private const int DefaultCustomSummonLimit = 4;
 
     [LocalSetting]
     internal static int collectorPhase = 3; // 1: stay in phase 1, 2: stay in phase 2, 3: default
@@ -31,7 +32,7 @@ public sealed class CollectorPhases : Module
     internal static bool DisableSummonLimit = false;
 
     [LocalSetting]
-    internal static int CustomSummonLimit = 20;
+    internal static int CustomSummonLimit = DefaultCustomSummonLimit;
 
     [LocalSetting]
     internal static int collectorMaxHP = DefaultCollectorHp;
@@ -678,7 +679,7 @@ public sealed class CollectorPhases : Module
                     GodhomeQoL.MarkMenuDirty();
                 },
                 () => CustomSummonLimit,
-                20,
+                DefaultCustomSummonLimit,
                 "CNT",
                 3
             ),
@@ -711,7 +712,7 @@ public sealed class CollectorPhases : Module
         CollectorImmortal = false;
         IgnoreInitialJarLimit = false;
         DisableSummonLimit = false;
-        CustomSummonLimit = 20;
+        CustomSummonLimit = DefaultCustomSummonLimit;
     }
 
     private static void ApplySummonCounts(PlayMakerFSM fsm)

@@ -34,6 +34,8 @@ internal static class PantheonSequenceCompatibility
             changed = true;
         }
 
+        RandomPantheons.ForceRestoreNow();
+
         if (loaded)
         {
             RefreshRandomPantheons();
@@ -44,6 +46,8 @@ internal static class PantheonSequenceCompatibility
             module.Enabled = false;
             changed = true;
         }
+
+        RandomPantheons.ForceRestoreNow();
 
         if (quickMenuChanged)
         {
@@ -75,6 +79,9 @@ internal static class PantheonSequenceCompatibility
             changed = true;
         }
 
+        TrueBossRush.ForceRestoreNow();
+        RandomPantheons.ForceRestoreNow();
+
         if (loaded)
         {
             RefreshTrueBossRush();
@@ -85,6 +92,9 @@ internal static class PantheonSequenceCompatibility
             module.Enabled = false;
             changed = true;
         }
+
+        TrueBossRush.ForceRestoreNow();
+        RandomPantheons.ForceRestoreNow();
 
         if (quickMenuChanged)
         {

@@ -15,11 +15,11 @@ public sealed class FastDreamWarp : Module
 		public bool Patched { get; set; }
 	}
 
-	private static readonly GameObjectRef knightRef = new(GameObjectRef.DONT_DESTROY_ON_LOAD, "Knight");
 	private static readonly Dictionary<int, DreamNailFsmSnapshot> fsmSnapshots = new();
 	private static bool timeScaleOverrideInFlight;
 	private static int timeScaleOverrideHandle;
 	private static int timeScaleOverrideGeneration;
+	private static int livePatchRetryGeneration;
 
 	public override bool DefaultEnabled => false;
 
@@ -27,13 +27,32 @@ public sealed class FastDreamWarp : Module
 	{
 		timeScaleOverrideGeneration++;
 		On.PlayMakerFSM.Start += ModifyDreamNailFSM;
+		On.HeroController.Start += OnHeroStart;
+		On.GameManager.BeginScene += OnBeginScene;
+
+		EnsureLiveDreamNailPatched();
 	}
 
 	private protected override void Unload()
 	{
+		livePatchRetryGeneration++;
 		On.PlayMakerFSM.Start -= ModifyDreamNailFSM;
+		On.HeroController.Start -= OnHeroStart;
+		On.GameManager.BeginScene -= OnBeginScene;
 		RestorePatchedFsms();
 		CancelPendingTimeScaleNormalization();
+	}
+
+	private void OnHeroStart(On.HeroController.orig_Start orig, HeroController self)
+	{
+		orig(self);
+		EnsureLiveDreamNailPatched();
+	}
+
+	private void OnBeginScene(On.GameManager.orig_BeginScene orig, GameManager self)
+	{
+		orig(self);
+		EnsureLiveDreamNailPatched();
 	}
 
 	private static bool ShouldActivate()
@@ -57,9 +76,106 @@ public sealed class FastDreamWarp : Module
 	{
 		orig(self);
 
-		if (self.FsmName == "Dream Nail" && knightRef.MatchGameObject(self.gameObject))
+		if (IsKnightDreamNailFsm(self))
 		{
 			ApplyDreamNailPatch(self);
+		}
+	}
+
+	private static bool IsKnightDreamNailFsm(PlayMakerFSM? fsm)
+	{
+		if (fsm == null || !string.Equals(fsm.FsmName, "Dream Nail", StringComparison.Ordinal))
+		{
+			return false;
+		}
+
+		GameObject? owner = fsm.gameObject;
+		if (owner == null)
+		{
+			return false;
+		}
+
+		HeroController? hero = HeroController.instance;
+		if (hero != null && owner == hero.gameObject)
+		{
+			return true;
+		}
+
+		if (owner.GetComponent<HeroController>() != null)
+		{
+			return true;
+		}
+
+		return string.Equals(owner.name, "Knight", StringComparison.Ordinal);
+	}
+
+	private static GameObject? GetLiveKnightObject()
+	{
+		HeroController? hero = HeroController.instance;
+		if (hero != null)
+		{
+			return hero.gameObject;
+		}
+
+		GameObject? knight = GameObject.Find("Knight");
+		if (knight != null)
+		{
+			return knight;
+		}
+
+		return null;
+	}
+
+	private bool TryPatchLiveDreamNailFsm()
+	{
+		GameObject? knight = GetLiveKnightObject();
+		if (knight == null)
+		{
+			return false;
+		}
+
+		PlayMakerFSM? fsm = knight.LocateMyFSM("Dream Nail");
+		if (!IsKnightDreamNailFsm(fsm))
+		{
+			return false;
+		}
+
+		ApplyDreamNailPatch(fsm);
+		return true;
+	}
+
+	private void EnsureLiveDreamNailPatched()
+	{
+		if (TryPatchLiveDreamNailFsm())
+		{
+			return;
+		}
+
+		StartLivePatchRetry();
+	}
+
+	private void StartLivePatchRetry()
+	{
+		livePatchRetryGeneration++;
+		_ = GlobalCoroutineExecutor.Start(RetryPatchLiveDreamNailFsm(this, livePatchRetryGeneration));
+	}
+
+	private static IEnumerator RetryPatchLiveDreamNailFsm(FastDreamWarp owner, int generation)
+	{
+		const int maxFrames = 120;
+		for (int frame = 0; frame < maxFrames; frame++)
+		{
+			if (generation != livePatchRetryGeneration || !owner.Loaded)
+			{
+				yield break;
+			}
+
+			if (owner.TryPatchLiveDreamNailFsm())
+			{
+				yield break;
+			}
+
+			yield return null;
 		}
 	}
 
