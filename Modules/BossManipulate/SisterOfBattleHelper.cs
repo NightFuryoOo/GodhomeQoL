@@ -7,7 +7,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class SisterOfBattleHelper : Module
 {
     private const string SisterOfBattleScene = "GG_Mantis_Lords_V";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string Phase1Name = "Mantis Lord";
     private const string Phase2S1Name = "Mantis Lord S1";
     private const string Phase2S2Name = "Mantis Lord S2";
@@ -72,6 +71,7 @@ public sealed class SisterOfBattleHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         vanillaHpByInstance.Clear();
         On.HealthManager.OnEnable += OnHealthManagerOnEnable;
@@ -299,7 +299,7 @@ public sealed class SisterOfBattleHelper : Module
     {
         if (string.Equals(nextScene, SisterOfBattleScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

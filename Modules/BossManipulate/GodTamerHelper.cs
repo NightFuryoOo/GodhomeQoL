@@ -7,7 +7,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class GodTamerHelper : Module
 {
     private const string GodTamerScene = "GG_God_Tamer";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string LobsterName = "Lobster";
     private const string LancerName = "Lancer";
     private const int DefaultLobsterHp = 1000;
@@ -52,6 +51,7 @@ public sealed class GodTamerHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         vanillaHpByInstance.Clear();
         On.HealthManager.Awake += OnHealthManagerAwake_GodTamer;
@@ -282,7 +282,7 @@ public sealed class GodTamerHelper : Module
     {
         if (string.Equals(nextScene, GodTamerScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

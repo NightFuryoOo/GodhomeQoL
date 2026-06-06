@@ -7,7 +7,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class HornetProtectorHelper : Module
 {
     private const string HornetScene = "GG_Hornet_1";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string HornetName = "Hornet Boss 1";
     private const int DefaultHornetMaxHp = 1250;
     private const int DefaultHornetVanillaHp = 1250;
@@ -44,6 +43,7 @@ public sealed class HornetProtectorHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         vanillaHpByInstance.Clear();
         On.HealthManager.Awake += OnHealthManagerAwake;
@@ -298,7 +298,7 @@ public sealed class HornetProtectorHelper : Module
     {
         if (string.Equals(nextScene, HornetScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

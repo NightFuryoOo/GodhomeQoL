@@ -7,7 +7,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class SoulTyrantHelper : Module
 {
     private const string SoulTyrantScene = "GG_Soul_Tyrant";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string SoulTyrantName = "Dream Mage Lord";
     private const string SoulTyrantPhase2Marker = "Phase2";
     private const int DefaultSoulTyrantPhase1Hp = 1200;
@@ -45,6 +44,7 @@ public sealed class SoulTyrantHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         vanillaHpByInstance.Clear();
         On.HealthManager.Awake += OnHealthManagerAwake_SoulTyrant;
@@ -278,7 +278,7 @@ public sealed class SoulTyrantHelper : Module
     {
         if (string.Equals(nextScene, SoulTyrantScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

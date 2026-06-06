@@ -9,17 +9,16 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class HiveKnightHelper : Module
 {
     private const string HiveKnightScene = "GG_Hive_Knight";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string HiveKnightName = "Hive Knight";
     private const int DefaultHiveKnightMaxHp = 1300;
     private const int DefaultHiveKnightVanillaHp = 1300;
     private const int DefaultHiveKnightPhase2Hp = 580;
     private const int DefaultHiveKnightPhase3Hp = 350;
     private const int P5HiveKnightHp = 850;
+    private const int PhaseCompareCount = 2;
     private const int MinHiveKnightHp = 1;
     private const int MaxHiveKnightHp = 999999;
     private const int MinHiveKnightPhase2Hp = 2;
-    private const int MaxHiveKnightPhase2Hp = DefaultHiveKnightVanillaHp;
     private const int MinHiveKnightPhase3Hp = 1;
 
     [LocalSetting]
@@ -70,6 +69,7 @@ public sealed class HiveKnightHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         NormalizePhaseThresholdState();
         vanillaHpByInstance.Clear();
@@ -249,7 +249,7 @@ public sealed class HiveKnightHelper : Module
 
             RememberVanillaPhaseThresholds(fsm);
             (int phase2Hp, int phase3Hp) = GetVanillaPhaseThresholds(fsm);
-            SetPhaseThresholdsOnFsm(fsm, phase2Hp, phase3Hp);
+            SetPhaseThresholdsOnFsm(fsm, phase2Hp, phase3Hp, triggerOnEqual: false);
         }
     }
 
@@ -326,6 +326,25 @@ public sealed class HiveKnightHelper : Module
         }
 
         ApplyPhaseThresholdSettings(self);
+        _ = self.StartCoroutine(DeferredApplyPhaseThresholds(self));
+    }
+
+    private static IEnumerator DeferredApplyPhaseThresholds(PlayMakerFSM fsm)
+    {
+        yield return null;
+
+        if (!moduleActive || fsm == null || fsm.gameObject == null || !IsHiveKnightPhaseControlFsm(fsm))
+        {
+            yield break;
+        }
+
+        ApplyPhaseThresholdSettings(fsm);
+
+        yield return new WaitForSeconds(0.01f);
+        if (moduleActive && fsm != null && fsm.gameObject != null && IsHiveKnightPhaseControlFsm(fsm))
+        {
+            ApplyPhaseThresholdSettings(fsm);
+        }
     }
 
     private static IEnumerator DeferredApply(HealthManager hm)
@@ -346,6 +365,8 @@ public sealed class HiveKnightHelper : Module
                 ApplyHiveKnightHealth(hm.gameObject, hm);
             }
         }
+
+        ApplyPhaseThresholdSettingsIfPresent();
     }
 
     private static void SceneManager_activeSceneChanged(Scene from, Scene to)
@@ -420,7 +441,7 @@ public sealed class HiveKnightHelper : Module
     {
         if (string.Equals(nextScene, HiveKnightScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }
@@ -470,10 +491,10 @@ public sealed class HiveKnightHelper : Module
             )
             : GetVanillaPhaseThresholds(fsm);
 
-        SetPhaseThresholdsOnFsm(fsm, thresholds.phase2Hp, thresholds.phase3Hp);
+        SetPhaseThresholdsOnFsm(fsm, thresholds.phase2Hp, thresholds.phase3Hp, ShouldUseCustomPhaseThresholds());
     }
 
-    private static void SetPhaseThresholdsOnFsm(PlayMakerFSM fsm, int phase2Hp, int phase3Hp)
+    private static void SetPhaseThresholdsOnFsm(PlayMakerFSM fsm, int phase2Hp, int phase3Hp, bool triggerOnEqual)
     {
         int targetPhase2Hp = ClampHiveKnightPhase2Hp(phase2Hp);
         int targetPhase3Hp = ClampHiveKnightPhase3Hp(phase3Hp, targetPhase2Hp);
@@ -502,8 +523,9 @@ public sealed class HiveKnightHelper : Module
                 }
 
                 compare.integer2.Value = compareIndex == 0 ? targetPhase2Hp : targetPhase3Hp;
+                SetPhaseCompareEqualEvent(compare, triggerOnEqual);
                 compareIndex++;
-                if (compareIndex >= 2)
+                if (compareIndex >= PhaseCompareCount)
                 {
                     break;
                 }
@@ -534,6 +556,13 @@ public sealed class HiveKnightHelper : Module
                 setIntValue.intVariable.Value = targetPhase3Hp;
             }
         }
+    }
+
+    private static void SetPhaseCompareEqualEvent(IntCompare compare, bool triggerOnEqual)
+    {
+        compare.equal = triggerOnEqual && compare.lessThan != null
+            ? compare.lessThan
+            : null;
     }
 
     private static void RememberVanillaPhaseThresholds(PlayMakerFSM fsm)
@@ -758,12 +787,32 @@ public sealed class HiveKnightHelper : Module
 
     private static int ClampHiveKnightPhase2Hp(int value)
     {
+        int maxPhase2Hp = ResolvePhase2MaxHp();
+
         if (value < MinHiveKnightPhase2Hp)
         {
             return MinHiveKnightPhase2Hp;
         }
 
-        return value > MaxHiveKnightPhase2Hp ? MaxHiveKnightPhase2Hp : value;
+        return value > maxPhase2Hp ? maxPhase2Hp : value;
+    }
+
+    private static int ResolvePhase2MaxHp()
+    {
+        return ShouldUseCustomHp()
+            ? ClampHiveKnightHp(hiveKnightMaxHp)
+            : DefaultHiveKnightVanillaHp;
+    }
+
+    internal static int GetPhase2MaxHpForUi()
+    {
+        return ResolvePhase2MaxHp();
+    }
+
+    internal static int GetPhase3MaxHpForUi()
+    {
+        int phase2Hp = ClampHiveKnightPhase2Hp(hiveKnightPhase2Hp);
+        return Math.Max(MinHiveKnightPhase3Hp, phase2Hp - 1);
     }
 
     private static int ClampHiveKnightPhase3Hp(int value, int phase2Hp)

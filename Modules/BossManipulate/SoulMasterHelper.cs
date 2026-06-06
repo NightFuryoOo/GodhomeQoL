@@ -7,7 +7,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class SoulMasterHelper : Module
 {
     private const string SoulMasterScene = "GG_Soul_Master";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string SoulMasterName = "Mage Lord";
     private const string SoulMasterPhase2Marker = "Phase2";
     private const int DefaultSoulMasterPhase1Hp = 900;
@@ -45,6 +44,7 @@ public sealed class SoulMasterHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         vanillaHpByInstance.Clear();
         On.HealthManager.Awake += OnHealthManagerAwake_SoulMaster;
@@ -278,7 +278,7 @@ public sealed class SoulMasterHelper : Module
     {
         if (string.Equals(nextScene, SoulMasterScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

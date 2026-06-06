@@ -9,7 +9,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class NoEyesP4Helper : Module
 {
     private const string NoEyesScene = "GG_Ghost_No_Eyes";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string NoEyesName = "Ghost Warrior No Eyes";
     private const string NoEyesPhaseFsmName = "Escalation";
     private const string NoEyesPhaseCheckState1Name = "Check";
@@ -57,6 +56,7 @@ public sealed class NoEyesP4Helper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizePhaseThresholdState();
         vanillaHpByInstance.Clear();
         vanillaPhaseThresholdsByFsm.Clear();
@@ -421,7 +421,7 @@ public sealed class NoEyesP4Helper : Module
     {
         if (string.Equals(nextScene, NoEyesScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

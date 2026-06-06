@@ -8,7 +8,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class NailsageSlyHelper : Module
 {
     private const string NailsageSlyScene = "GG_Sly";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string NailsageSlyName = "Sly Boss";
     private const string AscendedHpVariableName = "Ascended HP";
     private const string LegacyAscendedHpVariableName = "Acended HP";
@@ -50,6 +49,7 @@ public sealed class NailsageSlyHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         vanillaHpByInstance.Clear();
         vanillaPhase2HpByFsm.Clear();
@@ -524,7 +524,7 @@ public sealed class NailsageSlyHelper : Module
     {
         if (string.Equals(nextScene, NailsageSlyScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

@@ -9,7 +9,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class TraitorLordHelper : Module
 {
     private const string TraitorLordScene = "GG_Traitor_Lord";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string TraitorLordName = "Mantis Traitor Lord";
     private const string TraitorLordPhaseFsmName = "Mantis";
     private const string TraitorLordPhaseCheckStateName = "Slam?";
@@ -62,6 +61,7 @@ public sealed class TraitorLordHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         NormalizePhaseThresholdState();
         vanillaHpByInstance.Clear();
@@ -404,7 +404,7 @@ public sealed class TraitorLordHelper : Module
     {
         if (string.Equals(nextScene, TraitorLordScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

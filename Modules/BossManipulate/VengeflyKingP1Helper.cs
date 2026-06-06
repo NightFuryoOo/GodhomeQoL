@@ -7,7 +7,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class VengeflyKingP1Helper : Module
 {
     private const string VengeflyScene = "GG_Vengefly";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string VengeflyName = "Giant Buzzer Col";
     private const int DefaultVengeflyMaxHp = 450;
     private const int DefaultVengeflyVanillaHp = 450;
@@ -30,6 +29,7 @@ public sealed class VengeflyKingP1Helper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         vanillaHpByInstance.Clear();
         On.HealthManager.Awake += OnHealthManagerAwake;
         On.HealthManager.Start += OnHealthManagerStart;
@@ -235,7 +235,7 @@ public sealed class VengeflyKingP1Helper : Module
     {
         if (string.Equals(nextScene, VengeflyScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

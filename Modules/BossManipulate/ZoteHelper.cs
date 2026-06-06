@@ -7,7 +7,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class ZoteHelper : Module
 {
     private const string ZoteScene = "GG_Grey_Prince_Zote";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string GreyPrinceName = "Grey Prince";
     private const string ZotelingPrefix = "Zoteling";
     private const string PatchFlag = "GodhomeQoL_ZoteHelper_Patched";
@@ -71,6 +70,7 @@ public sealed class ZoteHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         ZoteHoGOnly = true;
         activeZotelings.Clear();
         On.PlayMakerFSM.OnEnable += PlayMakerFSM_OnEnable;
@@ -173,7 +173,7 @@ public sealed class ZoteHelper : Module
     {
         if (string.Equals(nextScene, ZoteScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

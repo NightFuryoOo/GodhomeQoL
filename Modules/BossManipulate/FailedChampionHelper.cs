@@ -11,7 +11,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class FailedChampionHelper : Module
 {
     private const string FailedChampionScene = "GG_Failed_Champion";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string ArmorNamePrefix = "False Knight";
     private const string MainPhase2StateName = "To Phase 2";
     private const string MainPhase3StateName = "To Phase 3";
@@ -61,6 +60,7 @@ public sealed class FailedChampionHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         NormalizeConfiguredHpState();
         vanillaArmorHpByInstance.Clear();
@@ -302,7 +302,7 @@ public sealed class FailedChampionHelper : Module
     {
         if (IsFailedChampionScene(nextScene))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

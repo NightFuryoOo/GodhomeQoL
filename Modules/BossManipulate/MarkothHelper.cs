@@ -1,4 +1,4 @@
-﻿using Modding;
+using Modding;
 using Satchel;
 using Satchel.Futils;
 using HutongGames.PlayMaker;
@@ -9,7 +9,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class MarkothHelper : Module
 {
     private const string MarkothScene = "GG_Ghost_Markoth_V";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string MarkothName = "Ghost Warrior Markoth";
     private const string MarkothPhaseFsmName = "Rage Check";
     private const string MarkothPhaseCheckStateName = "Check";
@@ -67,6 +66,7 @@ public sealed class MarkothHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         NormalizePhaseThresholdState();
         vanillaHpByInstance.Clear();
@@ -434,7 +434,7 @@ public sealed class MarkothHelper : Module
     {
         if (string.Equals(nextScene, MarkothScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

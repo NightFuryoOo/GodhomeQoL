@@ -1,4 +1,4 @@
-﻿using Modding;
+using Modding;
 using Satchel;
 using Satchel.Futils;
 
@@ -7,7 +7,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class MantisLordHelper : Module
 {
     private const string MantisLordScene = "GG_Mantis_Lords";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string Phase1Name = "Mantis Lord";
     private const string Phase2S1Name = "Mantis Lord S1";
     private const string Phase2S2Name = "Mantis Lord S2";
@@ -43,6 +42,7 @@ public sealed class MantisLordHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeState();
         vanillaHpByInstance.Clear();
         On.HealthManager.OnEnable += OnHealthManagerOnEnable;
@@ -214,7 +214,7 @@ public sealed class MantisLordHelper : Module
     {
         if (string.Equals(nextScene, MantisLordScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

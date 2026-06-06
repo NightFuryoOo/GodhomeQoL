@@ -9,7 +9,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class NoskP2Helper : Module
 {
     private const string NoskScene = "GG_Nosk";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string NoskName = "Mimic Spider";
     private const string NoskPhaseCheckStateName = "Roof Jump?";
     private const int DefaultNoskMaxHp = 680;
@@ -41,6 +40,7 @@ public sealed class NoskP2Helper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizePhaseThresholdState();
         vanillaHpByInstance.Clear();
         On.HealthManager.Awake += OnHealthManagerAwake;
@@ -288,7 +288,7 @@ public sealed class NoskP2Helper : Module
     {
         if (string.Equals(nextScene, NoskScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

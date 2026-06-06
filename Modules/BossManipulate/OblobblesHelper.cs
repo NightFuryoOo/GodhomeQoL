@@ -9,7 +9,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class OblobblesHelper : Module
 {
     private const string OblobblesScene = "GG_Oblobbles";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string OblobbleName = "Mega Fat Bee";
     private const string SetRageFsmName = "Set Rage";
     private const string Phase2HpAddVariableName = "HP Add";
@@ -75,6 +74,7 @@ public sealed class OblobblesHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         NormalizePhase2State();
         vanillaHpByInstance.Clear();
@@ -398,7 +398,7 @@ public sealed class OblobblesHelper : Module
     {
         if (string.Equals(nextScene, OblobblesScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

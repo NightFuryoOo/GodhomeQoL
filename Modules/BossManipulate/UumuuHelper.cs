@@ -8,7 +8,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class UumuuHelper : Module
 {
     private const string UumuuScene = "GG_Uumuu_V";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string UumuuName = "Mega Jellyfish GG";
     private const string UumuuSummonNameHint = "Jellyfish";
     private const string UumuuSpawnerNameHint = "Spawner";
@@ -62,6 +61,7 @@ public sealed class UumuuHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         vanillaHpByInstance.Clear();
         vanillaSummonHpByInstance.Clear();
@@ -577,7 +577,7 @@ public sealed class UumuuHelper : Module
     {
         if (string.Equals(nextScene, UumuuScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

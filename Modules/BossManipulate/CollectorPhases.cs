@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using HutongGames.PlayMaker;
@@ -12,7 +12,6 @@ namespace GodhomeQoL.Modules.CollectorPhases;
 
 public sealed class CollectorPhases : Module
 {
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const int DefaultCollectorHp = 1200;
     private const int DefaultBuzzerHp = 26;
     private const int DefaultRollerHp = 26;
@@ -75,6 +74,7 @@ public sealed class CollectorPhases : Module
     private protected override void Load()
     {
         moduleActive = true;
+        global::GodhomeQoL.Modules.BossChallenge.BossManipulateEntryGuard.EnsureHooks();
         On.PlayMakerFSM.OnEnable += FsmChanges;
         On.HealthManager.Awake += OnHealthManagerAwake;
         On.HealthManager.Start += OnHealthManagerStart;
@@ -120,7 +120,7 @@ public sealed class CollectorPhases : Module
     {
         if (IsCollectorScene(nextScene))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (global::GodhomeQoL.Modules.BossChallenge.BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

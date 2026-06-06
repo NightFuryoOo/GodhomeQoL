@@ -9,7 +9,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class FlukemarmHelper : Module
 {
     private const string FlukemarmScene = "GG_Flukemarm";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string FlukemarmName = "Fluke Mother";
     private const string FlukeFlyName = "Fluke Fly";
     private const int DefaultFlukemarmMaxHp = 900;
@@ -83,6 +82,7 @@ public sealed class FlukemarmHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         vanillaHpByInstance.Clear();
         vanillaSummonLimitByFsm.Clear();
@@ -522,7 +522,7 @@ public sealed class FlukemarmHelper : Module
     {
         if (string.Equals(nextScene, FlukemarmScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

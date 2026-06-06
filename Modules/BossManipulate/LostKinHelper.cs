@@ -1,4 +1,4 @@
-﻿using HutongGames.PlayMaker;
+using HutongGames.PlayMaker;
 using HutongGames.PlayMaker.Actions;
 using Modding;
 using Satchel;
@@ -9,7 +9,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class LostKinHelper : Module
 {
     private const string LostKinScene = "GG_Lost_Kin";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string LostKinName = "Lost Kin";
     private static readonly string[] LostKinSummonNameHints = { "Bursting", "Bouncer", "Balloon", "Zombie" };
     private const string LostKinSpawnBalloonFsmName = "Spawn Balloon";
@@ -129,6 +128,7 @@ public sealed class LostKinHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         NormalizePhaseThresholdState();
         vanillaHpByInstance.Clear();
@@ -870,7 +870,7 @@ public sealed class LostKinHelper : Module
     {
         if (string.Equals(nextScene, LostKinScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }
@@ -1634,4 +1634,3 @@ public sealed class LostKinHelper : Module
     }
 
 }
-

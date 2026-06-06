@@ -9,7 +9,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class MarkothP4Helper : Module
 {
     private const string MarkothScene = "GG_Ghost_Markoth";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string MarkothName = "Ghost Warrior Markoth";
     private const string MarkothPhaseFsmName = "Rage Check";
     private const string MarkothPhaseCheckStateName = "Check";
@@ -47,6 +46,7 @@ public sealed class MarkothP4Helper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizePhaseThresholdState();
         vanillaHpByInstance.Clear();
         On.HealthManager.Awake += OnHealthManagerAwake;
@@ -319,7 +319,7 @@ public sealed class MarkothP4Helper : Module
     {
         if (string.Equals(nextScene, MarkothScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

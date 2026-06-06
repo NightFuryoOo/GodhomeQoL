@@ -7,7 +7,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class BroodingMawlekP1Helper : Module
 {
     private const string MawlekScene = "GG_Brooding_Mawlek";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string MawlekName = "Mawlek Body";
     private const int DefaultMawlekMaxHp = 1050;
     private const int DefaultMawlekVanillaHp = 1050;
@@ -30,6 +29,7 @@ public sealed class BroodingMawlekP1Helper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         vanillaHpByInstance.Clear();
         On.HealthManager.Awake += OnHealthManagerAwake;
         On.HealthManager.Start += OnHealthManagerStart;
@@ -235,7 +235,7 @@ public sealed class BroodingMawlekP1Helper : Module
     {
         if (string.Equals(nextScene, MawlekScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

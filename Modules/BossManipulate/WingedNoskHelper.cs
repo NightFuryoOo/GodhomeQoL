@@ -9,7 +9,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class WingedNoskHelper : Module
 {
     private const string WingedNoskScene = "GG_Nosk_Hornet";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string WingedNoskName = "Hornet Nosk";
     private static readonly string[] WingedNoskSummonNameHints =
     {
@@ -104,6 +103,7 @@ public sealed class WingedNoskHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         NormalizePhaseThresholdState();
         vanillaHpByInstance.Clear();
@@ -776,7 +776,7 @@ public sealed class WingedNoskHelper : Module
     {
         if (string.Equals(nextScene, WingedNoskScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

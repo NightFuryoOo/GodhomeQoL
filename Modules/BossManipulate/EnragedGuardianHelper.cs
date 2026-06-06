@@ -7,7 +7,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class EnragedGuardianHelper : Module
 {
     private const string EnragedGuardianScene = "GG_Crystal_Guardian_2";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string EnragedGuardianName = "Zombie Beam Miner Rematch";
     private const int DefaultEnragedGuardianMaxHp = 1250;
     private const int DefaultEnragedGuardianVanillaHp = 1250;
@@ -44,6 +43,7 @@ public sealed class EnragedGuardianHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         vanillaHpByInstance.Clear();
         On.HealthManager.Awake += OnHealthManagerAwake_EnragedGuardian;
@@ -298,7 +298,7 @@ public sealed class EnragedGuardianHelper : Module
     {
         if (string.Equals(nextScene, EnragedGuardianScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }
@@ -455,5 +455,3 @@ public sealed class EnragedGuardianHelper : Module
         return value > MaxEnragedGuardianHp ? MaxEnragedGuardianHp : value;
     }
 }
-
-

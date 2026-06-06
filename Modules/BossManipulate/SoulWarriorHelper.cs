@@ -9,7 +9,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class SoulWarriorHelper : Module
 {
     private const string SoulWarriorScene = "GG_Mage_Knight_V";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string SoulWarriorName = "Mage Knight";
     private static readonly string[] SoulWarriorSummonNameHints =
     {
@@ -101,6 +100,7 @@ public sealed class SoulWarriorHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         vanillaHpByInstance.Clear();
         vanillaSummonHpByInstance.Clear();
@@ -820,7 +820,7 @@ public sealed class SoulWarriorHelper : Module
     {
         if (string.Equals(nextScene, SoulWarriorScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

@@ -8,7 +8,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class NightmareKingGrimmHelper : Module
 {
     private const string NightmareKingGrimmScene = "GG_Grimm_Nightmare";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string NightmareKingGrimmName = "Nightmare Grimm Boss";
     private const string RagePhase1VariableName = "Rage HP 1";
     private const string RagePhase2VariableName = "Rage HP 2";
@@ -22,7 +21,6 @@ public sealed class NightmareKingGrimmHelper : Module
     private const int MinNightmareKingGrimmHp = 1;
     private const int MaxNightmareKingGrimmHp = 999999;
     private const int MinNightmareKingGrimmRagePhase1Hp = 3;
-    private const int MaxNightmareKingGrimmRagePhase1Hp = DefaultNightmareKingGrimmVanillaHp;
     private const int MinNightmareKingGrimmRagePhase2Hp = 2;
     private const int MinNightmareKingGrimmRagePhase3Hp = 1;
 
@@ -79,6 +77,7 @@ public sealed class NightmareKingGrimmHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         NormalizePhaseThresholdState();
         vanillaHpByInstance.Clear();
@@ -431,7 +430,7 @@ public sealed class NightmareKingGrimmHelper : Module
     {
         if (string.Equals(nextScene, NightmareKingGrimmScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }
@@ -690,12 +689,38 @@ public sealed class NightmareKingGrimmHelper : Module
 
     private static int ClampNightmareKingGrimmRagePhase1Hp(int value)
     {
+        int maxRagePhase1Hp = ResolveRagePhase1MaxHp();
+
         if (value < MinNightmareKingGrimmRagePhase1Hp)
         {
             return MinNightmareKingGrimmRagePhase1Hp;
         }
 
-        return value > MaxNightmareKingGrimmRagePhase1Hp ? MaxNightmareKingGrimmRagePhase1Hp : value;
+        return value > maxRagePhase1Hp ? maxRagePhase1Hp : value;
+    }
+
+    private static int ResolveRagePhase1MaxHp()
+    {
+        return ShouldUseCustomHp()
+            ? ClampNightmareKingGrimmHp(nightmareKingGrimmMaxHp)
+            : DefaultNightmareKingGrimmVanillaHp;
+    }
+
+    internal static int GetRagePhase1MaxHpForUi()
+    {
+        return ResolveRagePhase1MaxHp();
+    }
+
+    internal static int GetRagePhase2MaxHpForUi()
+    {
+        int ragePhase1Hp = ClampNightmareKingGrimmRagePhase1Hp(nightmareKingGrimmRagePhase1Hp);
+        return Math.Max(MinNightmareKingGrimmRagePhase2Hp, ragePhase1Hp - 1);
+    }
+
+    internal static int GetRagePhase3MaxHpForUi()
+    {
+        int ragePhase2Hp = ClampNightmareKingGrimmRagePhase2Hp(nightmareKingGrimmRagePhase2Hp, nightmareKingGrimmRagePhase1Hp);
+        return Math.Max(MinNightmareKingGrimmRagePhase3Hp, ragePhase2Hp - 1);
     }
 
     private static int ClampNightmareKingGrimmRagePhase2Hp(int value, int ragePhase1Hp)

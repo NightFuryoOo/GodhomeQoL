@@ -7,7 +7,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class SoulWarriorP1Helper : Module
 {
     private const string SoulWarriorScene = "GG_Mage_Knight";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string SoulWarriorName = "Mage Knight";
     private const int DefaultSoulWarriorMaxHp = 750;
     private const int DefaultSoulWarriorVanillaHp = 750;
@@ -30,6 +29,7 @@ public sealed class SoulWarriorP1Helper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         vanillaHpByInstance.Clear();
         On.HealthManager.Awake += OnHealthManagerAwake;
         On.HealthManager.Start += OnHealthManagerStart;
@@ -235,7 +235,7 @@ public sealed class SoulWarriorP1Helper : Module
     {
         if (string.Equals(nextScene, SoulWarriorScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

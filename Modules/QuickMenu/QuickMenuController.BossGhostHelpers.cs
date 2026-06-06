@@ -2582,10 +2582,15 @@ public sealed partial class QuickMenu : Module
             }
 
             Modules.BossChallenge.DungDefenderHelper.dungDefenderMaxHp = Mathf.Clamp(value, 1, 999999);
-            if (Modules.BossChallenge.DungDefenderHelper.dungDefenderUseMaxHp)
+            int maxPhase2Hp = Mathf.Max(1, Modules.BossChallenge.DungDefenderHelper.GetPhase2MaxHpForUi());
+            Modules.BossChallenge.DungDefenderHelper.dungDefenderPhase2Hp = Mathf.Clamp(Modules.BossChallenge.DungDefenderHelper.dungDefenderPhase2Hp, 1, maxPhase2Hp);
+            if (Modules.BossChallenge.DungDefenderHelper.dungDefenderUseMaxHp
+                || Modules.BossChallenge.DungDefenderHelper.dungDefenderUseCustomPhase)
             {
-                Modules.BossChallenge.DungDefenderHelper.ApplyDungDefenderHealthIfPresent();
+                Modules.BossChallenge.DungDefenderHelper.ReapplyLiveSettings();
             }
+
+            RefreshDungDefenderHelperUi();
         }
 
         private void SetDungDefenderPhase2Hp(int value)
@@ -2851,9 +2856,7 @@ public sealed partial class QuickMenu : Module
                 return;
             }
 
-            int phase2Hp = Mathf.Clamp(Modules.BossChallenge.HiveKnightHelper.hiveKnightPhase2Hp, 2, 1300);
-            Modules.BossChallenge.HiveKnightHelper.hiveKnightPhase2Hp = phase2Hp;
-            Modules.BossChallenge.HiveKnightHelper.hiveKnightPhase3Hp = Mathf.Clamp(Modules.BossChallenge.HiveKnightHelper.hiveKnightPhase3Hp, 1, Mathf.Max(1, phase2Hp - 1));
+            ClampHiveKnightPhaseThresholdsForUi();
             Modules.BossChallenge.HiveKnightHelper.hiveKnightUseCustomPhase = value;
             Modules.BossChallenge.HiveKnightHelper.ReapplyLiveSettings();
             RefreshHiveKnightHelperUi();
@@ -2875,10 +2878,14 @@ public sealed partial class QuickMenu : Module
             }
 
             Modules.BossChallenge.HiveKnightHelper.hiveKnightMaxHp = Mathf.Clamp(value, 1, 999999);
-            if (Modules.BossChallenge.HiveKnightHelper.hiveKnightUseMaxHp)
+            ClampHiveKnightPhaseThresholdsForUi();
+            if (Modules.BossChallenge.HiveKnightHelper.hiveKnightUseMaxHp
+                || Modules.BossChallenge.HiveKnightHelper.hiveKnightUseCustomPhase)
             {
-                Modules.BossChallenge.HiveKnightHelper.ApplyHiveKnightHealthIfPresent();
+                Modules.BossChallenge.HiveKnightHelper.ReapplyLiveSettings();
             }
+
+            RefreshHiveKnightHelperUi();
         }
 
         private void SetHiveKnightPhase2Hp(int value)
@@ -2889,11 +2896,8 @@ public sealed partial class QuickMenu : Module
                 return;
             }
 
-            int phase2Hp = Mathf.Clamp(value, 2, 1300);
-            Modules.BossChallenge.HiveKnightHelper.hiveKnightPhase2Hp = phase2Hp;
-
-            int maxPhase3Hp = Mathf.Max(1, phase2Hp - 1);
-            Modules.BossChallenge.HiveKnightHelper.hiveKnightPhase3Hp = Mathf.Clamp(Modules.BossChallenge.HiveKnightHelper.hiveKnightPhase3Hp, 1, maxPhase3Hp);
+            Modules.BossChallenge.HiveKnightHelper.hiveKnightPhase2Hp = value;
+            ClampHiveKnightPhaseThresholdsForUi();
 
             if (Modules.BossChallenge.HiveKnightHelper.hiveKnightUseCustomPhase)
             {
@@ -2911,9 +2915,8 @@ public sealed partial class QuickMenu : Module
                 return;
             }
 
-            int phase2Hp = Mathf.Clamp(Modules.BossChallenge.HiveKnightHelper.hiveKnightPhase2Hp, 2, 1300);
-            Modules.BossChallenge.HiveKnightHelper.hiveKnightPhase2Hp = phase2Hp;
-            Modules.BossChallenge.HiveKnightHelper.hiveKnightPhase3Hp = Mathf.Clamp(value, 1, Mathf.Max(1, phase2Hp - 1));
+            Modules.BossChallenge.HiveKnightHelper.hiveKnightPhase3Hp = value;
+            ClampHiveKnightPhaseThresholdsForUi();
 
             if (Modules.BossChallenge.HiveKnightHelper.hiveKnightUseCustomPhase)
             {
@@ -2921,6 +2924,22 @@ public sealed partial class QuickMenu : Module
             }
 
             RefreshHiveKnightHelperUi();
+        }
+
+        private static void ClampHiveKnightPhaseThresholdsForUi()
+        {
+            int phase2Hp = Mathf.Clamp(
+                Modules.BossChallenge.HiveKnightHelper.hiveKnightPhase2Hp,
+                2,
+                Modules.BossChallenge.HiveKnightHelper.GetPhase2MaxHpForUi()
+            );
+            Modules.BossChallenge.HiveKnightHelper.hiveKnightPhase2Hp = phase2Hp;
+
+            Modules.BossChallenge.HiveKnightHelper.hiveKnightPhase3Hp = Mathf.Clamp(
+                Modules.BossChallenge.HiveKnightHelper.hiveKnightPhase3Hp,
+                1,
+                Modules.BossChallenge.HiveKnightHelper.GetPhase3MaxHpForUi()
+            );
         }
 
         private void RefreshHiveKnightHelperUi()
@@ -4663,15 +4682,7 @@ public sealed partial class QuickMenu : Module
                 return;
             }
 
-            int ragePhase1Hp = Mathf.Clamp(Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase1Hp, 3, 1650);
-            int ragePhase2Max = Mathf.Max(2, ragePhase1Hp - 1);
-            int ragePhase2Hp = Mathf.Clamp(Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase2Hp, 2, ragePhase2Max);
-            int ragePhase3Max = Mathf.Max(1, ragePhase2Hp - 1);
-            int ragePhase3Hp = Mathf.Clamp(Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase3Hp, 1, ragePhase3Max);
-
-            Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase1Hp = ragePhase1Hp;
-            Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase2Hp = ragePhase2Hp;
-            Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase3Hp = ragePhase3Hp;
+            ClampNightmareKingGrimmPhaseThresholdsForUi();
             Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmUseCustomPhase = value;
             Modules.BossChallenge.NightmareKingGrimmHelper.ReapplyLiveSettings();
             RefreshNightmareKingGrimmHelperUi();
@@ -4681,6 +4692,29 @@ public sealed partial class QuickMenu : Module
         {
             Modules.BossChallenge.NightmareKingGrimmHelper.SetP5HpEnabled(value);
             RefreshNightmareKingGrimmHelperUi();
+        }
+
+        private void ClampNightmareKingGrimmPhaseThresholdsForUi()
+        {
+            int ragePhase1Hp = Mathf.Clamp(
+                Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase1Hp,
+                3,
+                Modules.BossChallenge.NightmareKingGrimmHelper.GetRagePhase1MaxHpForUi()
+            );
+            Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase1Hp = ragePhase1Hp;
+
+            int ragePhase2Hp = Mathf.Clamp(
+                Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase2Hp,
+                2,
+                Modules.BossChallenge.NightmareKingGrimmHelper.GetRagePhase2MaxHpForUi()
+            );
+            Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase2Hp = ragePhase2Hp;
+
+            Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase3Hp = Mathf.Clamp(
+                Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase3Hp,
+                1,
+                Modules.BossChallenge.NightmareKingGrimmHelper.GetRagePhase3MaxHpForUi()
+            );
         }
 
         private void SetNightmareKingGrimmMaxHp(int value)
@@ -4693,6 +4727,7 @@ public sealed partial class QuickMenu : Module
             }
 
             Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmMaxHp = Mathf.Clamp(value, 1, 999999);
+            ClampNightmareKingGrimmPhaseThresholdsForUi();
             if (Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmUseMaxHp
                 || Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmUseCustomPhase)
             {
@@ -4710,15 +4745,8 @@ public sealed partial class QuickMenu : Module
                 return;
             }
 
-            int ragePhase1Hp = Mathf.Clamp(value, 3, 1650);
-            int ragePhase2Max = Mathf.Max(2, ragePhase1Hp - 1);
-            int ragePhase2Hp = Mathf.Clamp(Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase2Hp, 2, ragePhase2Max);
-            int ragePhase3Max = Mathf.Max(1, ragePhase2Hp - 1);
-            int ragePhase3Hp = Mathf.Clamp(Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase3Hp, 1, ragePhase3Max);
-
-            Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase1Hp = ragePhase1Hp;
-            Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase2Hp = ragePhase2Hp;
-            Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase3Hp = ragePhase3Hp;
+            Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase1Hp = value;
+            ClampNightmareKingGrimmPhaseThresholdsForUi();
 
             if (Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmUseCustomPhase)
             {
@@ -4736,15 +4764,8 @@ public sealed partial class QuickMenu : Module
                 return;
             }
 
-            int ragePhase1Hp = Mathf.Clamp(Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase1Hp, 3, 1650);
-            Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase1Hp = ragePhase1Hp;
-            int ragePhase2Max = Mathf.Max(2, ragePhase1Hp - 1);
-            int ragePhase2Hp = Mathf.Clamp(value, 2, ragePhase2Max);
-            int ragePhase3Max = Mathf.Max(1, ragePhase2Hp - 1);
-            int ragePhase3Hp = Mathf.Clamp(Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase3Hp, 1, ragePhase3Max);
-
-            Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase2Hp = ragePhase2Hp;
-            Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase3Hp = ragePhase3Hp;
+            Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase2Hp = value;
+            ClampNightmareKingGrimmPhaseThresholdsForUi();
 
             if (Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmUseCustomPhase)
             {
@@ -4762,13 +4783,8 @@ public sealed partial class QuickMenu : Module
                 return;
             }
 
-            int ragePhase1Hp = Mathf.Clamp(Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase1Hp, 3, 1650);
-            Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase1Hp = ragePhase1Hp;
-            int ragePhase2Max = Mathf.Max(2, ragePhase1Hp - 1);
-            int ragePhase2Hp = Mathf.Clamp(Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase2Hp, 2, ragePhase2Max);
-            Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase2Hp = ragePhase2Hp;
-            int ragePhase3Hp = Mathf.Clamp(value, 1, Mathf.Max(1, ragePhase2Hp - 1));
-            Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase3Hp = ragePhase3Hp;
+            Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase3Hp = value;
+            ClampNightmareKingGrimmPhaseThresholdsForUi();
 
             if (Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmUseCustomPhase)
             {
@@ -4880,9 +4896,7 @@ public sealed partial class QuickMenu : Module
                 return;
             }
 
-            int phase2Hp = Mathf.Clamp(Modules.BossChallenge.PureVesselHelper.pureVesselPhase2Hp, 2, 1850);
-            Modules.BossChallenge.PureVesselHelper.pureVesselPhase2Hp = phase2Hp;
-            Modules.BossChallenge.PureVesselHelper.pureVesselPhase3Hp = Mathf.Clamp(Modules.BossChallenge.PureVesselHelper.pureVesselPhase3Hp, 1, Mathf.Max(1, phase2Hp - 1));
+            ClampPureVesselPhaseThresholdsForUi();
             Modules.BossChallenge.PureVesselHelper.pureVesselUseCustomPhase = value;
             Modules.BossChallenge.PureVesselHelper.ReapplyLiveSettings();
             RefreshPureVesselHelperUi();
@@ -4904,10 +4918,13 @@ public sealed partial class QuickMenu : Module
             }
 
             Modules.BossChallenge.PureVesselHelper.pureVesselMaxHp = Mathf.Clamp(value, 1, 999999);
-            if (Modules.BossChallenge.PureVesselHelper.pureVesselUseMaxHp)
+            ClampPureVesselPhaseThresholdsForUi();
+            if (Modules.BossChallenge.PureVesselHelper.pureVesselUseMaxHp || Modules.BossChallenge.PureVesselHelper.pureVesselUseCustomPhase)
             {
-                Modules.BossChallenge.PureVesselHelper.ApplyPureVesselHealthIfPresent();
+                Modules.BossChallenge.PureVesselHelper.ReapplyLiveSettings();
             }
+
+            RefreshPureVesselHelperUi();
         }
 
         private void SetPureVesselPhase2Hp(int value)
@@ -4918,7 +4935,7 @@ public sealed partial class QuickMenu : Module
                 return;
             }
 
-            int phase2Hp = Mathf.Clamp(value, 2, 1850);
+            int phase2Hp = Mathf.Clamp(value, 2, Modules.BossChallenge.PureVesselHelper.GetPhase2MaxHpForUi());
             Modules.BossChallenge.PureVesselHelper.pureVesselPhase2Hp = phase2Hp;
             Modules.BossChallenge.PureVesselHelper.pureVesselPhase3Hp = Mathf.Clamp(Modules.BossChallenge.PureVesselHelper.pureVesselPhase3Hp, 1, Mathf.Max(1, phase2Hp - 1));
 
@@ -4938,9 +4955,9 @@ public sealed partial class QuickMenu : Module
                 return;
             }
 
-            int phase2Hp = Mathf.Clamp(Modules.BossChallenge.PureVesselHelper.pureVesselPhase2Hp, 2, 1850);
+            int phase2Hp = Mathf.Clamp(Modules.BossChallenge.PureVesselHelper.pureVesselPhase2Hp, 2, Modules.BossChallenge.PureVesselHelper.GetPhase2MaxHpForUi());
             Modules.BossChallenge.PureVesselHelper.pureVesselPhase2Hp = phase2Hp;
-            Modules.BossChallenge.PureVesselHelper.pureVesselPhase3Hp = Mathf.Clamp(value, 1, Mathf.Max(1, phase2Hp - 1));
+            Modules.BossChallenge.PureVesselHelper.pureVesselPhase3Hp = Mathf.Clamp(value, 1, Modules.BossChallenge.PureVesselHelper.GetPhase3MaxHpForUi());
 
             if (Modules.BossChallenge.PureVesselHelper.pureVesselUseCustomPhase)
             {
@@ -4948,6 +4965,21 @@ public sealed partial class QuickMenu : Module
             }
 
             RefreshPureVesselHelperUi();
+        }
+
+        private static void ClampPureVesselPhaseThresholdsForUi()
+        {
+            int phase2Hp = Mathf.Clamp(
+                Modules.BossChallenge.PureVesselHelper.pureVesselPhase2Hp,
+                2,
+                Modules.BossChallenge.PureVesselHelper.GetPhase2MaxHpForUi()
+            );
+            Modules.BossChallenge.PureVesselHelper.pureVesselPhase2Hp = phase2Hp;
+            Modules.BossChallenge.PureVesselHelper.pureVesselPhase3Hp = Mathf.Clamp(
+                Modules.BossChallenge.PureVesselHelper.pureVesselPhase3Hp,
+                1,
+                Mathf.Max(1, phase2Hp - 1)
+            );
         }
 
         private void RefreshPureVesselHelperUi()
@@ -9446,7 +9478,7 @@ public sealed partial class QuickMenu : Module
                 () => Modules.BossChallenge.HiveKnightHelper.hiveKnightPhase2Hp,
                 SetHiveKnightPhase2Hp,
                 2,
-                1300,
+                999999,
                 10,
                 out hiveKnightPhase2HpField
             );
@@ -9461,7 +9493,7 @@ public sealed partial class QuickMenu : Module
                 () => Modules.BossChallenge.HiveKnightHelper.hiveKnightPhase3Hp,
                 SetHiveKnightPhase3Hp,
                 1,
-                1299,
+                999998,
                 10,
                 out hiveKnightPhase3HpField
             );
@@ -10907,7 +10939,7 @@ public sealed partial class QuickMenu : Module
                 () => Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase1Hp,
                 SetNightmareKingGrimmRagePhase1Hp,
                 3,
-                1650,
+                999999,
                 10,
                 out nightmareKingGrimmRagePhase1HpField
             );
@@ -10922,7 +10954,7 @@ public sealed partial class QuickMenu : Module
                 () => Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase2Hp,
                 SetNightmareKingGrimmRagePhase2Hp,
                 2,
-                1649,
+                999998,
                 10,
                 out nightmareKingGrimmRagePhase2HpField
             );
@@ -10937,7 +10969,7 @@ public sealed partial class QuickMenu : Module
                 () => Modules.BossChallenge.NightmareKingGrimmHelper.nightmareKingGrimmRagePhase3Hp,
                 SetNightmareKingGrimmRagePhase3Hp,
                 1,
-                1648,
+                999997,
                 10,
                 out nightmareKingGrimmRagePhase3HpField
             );
@@ -11084,7 +11116,7 @@ public sealed partial class QuickMenu : Module
                 () => Modules.BossChallenge.PureVesselHelper.pureVesselPhase2Hp,
                 SetPureVesselPhase2Hp,
                 2,
-                1850,
+                999999,
                 10,
                 out pureVesselPhase2HpField
             );
@@ -11099,7 +11131,7 @@ public sealed partial class QuickMenu : Module
                 () => Modules.BossChallenge.PureVesselHelper.pureVesselPhase3Hp,
                 SetPureVesselPhase3Hp,
                 1,
-                1849,
+                999998,
                 10,
                 out pureVesselPhase3HpField
             );

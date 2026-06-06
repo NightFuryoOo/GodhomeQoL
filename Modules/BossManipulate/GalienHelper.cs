@@ -9,7 +9,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class GalienHelper : Module
 {
     private const string GalienScene = "GG_Ghost_Galien";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string GalienName = "Ghost Warrior Galien";
     private const string GalienPhaseFsmName = "Summon Minis";
     private const string GalienPhaseCheckState1Name = "Check";
@@ -80,6 +79,7 @@ public sealed class GalienHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         NormalizePhaseThresholdState();
         vanillaHpByInstance.Clear();
@@ -507,7 +507,7 @@ public sealed class GalienHelper : Module
     {
         if (string.Equals(nextScene, GalienScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

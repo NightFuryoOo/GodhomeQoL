@@ -7,7 +7,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class GruzMotherP1Helper : Module
 {
     private const string GruzScene = "GG_Gruz_Mother";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string GruzName = "Giant Fly";
     private const int DefaultGruzMaxHp = 650;
     private const int DefaultGruzVanillaHp = 945;
@@ -30,6 +29,7 @@ public sealed class GruzMotherP1Helper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         vanillaHpByInstance.Clear();
         On.HealthManager.Awake += OnHealthManagerAwake;
         On.HealthManager.Start += OnHealthManagerStart;
@@ -235,7 +235,7 @@ public sealed class GruzMotherP1Helper : Module
     {
         if (string.Equals(nextScene, GruzScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

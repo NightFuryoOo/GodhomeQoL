@@ -1,4 +1,4 @@
-﻿using Satchel.BetterMenus;
+using Satchel.BetterMenus;
 
 namespace GodhomeQoL.Modules.CollectorPhases;
 

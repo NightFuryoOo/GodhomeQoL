@@ -9,7 +9,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class WhiteDefenderHelper : Module
 {
     private const string WhiteDefenderScene = "GG_White_Defender";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string WhiteDefenderName = "White Defender";
     private const string WhiteDefenderPhaseFsmName = "Dung Defender";
     private const string WhiteDefenderPhaseCheckStateName = "Rage?";
@@ -63,6 +62,7 @@ public sealed class WhiteDefenderHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         NormalizePhaseThresholdState();
         vanillaHpByInstance.Clear();
@@ -405,7 +405,7 @@ public sealed class WhiteDefenderHelper : Module
     {
         if (string.Equals(nextScene, WhiteDefenderScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

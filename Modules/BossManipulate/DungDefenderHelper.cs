@@ -9,7 +9,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class DungDefenderHelper : Module
 {
     private const string DungDefenderScene = "GG_Dung_Defender";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string DungDefenderName = "Dung Defender";
     private const string DungDefenderPhaseFsmName = "Dung Defender";
     private const string DungDefenderPhaseCheckStateName = "Rage?";
@@ -66,6 +65,7 @@ public sealed class DungDefenderHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         NormalizePhaseThresholdState();
         vanillaHpByInstance.Clear();
@@ -319,6 +319,25 @@ public sealed class DungDefenderHelper : Module
         }
 
         ApplyPhaseThresholdSettings(self);
+        _ = self.StartCoroutine(DeferredApplyPhaseThresholds(self));
+    }
+
+    private static IEnumerator DeferredApplyPhaseThresholds(PlayMakerFSM fsm)
+    {
+        yield return null;
+
+        if (!moduleActive || fsm == null || fsm.gameObject == null || !IsDungDefenderPhaseControlFsm(fsm))
+        {
+            yield break;
+        }
+
+        ApplyPhaseThresholdSettings(fsm);
+
+        yield return new WaitForSeconds(0.01f);
+        if (moduleActive && fsm != null && fsm.gameObject != null && IsDungDefenderPhaseControlFsm(fsm))
+        {
+            ApplyPhaseThresholdSettings(fsm);
+        }
     }
 
     private static IEnumerator DeferredApply(HealthManager hm)
@@ -450,7 +469,7 @@ public sealed class DungDefenderHelper : Module
     {
         if (string.Equals(nextScene, DungDefenderScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }
@@ -583,6 +602,8 @@ public sealed class DungDefenderHelper : Module
             {
                 continue;
             }
+
+            ApplyPhaseThresholdSettings(fsm);
 
             FsmBool? ragedFlag = fsm.FsmVariables.GetFsmBool(DungDefenderRagedVariableName);
             if (ragedFlag != null && ragedFlag.Value)

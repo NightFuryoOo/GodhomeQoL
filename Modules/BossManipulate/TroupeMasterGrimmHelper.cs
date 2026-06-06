@@ -9,7 +9,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class TroupeMasterGrimmHelper : Module
 {
     private const string TroupeMasterGrimmScene = "GG_Grimm";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string TroupeMasterGrimmName = "Grimm Boss";
     private const string RagePhase1VariableName = "Rage HP 1";
     private const string RagePhase2VariableName = "Rage HP 2";
@@ -80,6 +79,7 @@ public sealed class TroupeMasterGrimmHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         NormalizePhaseThresholdState();
         vanillaHpByInstance.Clear();
@@ -435,7 +435,7 @@ public sealed class TroupeMasterGrimmHelper : Module
     {
         if (string.Equals(nextScene, TroupeMasterGrimmScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

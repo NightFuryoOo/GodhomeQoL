@@ -7,7 +7,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class MassiveMossChargerHelper : Module
 {
     private const string MassiveMossScene = "GG_Mega_Moss_Charger";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string MassiveMossName = "Mega Moss Charger";
     private const int DefaultMassiveMossMaxHp = 850;
     private const int DefaultMassiveMossVanillaHp = 850;
@@ -44,6 +43,7 @@ public sealed class MassiveMossChargerHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         vanillaHpByInstance.Clear();
         On.HealthManager.Awake += OnHealthManagerAwake_MassiveMoss;
@@ -298,7 +298,7 @@ public sealed class MassiveMossChargerHelper : Module
     {
         if (string.Equals(nextScene, MassiveMossScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }
@@ -455,5 +455,3 @@ public sealed class MassiveMossChargerHelper : Module
         return value > MaxMassiveMossHp ? MaxMassiveMossHp : value;
     }
 }
-
-

@@ -7,7 +7,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class PaintmasterSheoHelper : Module
 {
     private const string PaintmasterSheoScene = "GG_Painter";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string PaintmasterSheoName = "Sheo Boss";
     private const int DefaultPaintmasterSheoMaxHp = 1450;
     private const int DefaultPaintmasterSheoVanillaHp = 1450;
@@ -44,6 +43,7 @@ public sealed class PaintmasterSheoHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         vanillaHpByInstance.Clear();
         On.HealthManager.Awake += OnHealthManagerAwake;
@@ -298,7 +298,7 @@ public sealed class PaintmasterSheoHelper : Module
     {
         if (string.Equals(nextScene, PaintmasterSheoScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

@@ -7,7 +7,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class MarmuP2Helper : Module
 {
     private const string MarmuScene = "GG_Ghost_Marmu";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string MarmuName = "Ghost Warrior Marmu";
     private const int DefaultMarmuMaxHp = 416;
     private const int DefaultMarmuVanillaHp = 416;
@@ -30,6 +29,7 @@ public sealed class MarmuP2Helper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         vanillaHpByInstance.Clear();
         On.HealthManager.Awake += OnHealthManagerAwake;
         On.HealthManager.Start += OnHealthManagerStart;
@@ -235,7 +235,7 @@ public sealed class MarmuP2Helper : Module
     {
         if (string.Equals(nextScene, MarmuScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

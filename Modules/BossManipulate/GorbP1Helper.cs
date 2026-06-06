@@ -9,7 +9,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class GorbP1Helper : Module
 {
     private const string GorbScene = "GG_Ghost_Gorb";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string GorbName = "Ghost Warrior Slug";
     private const string GorbPhaseFsmName = "Attacking";
     private const string GorbPhaseCheckState1Name = "Double?";
@@ -55,6 +54,7 @@ public sealed class GorbP1Helper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizePhaseThresholdState();
         vanillaHpByInstance.Clear();
         vanillaPhaseThresholdsByFsm.Clear();
@@ -415,7 +415,7 @@ public sealed class GorbP1Helper : Module
     {
         if (string.Equals(nextScene, GorbScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

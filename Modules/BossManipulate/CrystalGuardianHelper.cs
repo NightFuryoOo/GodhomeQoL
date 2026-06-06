@@ -7,7 +7,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class CrystalGuardianHelper : Module
 {
     private const string CrystalGuardianScene = "GG_Crystal_Guardian";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string CrystalGuardianName = "Mega Zombie Beam Miner (1)";
     private const int DefaultCrystalGuardianMaxHp = 900;
     private const int DefaultCrystalGuardianVanillaHp = 900;
@@ -44,6 +43,7 @@ public sealed class CrystalGuardianHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         vanillaHpByInstance.Clear();
         On.HealthManager.Awake += OnHealthManagerAwake_CrystalGuardian;
@@ -298,7 +298,7 @@ public sealed class CrystalGuardianHelper : Module
     {
         if (string.Equals(nextScene, CrystalGuardianScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }
@@ -455,5 +455,3 @@ public sealed class CrystalGuardianHelper : Module
         return value > MaxCrystalGuardianHp ? MaxCrystalGuardianHp : value;
     }
 }
-
-

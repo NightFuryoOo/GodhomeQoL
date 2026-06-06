@@ -9,7 +9,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class PureVesselHelper : Module
 {
     private const string PureVesselScene = "GG_Hollow_Knight";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string PureVesselName = "HK Prime";
     private const string PureVesselPhase2VariableName = "Half HP";
     private const string PureVesselPhase3VariableName = "Quarter HP";
@@ -21,7 +20,6 @@ public sealed class PureVesselHelper : Module
     private const int MinPureVesselHp = 1;
     private const int MaxPureVesselHp = 999999;
     private const int MinPureVesselPhase2Hp = 2;
-    private const int MaxPureVesselPhase2Hp = DefaultPureVesselVanillaHp;
     private const int MinPureVesselPhase3Hp = 1;
 
     [LocalSetting]
@@ -71,6 +69,7 @@ public sealed class PureVesselHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         NormalizePhaseThresholdState();
         vanillaHpByInstance.Clear();
@@ -328,6 +327,25 @@ public sealed class PureVesselHelper : Module
         }
 
         ApplyPhaseThresholdSettings(self);
+        _ = self.StartCoroutine(DeferredApplyPhaseThresholds(self));
+    }
+
+    private static IEnumerator DeferredApplyPhaseThresholds(PlayMakerFSM fsm)
+    {
+        yield return null;
+
+        if (!moduleActive || fsm == null || fsm.gameObject == null || !IsPureVesselPhaseControlFsm(fsm))
+        {
+            yield break;
+        }
+
+        ApplyPhaseThresholdSettings(fsm);
+
+        yield return new WaitForSeconds(0.01f);
+        if (moduleActive && fsm != null && fsm.gameObject != null && IsPureVesselPhaseControlFsm(fsm))
+        {
+            ApplyPhaseThresholdSettings(fsm);
+        }
     }
 
     private static IEnumerator DeferredApply(HealthManager hm)
@@ -348,6 +366,8 @@ public sealed class PureVesselHelper : Module
                 ApplyPureVesselHealth(hm.gameObject, hm);
             }
         }
+
+        ApplyPhaseThresholdSettingsIfPresent();
     }
 
     private static void SceneManager_activeSceneChanged(Scene from, Scene to)
@@ -421,7 +441,7 @@ public sealed class PureVesselHelper : Module
     {
         if (string.Equals(nextScene, PureVesselScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }
@@ -675,14 +695,32 @@ public sealed class PureVesselHelper : Module
         return value > MaxPureVesselHp ? MaxPureVesselHp : value;
     }
 
+    internal static int GetPhase2MaxHpForUi() => ResolvePhase2MaxHp();
+
+    internal static int GetPhase3MaxHpForUi()
+    {
+        int clampedPhase2Hp = ClampPureVesselPhase2Hp(pureVesselPhase2Hp);
+        return Math.Max(MinPureVesselPhase3Hp, clampedPhase2Hp - 1);
+    }
+
     private static int ClampPureVesselPhase2Hp(int value)
     {
+        int maxPhase2Hp = ResolvePhase2MaxHp();
         if (value < MinPureVesselPhase2Hp)
         {
             return MinPureVesselPhase2Hp;
         }
 
-        return value > MaxPureVesselPhase2Hp ? MaxPureVesselPhase2Hp : value;
+        return value > maxPhase2Hp ? maxPhase2Hp : value;
+    }
+
+    private static int ResolvePhase2MaxHp()
+    {
+        int referenceHp = pureVesselUseMaxHp || pureVesselP5Hp
+            ? pureVesselMaxHp
+            : DefaultPureVesselVanillaHp;
+
+        return Math.Max(MinPureVesselPhase2Hp, ClampPureVesselHp(referenceHp));
     }
 
     private static int ClampPureVesselPhase3Hp(int value, int phase2Hp)

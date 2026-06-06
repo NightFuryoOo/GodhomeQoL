@@ -9,7 +9,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class AbsoluteRadianceHelper : Module
 {
     private const string AbsoluteRadianceScene = "GG_Radiance";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string AbsoluteRadianceName = "Absolute Radiance";
     private const string AbsoluteRadianceControlFsmName = "Control";
     private const string AbsoluteRadiancePhaseControlFsmName = "Phase Control";
@@ -97,6 +96,7 @@ public sealed class AbsoluteRadianceHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         NormalizeCustomPhaseThresholdState();
         vanillaHpByInstance.Clear();
@@ -496,7 +496,7 @@ public sealed class AbsoluteRadianceHelper : Module
     {
         if (string.Equals(nextScene, AbsoluteRadianceScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

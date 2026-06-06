@@ -1,4 +1,4 @@
-﻿using Modding;
+using Modding;
 using Satchel;
 using Satchel.Futils;
 
@@ -7,7 +7,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class ElderHuHelper : Module
 {
     private const string ElderHuScene = "GG_Ghost_Hu";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string ElderHuName = "Ghost Warrior Hu";
     private const int DefaultElderHuMaxHp = 800;
     private const int DefaultElderHuVanillaHp = 800;
@@ -44,6 +43,7 @@ public sealed class ElderHuHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         vanillaHpByInstance.Clear();
         On.HealthManager.Awake += OnHealthManagerAwake;
@@ -298,7 +298,7 @@ public sealed class ElderHuHelper : Module
     {
         if (string.Equals(nextScene, ElderHuScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

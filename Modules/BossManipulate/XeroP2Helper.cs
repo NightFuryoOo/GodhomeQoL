@@ -9,7 +9,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class XeroP2Helper : Module
 {
     private const string XeroScene = "GG_Ghost_Xero";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string XeroName = "Ghost Warrior Xero";
     private const string XeroPhaseFsmName = "Sword Summon";
     private const string XeroPhaseCheckStateName = "Check";
@@ -46,6 +45,7 @@ public sealed class XeroP2Helper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizePhaseThresholdState();
         vanillaHpByInstance.Clear();
         On.HealthManager.Awake += OnHealthManagerAwake;
@@ -318,7 +318,7 @@ public sealed class XeroP2Helper : Module
     {
         if (string.Equals(nextScene, XeroScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

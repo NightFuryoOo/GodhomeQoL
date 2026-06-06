@@ -931,6 +931,7 @@ public sealed partial class QuickMenu : Module
                 return;
             }
 
+            ClampHornetSentinelPhaseThresholdsForUi();
             Modules.BossChallenge.HornetSentinelHelper.hornetSentinelUseCustomPhase = value;
             Modules.BossChallenge.HornetSentinelHelper.ReapplyLiveSettings();
             RefreshHornetSentinelHelperUi();
@@ -952,10 +953,14 @@ public sealed partial class QuickMenu : Module
             }
 
             Modules.BossChallenge.HornetSentinelHelper.hornetSentinelMaxHp = Mathf.Clamp(value, 1, 999999);
-            if (Modules.BossChallenge.HornetSentinelHelper.hornetSentinelUseMaxHp)
+            ClampHornetSentinelPhaseThresholdsForUi();
+            if (Modules.BossChallenge.HornetSentinelHelper.hornetSentinelUseMaxHp
+                || Modules.BossChallenge.HornetSentinelHelper.hornetSentinelUseCustomPhase)
             {
-                Modules.BossChallenge.HornetSentinelHelper.ApplyHornetSentinelHealthIfPresent();
+                Modules.BossChallenge.HornetSentinelHelper.ReapplyLiveSettings();
             }
+
+            RefreshHornetSentinelHelperUi();
         }
 
         private void SetHornetSentinelPhase2Hp(int value)
@@ -966,11 +971,23 @@ public sealed partial class QuickMenu : Module
                 return;
             }
 
-            Modules.BossChallenge.HornetSentinelHelper.hornetSentinelPhase2Hp = Mathf.Clamp(value, 1, 1200);
+            Modules.BossChallenge.HornetSentinelHelper.hornetSentinelPhase2Hp = value;
+            ClampHornetSentinelPhaseThresholdsForUi();
             if (Modules.BossChallenge.HornetSentinelHelper.hornetSentinelUseCustomPhase)
             {
-                Modules.BossChallenge.HornetSentinelHelper.ApplyPhaseThresholdSettingsIfPresent();
+                Modules.BossChallenge.HornetSentinelHelper.ReapplyLiveSettings();
             }
+
+            RefreshHornetSentinelHelperUi();
+        }
+
+        private static void ClampHornetSentinelPhaseThresholdsForUi()
+        {
+            Modules.BossChallenge.HornetSentinelHelper.hornetSentinelPhase2Hp = Mathf.Clamp(
+                Modules.BossChallenge.HornetSentinelHelper.hornetSentinelPhase2Hp,
+                1,
+                Modules.BossChallenge.HornetSentinelHelper.GetPhase2MaxHpForUi()
+            );
         }
 
         private static void ReapplyCollectorPhasesLiveSettings()

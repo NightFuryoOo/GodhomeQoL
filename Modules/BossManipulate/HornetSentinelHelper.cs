@@ -9,7 +9,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class HornetSentinelHelper : Module
 {
     private const string HornetSentinelScene = "GG_Hornet_2";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string HornetSentinelName = "Hornet Boss 2";
     private const int DefaultHornetSentinelMaxHp = 1200;
     private const int DefaultHornetSentinelVanillaHp = 1200;
@@ -18,7 +17,6 @@ public sealed class HornetSentinelHelper : Module
     private const int MinHornetSentinelHp = 1;
     private const int MaxHornetSentinelHp = 999999;
     private const int MinHornetSentinelPhase2Hp = 1;
-    private const int MaxHornetSentinelPhase2Hp = DefaultHornetSentinelVanillaHp;
 
     [LocalSetting]
     [BoolOption]
@@ -62,7 +60,9 @@ public sealed class HornetSentinelHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
+        NormalizePhaseThresholdState();
         vanillaHpByInstance.Clear();
         vanillaPhase2HpByFsm.Clear();
         On.HealthManager.Awake += OnHealthManagerAwake_HornetSentinel;
@@ -141,6 +141,11 @@ public sealed class HornetSentinelHelper : Module
         }
 
         ReapplyLiveSettings();
+    }
+
+    private static void NormalizePhaseThresholdState()
+    {
+        hornetSentinelPhase2Hp = ClampHornetSentinelPhase2Hp(hornetSentinelPhase2Hp);
     }
 
     private static void NormalizeP5State()
@@ -380,7 +385,7 @@ public sealed class HornetSentinelHelper : Module
     {
         if (string.Equals(nextScene, HornetSentinelScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }
@@ -649,11 +654,25 @@ public sealed class HornetSentinelHelper : Module
 
     private static int ClampHornetSentinelPhase2Hp(int value)
     {
+        int maxPhase2Hp = ResolvePhase2MaxHp();
+
         if (value < MinHornetSentinelPhase2Hp)
         {
             return MinHornetSentinelPhase2Hp;
         }
 
-        return value > MaxHornetSentinelPhase2Hp ? MaxHornetSentinelPhase2Hp : value;
+        return value > maxPhase2Hp ? maxPhase2Hp : value;
+    }
+
+    private static int ResolvePhase2MaxHp()
+    {
+        return ShouldUseCustomHp()
+            ? ClampHornetSentinelHp(hornetSentinelMaxHp)
+            : DefaultHornetSentinelVanillaHp;
+    }
+
+    internal static int GetPhase2MaxHpForUi()
+    {
+        return ResolvePhase2MaxHp();
     }
 }

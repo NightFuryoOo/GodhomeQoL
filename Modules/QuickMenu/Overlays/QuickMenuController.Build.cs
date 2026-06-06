@@ -4638,7 +4638,7 @@ public sealed partial class QuickMenu : Module
                 () => Modules.BossChallenge.HornetSentinelHelper.hornetSentinelPhase2Hp,
                 SetHornetSentinelPhase2Hp,
                 1,
-                1200,
+                999999,
                 10,
                 out hornetSentinelPhase2HpField
             );

@@ -1,4 +1,4 @@
-﻿using Modding;
+using Modding;
 using Satchel;
 using Satchel.Futils;
 using HutongGames.PlayMaker;
@@ -9,7 +9,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class XeroHelper : Module
 {
     private const string XeroScene = "GG_Ghost_Xero_V";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string XeroName = "Ghost Warrior Xero";
     private const string XeroPhaseFsmName = "Sword Summon";
     private const string XeroPhaseCheckStateName = "Check";
@@ -66,6 +65,7 @@ public sealed class XeroHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         NormalizePhaseThresholdState();
         vanillaHpByInstance.Clear();
@@ -397,7 +397,7 @@ public sealed class XeroHelper : Module
     {
         if (string.Equals(nextScene, XeroScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

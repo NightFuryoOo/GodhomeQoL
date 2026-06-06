@@ -7,7 +7,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class WatcherKnightHelper : Module
 {
     private const string WatcherKnightScene = "GG_Watcher_Knights";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string WatcherKnightNamePrefix = "Black Knight ";
     private const int WatcherKnightCount = 6;
     private const int DefaultWatcherKnightHp = 600;
@@ -67,6 +66,7 @@ public sealed class WatcherKnightHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         vanillaHpByInstance.Clear();
         On.HealthManager.Awake += OnHealthManagerAwake_WatcherKnight;
@@ -335,7 +335,7 @@ public sealed class WatcherKnightHelper : Module
     {
         if (string.Equals(nextScene, WatcherKnightScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

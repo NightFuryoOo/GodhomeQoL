@@ -9,7 +9,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class BrokenVesselHelper : Module
 {
     private const string BrokenVesselScene = "GG_Broken_Vessel";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string BrokenVesselName = "Infected Knight";
     private static readonly string[] BrokenVesselSummonNameHints = { "Bursting", "Bouncer", "Balloon", "Zombie" };
     private const string BrokenVesselSpawnBalloonFsmName = "Spawn Balloon";
@@ -129,6 +128,7 @@ public sealed class BrokenVesselHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         NormalizePhaseThresholdState();
         vanillaHpByInstance.Clear();
@@ -870,7 +870,7 @@ public sealed class BrokenVesselHelper : Module
     {
         if (string.Equals(nextScene, BrokenVesselScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }

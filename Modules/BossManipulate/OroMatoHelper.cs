@@ -7,7 +7,6 @@ namespace GodhomeQoL.Modules.BossChallenge;
 public sealed class OroMatoHelper : Module
 {
     private const string OroMatoScene = "GG_Nailmasters";
-    private const string HoGWorkshopScene = "GG_Workshop";
     private const string OroName = "Oro";
     private const string MatoName = "Mato";
     private const int DefaultOroPhase1Hp = 800;
@@ -54,6 +53,7 @@ public sealed class OroMatoHelper : Module
     private protected override void Load()
     {
         moduleActive = true;
+        BossManipulateEntryGuard.EnsureHooks();
         NormalizeP5State();
         vanillaHpByInstance.Clear();
         oroPhase2ByInstance.Clear();
@@ -338,7 +338,7 @@ public sealed class OroMatoHelper : Module
     {
         if (string.Equals(nextScene, OroMatoScene, StringComparison.Ordinal))
         {
-            if (string.Equals(currentScene, HoGWorkshopScene, StringComparison.Ordinal))
+            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
             {
                 hoGEntryAllowed = true;
             }
