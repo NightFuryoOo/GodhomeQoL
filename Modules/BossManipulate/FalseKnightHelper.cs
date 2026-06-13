@@ -52,6 +52,9 @@ public sealed class FalseKnightHelper : Module
     private static readonly Dictionary<int, int> vanillaArmorHpByInstance = new();
     private static readonly Dictionary<int, int> vanillaRecoverHpByFsm = new();
     private static readonly Dictionary<int, int> trackedPhaseByArmorInstance = new();
+    private static readonly Dictionary<int, int> appliedHeadKillsByArmorInstance = new();
+    private static readonly Dictionary<int, int> lastHeadHpByInstance = new();
+    private static int confirmedHeadKillCount;
     private static bool moduleActive;
     private static bool hoGEntryAllowed;
 
@@ -66,6 +69,9 @@ public sealed class FalseKnightHelper : Module
         vanillaArmorHpByInstance.Clear();
         vanillaRecoverHpByFsm.Clear();
         trackedPhaseByArmorInstance.Clear();
+        appliedHeadKillsByArmorInstance.Clear();
+        lastHeadHpByInstance.Clear();
+        confirmedHeadKillCount = 0;
         On.HealthManager.Awake += OnHealthManagerAwake;
         On.HealthManager.Start += OnHealthManagerStart;
         On.HealthManager.Update += OnHealthManagerUpdate;
@@ -89,6 +95,9 @@ public sealed class FalseKnightHelper : Module
         vanillaArmorHpByInstance.Clear();
         vanillaRecoverHpByFsm.Clear();
         trackedPhaseByArmorInstance.Clear();
+        appliedHeadKillsByArmorInstance.Clear();
+        lastHeadHpByInstance.Clear();
+        confirmedHeadKillCount = 0;
         hoGEntryAllowed = false;
     }
 
@@ -169,6 +178,7 @@ public sealed class FalseKnightHelper : Module
         }
 
         trackedPhaseByArmorInstance.Clear();
+        appliedHeadKillsByArmorInstance.Clear();
     }
 
     private static void OnHealthManagerAwake(On.HealthManager.orig_Awake orig, HealthManager self)
@@ -208,7 +218,18 @@ public sealed class FalseKnightHelper : Module
     {
         orig(self);
 
-        if (!moduleActive || self == null || self.gameObject == null || !IsArmor(self) || !ShouldApplySettings(self.gameObject))
+        if (!moduleActive || self == null || self.gameObject == null || !ShouldApplySettings(self.gameObject))
+        {
+            return;
+        }
+
+        if (IsHead(self))
+        {
+            TrackHeadHealth(self);
+            return;
+        }
+
+        if (!IsArmor(self))
         {
             return;
         }
@@ -281,6 +302,9 @@ public sealed class FalseKnightHelper : Module
             vanillaArmorHpByInstance.Clear();
             vanillaRecoverHpByFsm.Clear();
             trackedPhaseByArmorInstance.Clear();
+            appliedHeadKillsByArmorInstance.Clear();
+            lastHeadHpByInstance.Clear();
+            confirmedHeadKillCount = 0;
             return;
         }
 
@@ -336,6 +360,36 @@ public sealed class FalseKnightHelper : Module
         GameObject gameObject = hm.gameObject;
         return IsFalseKnightScene(gameObject.scene.name)
             && gameObject.name.StartsWith(ArmorNamePrefix, StringComparison.Ordinal);
+    }
+
+    private static bool IsHead(HealthManager hm)
+    {
+        if (hm == null || hm.gameObject == null)
+        {
+            return false;
+        }
+
+        GameObject gameObject = hm.gameObject;
+        if (!IsFalseKnightScene(gameObject.scene.name))
+        {
+            return false;
+        }
+
+        string objectName = gameObject.name;
+        return objectName.IndexOf("Head", StringComparison.OrdinalIgnoreCase) >= 0
+            || objectName.IndexOf("Hornhead", StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
+    private static void TrackHeadHealth(HealthManager headHm)
+    {
+        int instanceId = headHm.GetInstanceID();
+        int hp = Math.Max(headHm.hp, 0);
+        if (lastHeadHpByInstance.TryGetValue(instanceId, out int lastHp) && lastHp > 0 && hp <= 0)
+        {
+            confirmedHeadKillCount = Math.Min(confirmedHeadKillCount + 1, 2);
+        }
+
+        lastHeadHpByInstance[instanceId] = hp;
     }
 
     private static bool ShouldApplySettings(GameObject? gameObject)
@@ -401,17 +455,26 @@ public sealed class FalseKnightHelper : Module
     private static void ApplyPhaseSettings(HealthManager armorHm, bool forceReapply)
     {
         int armorInstanceId = armorHm.GetInstanceID();
-        int phase = ResolvePhase(armorHm);
-        bool phaseChanged = !trackedPhaseByArmorInstance.TryGetValue(armorInstanceId, out int trackedPhase) || trackedPhase != phase;
+        int phase = Math.Max(ResolvePhase(armorHm), confirmedHeadKillCount + 1);
+        bool firstApply = !trackedPhaseByArmorInstance.TryGetValue(armorInstanceId, out int trackedPhase);
+        bool phaseChanged = firstApply || trackedPhase != phase;
+        int appliedHeadKills = appliedHeadKillsByArmorInstance.TryGetValue(armorInstanceId, out int appliedKills)
+            ? appliedKills
+            : 0;
+        bool confirmedHeadPhaseAdvance = confirmedHeadKillCount > appliedHeadKills;
         if (!phaseChanged && !forceReapply)
         {
             return;
         }
 
         trackedPhaseByArmorInstance[armorInstanceId] = phase;
+        if (confirmedHeadPhaseAdvance)
+        {
+            appliedHeadKillsByArmorInstance[armorInstanceId] = confirmedHeadKillCount;
+        }
 
         int armorHp = GetArmorHpForPhase(phase);
-        ApplyArmorHealth(armorHm, armorHp);
+        ApplyArmorHealth(armorHm, armorHp, resetCurrentHp: firstApply || confirmedHeadPhaseAdvance);
         ApplyRecoverHp(armorHm.gameObject, armorHp);
     }
 
@@ -425,7 +488,7 @@ public sealed class FalseKnightHelper : Module
         };
     }
 
-    private static void ApplyArmorHealth(HealthManager armorHm, int hp)
+    private static void ApplyArmorHealth(HealthManager armorHm, int hp, bool resetCurrentHp)
     {
         if (armorHm == null || armorHm.gameObject == null)
         {
@@ -434,9 +497,11 @@ public sealed class FalseKnightHelper : Module
 
         RememberVanillaArmorHp(armorHm);
         int targetHp = ClampHp(hp);
-        armorHm.gameObject.manageHealth(targetHp);
-        armorHm.hp = targetHp;
         TrySetMaxHp(armorHm, targetHp);
+        if (resetCurrentHp || armorHm.hp > targetHp)
+        {
+            armorHm.hp = targetHp;
+        }
     }
 
     private static void ApplyRecoverHp(GameObject armorObject, int hp)
