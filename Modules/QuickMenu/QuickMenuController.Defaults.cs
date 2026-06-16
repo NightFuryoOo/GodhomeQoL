@@ -1196,6 +1196,7 @@ public sealed partial class QuickMenu : Module
             bossAnimMasterHasSnapshot = true;
             bossAnimSavedHallOfGods = Modules.QoL.SkipCutscenes.HallOfGodsStatues;
             bossAnimSavedAbsoluteRadiance = Modules.QoL.SkipCutscenes.AbsoluteRadiance;
+            bossAnimSavedPantheonVEnding = Modules.QoL.SkipCutscenes.PantheonVEnding;
             bossAnimSavedPureVesselRoar = Modules.QoL.SkipCutscenes.PureVesselRoar;
             bossAnimSavedGrimmNightmare = Modules.QoL.SkipCutscenes.GrimmNightmare;
             bossAnimSavedGreyPrinceZote = Modules.QoL.SkipCutscenes.GreyPrinceZote;
@@ -1212,6 +1213,7 @@ public sealed partial class QuickMenu : Module
 
             Modules.QoL.SkipCutscenes.HallOfGodsStatues = bossAnimSavedHallOfGods;
             Modules.QoL.SkipCutscenes.AbsoluteRadiance = bossAnimSavedAbsoluteRadiance;
+            Modules.QoL.SkipCutscenes.PantheonVEnding = bossAnimSavedPantheonVEnding;
             Modules.QoL.SkipCutscenes.PureVesselRoar = bossAnimSavedPureVesselRoar;
             Modules.QoL.SkipCutscenes.GrimmNightmare = bossAnimSavedGrimmNightmare;
             Modules.QoL.SkipCutscenes.GreyPrinceZote = bossAnimSavedGreyPrinceZote;
@@ -1223,6 +1225,7 @@ public sealed partial class QuickMenu : Module
         {
             Modules.QoL.SkipCutscenes.HallOfGodsStatues = value;
             Modules.QoL.SkipCutscenes.AbsoluteRadiance = value;
+            Modules.QoL.SkipCutscenes.PantheonVEnding = value;
             Modules.QoL.SkipCutscenes.PureVesselRoar = value;
             Modules.QoL.SkipCutscenes.GrimmNightmare = value;
             Modules.QoL.SkipCutscenes.GreyPrinceZote = value;
@@ -1274,6 +1277,7 @@ public sealed partial class QuickMenu : Module
             settings.BossAnimHasSnapshot = bossAnimMasterHasSnapshot;
             settings.BossAnimSavedHallOfGods = bossAnimSavedHallOfGods;
             settings.BossAnimSavedAbsoluteRadiance = bossAnimSavedAbsoluteRadiance;
+            settings.BossAnimSavedPantheonVEnding = bossAnimSavedPantheonVEnding;
             settings.BossAnimSavedPureVesselRoar = bossAnimSavedPureVesselRoar;
             settings.BossAnimSavedGrimmNightmare = bossAnimSavedGrimmNightmare;
             settings.BossAnimSavedGreyPrinceZote = bossAnimSavedGreyPrinceZote;

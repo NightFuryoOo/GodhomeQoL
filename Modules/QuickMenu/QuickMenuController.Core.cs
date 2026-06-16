@@ -104,6 +104,7 @@ public sealed partial class QuickMenu : Module
             bossAnimMasterHasSnapshot = settings.BossAnimHasSnapshot;
             bossAnimSavedHallOfGods = settings.BossAnimSavedHallOfGods || settings.QolSavedHallOfGods;
             bossAnimSavedAbsoluteRadiance = settings.BossAnimSavedAbsoluteRadiance;
+            bossAnimSavedPantheonVEnding = settings.BossAnimSavedPantheonVEnding;
             bossAnimSavedPureVesselRoar = settings.BossAnimSavedPureVesselRoar;
             bossAnimSavedGrimmNightmare = settings.BossAnimSavedGrimmNightmare;
             bossAnimSavedGreyPrinceZote = settings.BossAnimSavedGreyPrinceZote;

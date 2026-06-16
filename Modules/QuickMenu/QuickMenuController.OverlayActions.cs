@@ -838,6 +838,7 @@ public sealed partial class QuickMenu : Module
             bossAnimMasterHasSnapshot = false;
             Modules.QoL.SkipCutscenes.HallOfGodsStatues = true;
             Modules.QoL.SkipCutscenes.AbsoluteRadiance = true;
+            Modules.QoL.SkipCutscenes.PantheonVEnding = true;
             Modules.QoL.SkipCutscenes.PureVesselRoar = true;
             Modules.QoL.SkipCutscenes.GrimmNightmare = true;
             Modules.QoL.SkipCutscenes.GreyPrinceZote = true;

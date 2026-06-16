@@ -386,6 +386,16 @@ public sealed partial class GodhomeQoL
             () => Modules.QoL.SkipCutscenes.AbsoluteRadiance
         ));
         elements.Add(Blueprints.HorizontalBoolOption(
+            "Settings/PantheonVEnding".Localize(),
+            "",
+            b =>
+            {
+                Modules.QoL.SkipCutscenes.PantheonVEnding = b;
+                QuickMenu.InvalidateBossAnimationSnapshotFromExternal();
+            },
+            () => Modules.QoL.SkipCutscenes.PantheonVEnding
+        ));
+        elements.Add(Blueprints.HorizontalBoolOption(
             "Settings/PureVesselRoar".Localize(),
             "",
             b =>
@@ -602,6 +612,7 @@ public sealed partial class GodhomeQoL
         Modules.QoL.SkipCutscenes.SkipCutscenesWithoutPrompt = false;
         Modules.QoL.SkipCutscenes.HallOfGodsStatues = false;
         Modules.QoL.SkipCutscenes.AbsoluteRadiance = false;
+        Modules.QoL.SkipCutscenes.PantheonVEnding = false;
         Modules.QoL.SkipCutscenes.PureVesselRoar = false;
         Modules.QoL.SkipCutscenes.GrimmNightmare = false;
         Modules.QoL.SkipCutscenes.GreyPrinceZote = false;

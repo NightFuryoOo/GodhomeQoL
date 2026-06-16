@@ -3495,6 +3495,18 @@ public sealed partial class QuickMenu : Module
             rowY += RowSpacing;
             CreateToggleRow(
                 content,
+                "BossAnimPantheonVEndingRow",
+                "Settings/PantheonVEnding".Localize(),
+                rowY,
+                () => Modules.QoL.SkipCutscenes.PantheonVEnding,
+                value => Modules.QoL.SkipCutscenes.PantheonVEnding = value,
+                out bossAnimPantheonVEndingValue
+            );
+
+            lastY = rowY;
+            rowY += RowSpacing;
+            CreateToggleRow(
+                content,
                 "BossAnimPureVesselRow",
                 "Settings/PureVesselRoar".Localize(),
                 rowY,

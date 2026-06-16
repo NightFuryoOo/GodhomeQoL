@@ -282,6 +282,7 @@ public sealed partial class QuickMenu : Module
             UpdateToggleIcon(bossAnimEnableIcon, GetBossAnimationMasterEnabled());
             UpdateToggleValue(bossAnimHallOfGodsValue, Modules.QoL.SkipCutscenes.HallOfGodsStatues);
             UpdateToggleValue(bossAnimAbsoluteRadianceValue, Modules.QoL.SkipCutscenes.AbsoluteRadiance);
+            UpdateToggleValue(bossAnimPantheonVEndingValue, Modules.QoL.SkipCutscenes.PantheonVEnding);
             UpdateToggleValue(bossAnimPureVesselValue, Modules.QoL.SkipCutscenes.PureVesselRoar);
             UpdateToggleValue(bossAnimGrimmNightmareValue, Modules.QoL.SkipCutscenes.GrimmNightmare);
             UpdateToggleValue(bossAnimGreyPrinceValue, Modules.QoL.SkipCutscenes.GreyPrinceZote);

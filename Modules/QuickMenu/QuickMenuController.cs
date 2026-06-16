@@ -685,6 +685,7 @@ public sealed partial class QuickMenu : Module
         private Text? bossAnimShortDeathValue;
         private Text? bossAnimHallOfGodsValue;
         private Text? bossAnimAbsoluteRadianceValue;
+        private Text? bossAnimPantheonVEndingValue;
         private Text? bossAnimPureVesselValue;
         private Text? bossAnimGrimmNightmareValue;
         private Text? bossAnimGreyPrinceValue;
@@ -696,6 +697,7 @@ public sealed partial class QuickMenu : Module
         private bool bossAnimMasterHasSnapshot;
         private bool bossAnimSavedHallOfGods;
         private bool bossAnimSavedAbsoluteRadiance;
+        private bool bossAnimSavedPantheonVEnding;
         private bool bossAnimSavedPureVesselRoar;
         private bool bossAnimSavedGrimmNightmare;
         private bool bossAnimSavedGreyPrinceZote;

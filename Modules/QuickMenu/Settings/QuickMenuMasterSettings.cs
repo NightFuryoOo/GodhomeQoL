@@ -42,6 +42,7 @@ public sealed class QuickMenuMasterSettings
     public bool BossAnimHasSnapshot { get; set; }
     public bool BossAnimSavedHallOfGods { get; set; }
     public bool BossAnimSavedAbsoluteRadiance { get; set; }
+    public bool BossAnimSavedPantheonVEnding { get; set; }
     public bool BossAnimSavedPureVesselRoar { get; set; }
     public bool BossAnimSavedGrimmNightmare { get; set; }
     public bool BossAnimSavedGreyPrinceZote { get; set; }

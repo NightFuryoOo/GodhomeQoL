@@ -39,6 +39,9 @@ namespace GodhomeQoL.Modules.QoL
         [GlobalSetting]
         public static bool SoulMasterPhaseTransitionSkip = true;
 
+        [GlobalSetting]
+        public static bool PantheonVEnding = true;
+
         #endregion
         public override bool DefaultEnabled => true;
         public override bool Hidden => true;
@@ -53,6 +56,7 @@ namespace GodhomeQoL.Modules.QoL
             (() => GrimmNightmare, GrimmNightmareSkip),
             (() => GreyPrinceZote, GreyPrinceZoteSkip),
             (() => Collector, CollectorSkip),
+            (() => PantheonVEnding, PantheonVEndingSkip),
             (() => HallOfGodsStatues, StatueWait)
         };
 
@@ -88,6 +92,7 @@ namespace GodhomeQoL.Modules.QoL
         private const int StatuePatchMaxRetryFrames = 45;
         private const float StatueApproachMaxWait = 0.06f;
         private const float StatueDreamBoxDownMaxWait = 0.08f;
+        private const string AbsoluteRadianceScene = "GG_Radiance";
 
         private protected override void Load()
         {
@@ -101,6 +106,7 @@ namespace GodhomeQoL.Modules.QoL
             On.InputHandler.SetSkipMode += OnSetSkip;
             On.GameManager.BeginSceneTransitionRoutine += OnBeginSceneTransition;
             On.GGCheckIfBossScene.OnEnter += MageLordPhaseTransitionSkip;
+            On.PlayMakerFSM.Start += OnPlayMakerFsmStart;
             UnityEngine.SceneManagement.SceneManager.activeSceneChanged += FsmSkips;
         }
 
@@ -112,6 +118,7 @@ namespace GodhomeQoL.Modules.QoL
             On.InputHandler.SetSkipMode -= OnSetSkip;
             On.GameManager.BeginSceneTransitionRoutine -= OnBeginSceneTransition;
             On.GGCheckIfBossScene.OnEnter -= MageLordPhaseTransitionSkip;
+            On.PlayMakerFSM.Start -= OnPlayMakerFsmStart;
             UnityEngine.SceneManagement.SceneManager.activeSceneChanged -= FsmSkips;
 
             suppressAutoSkipForTransition = false;
@@ -148,6 +155,13 @@ namespace GodhomeQoL.Modules.QoL
             }
 
             fsm.Event(p.isTrue);
+        }
+
+        private static void OnPlayMakerFsmStart(On.PlayMakerFSM.orig_Start orig, PlayMakerFSM self)
+        {
+            orig(self);
+
+            _ = TryPatchPantheonVEndingFsm(self);
         }
 
         private static void FsmSkips(Scene arg0, Scene arg1)
@@ -440,6 +454,74 @@ namespace GodhomeQoL.Modules.QoL
             }
         }
 
+        private static IEnumerator PantheonVEndingSkip(Scene arg1)
+        {
+            if (arg1.name != AbsoluteRadianceScene)
+            {
+                yield break;
+            }
+
+            for (int i = 0; i < 60; i++)
+            {
+                PlayMakerFSM? control = FindAbsoluteRadianceControlFsm();
+                if (TryPatchPantheonVEndingFsm(control))
+                {
+                    yield break;
+                }
+
+                yield return null;
+            }
+
+            LogDebug("SkipCutscenes: Pantheon V ending skip patch was not applied because Absolute Radiance Control FSM was not ready");
+        }
+
+        private static PlayMakerFSM? FindAbsoluteRadianceControlFsm()
+        {
+            GameObject? absoluteRadiance = GameObject.Find("Absolute Radiance");
+            PlayMakerFSM? control = absoluteRadiance?.LocateMyFSM("Control");
+            if (IsAbsoluteRadianceEndingControlFsm(control))
+            {
+                return control;
+            }
+
+            return UObject.FindObjectsOfType<PlayMakerFSM>()
+                .FirstOrDefault(fsm => fsm != null
+                    && fsm.FsmName == "Control"
+                    && IsAbsoluteRadianceEndingControlFsm(fsm));
+        }
+
+        private static bool TryPatchPantheonVEndingFsm(PlayMakerFSM? control)
+        {
+            if (!PantheonVEnding || !BossSequenceController.IsInSequence || !IsAbsoluteRadianceEndingControlFsm(control))
+            {
+                return false;
+            }
+
+            try
+            {
+                SetStaticVariable? endingSceneAction = control!.GetAction<SetStaticVariable>("Ending Scene", 1);
+                if (endingSceneAction?.setValue == null)
+                {
+                    return false;
+                }
+
+                endingSceneAction.setValue.boolValue = false;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogDebug($"SkipCutscenes: Pantheon V ending skip patch failed - {ex.Message}");
+                return false;
+            }
+        }
+
+        private static bool IsAbsoluteRadianceEndingControlFsm(PlayMakerFSM? fsm) =>
+            fsm != null
+            && fsm.FsmName == "Control"
+            && fsm.gameObject != null
+            && fsm.gameObject.name == "Absolute Radiance"
+            && fsm.Fsm.GetState("Ending Scene") != null;
+
         private static IEnumerator OnBeginSceneTransition(On.GameManager.orig_BeginSceneTransitionRoutine orig, GameManager self, GameManager.SceneLoadInfo info) =>
             RunSceneTransition(orig(self, info), info);
 
@@ -485,7 +567,8 @@ namespace GodhomeQoL.Modules.QoL
             || GrimmNightmare
             || GreyPrinceZote
             || Collector
-            || SoulMasterPhaseTransitionSkip;
+            || SoulMasterPhaseTransitionSkip
+            || PantheonVEnding;
 
         private static bool IsBossOrPantheonScene()
         {
