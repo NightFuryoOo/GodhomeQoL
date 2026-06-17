@@ -1731,6 +1731,12 @@ public sealed partial class QuickMenu : Module
         private void SetCheatsInfiniteSoulEnabled(bool value)
         {
             Modules.Cheats.Cheats.SetInfiniteSoulEnabled(value);
+            if (cheatsMasterEnabled)
+            {
+                cheatsMasterHasSnapshot = true;
+                cheatsSavedInfiniteSoul = value;
+            }
+
             SaveMasterSettings();
         }
 
@@ -1739,6 +1745,12 @@ public sealed partial class QuickMenu : Module
         private void SetCheatsInfiniteHpEnabled(bool value)
         {
             Modules.Cheats.Cheats.SetInfiniteHpEnabled(value);
+            if (cheatsMasterEnabled)
+            {
+                cheatsMasterHasSnapshot = true;
+                cheatsSavedInfiniteHp = value;
+            }
+
             SaveMasterSettings();
         }
 
@@ -1747,6 +1759,12 @@ public sealed partial class QuickMenu : Module
         private void SetCheatsInvincibilityEnabled(bool value)
         {
             Modules.Cheats.Cheats.SetInvincibilityEnabled(value);
+            if (cheatsMasterEnabled)
+            {
+                cheatsMasterHasSnapshot = true;
+                cheatsSavedInvincibility = value;
+            }
+
             SaveMasterSettings();
         }
 
@@ -1755,6 +1773,12 @@ public sealed partial class QuickMenu : Module
         private void SetCheatsNoclipEnabled(bool value)
         {
             Modules.Cheats.Cheats.SetNoclipEnabled(value);
+            if (cheatsMasterEnabled)
+            {
+                cheatsMasterHasSnapshot = true;
+                cheatsSavedNoclip = value;
+            }
+
             SaveMasterSettings();
         }
 
