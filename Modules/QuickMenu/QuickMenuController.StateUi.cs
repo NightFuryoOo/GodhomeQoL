@@ -49,18 +49,6 @@ public sealed partial class QuickMenu : Module
             }
         }
 
-        private void StartQuickMenuFade(bool show)
-        {
-            if (quickPanelGroup == null || quickRoot == null)
-            {
-                return;
-            }
-
-            StopQuickMenuFade();
-            float target = show ? 1f : 0f;
-            quickMenuFadeCoroutine = StartCoroutine(FadeQuickMenu(target, show));
-        }
-
         private void StopQuickMenuFade()
         {
             if (quickMenuFadeCoroutine != null)
@@ -68,43 +56,6 @@ public sealed partial class QuickMenu : Module
                 StopCoroutine(quickMenuFadeCoroutine);
                 quickMenuFadeCoroutine = null;
             }
-        }
-
-        private IEnumerator FadeQuickMenu(float target, bool show)
-        {
-            float start = quickMenuFadeAlpha;
-            float duration = QuickMenuFadeSeconds;
-            if (Mathf.Abs(target - start) < 0.001f || duration <= 0f)
-            {
-                quickMenuFadeAlpha = target;
-                UpdateQuickMenuAlpha();
-                if (!show && quickRoot != null)
-                {
-                    quickRoot.SetActive(false);
-                }
-
-                quickMenuFadeCoroutine = null;
-                yield break;
-            }
-
-            float time = 0f;
-            while (time < duration)
-            {
-                time += Time.unscaledDeltaTime;
-                float t = Mathf.Clamp01(time / duration);
-                quickMenuFadeAlpha = Mathf.Lerp(start, target, t);
-                UpdateQuickMenuAlpha();
-                yield return null;
-            }
-
-            quickMenuFadeAlpha = target;
-            UpdateQuickMenuAlpha();
-            if (!show && quickRoot != null)
-            {
-                quickRoot.SetActive(false);
-            }
-
-            quickMenuFadeCoroutine = null;
         }
 
         private void SetQuickMenuFreeLayoutEnabled(bool value)
@@ -156,6 +107,7 @@ public sealed partial class QuickMenu : Module
             SetShowHpOnDeathVisible(false);
             SetMaskDamageVisible(false);
             SetFreezeHitboxesVisible(false);
+            SetFpsBoostVisible(false);
             SetSpeedChangerVisible(false);
             SetTeleportKitVisible(false);
             SetBossChallengeVisible(false);

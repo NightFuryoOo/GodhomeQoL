@@ -29,6 +29,7 @@ public sealed partial class QuickMenu : Module
                 new("Cheats", "Modules/Cheats".Localize(), OnQuickCheatsClicked),
                 new("AlwaysFurious", "Modules/AlwaysFurious".Localize(), OnQuickAlwaysFuriousClicked),
                 new("GearSwitcher", "Modules/GearSwitcher".Localize(), OnQuickGearSwitcherClicked),
+                new("FpsBoost", "Modules/FpsBoost".Localize(), OnQuickFpsBoostClicked),
                 new("QualityOfLife", "Categories/QoL".Localize(), OnQuickQolClicked),
                 new("BossAnimationSkipping", "Categories/BossAnimationSkipping".Localize(), OnQuickBossAnimationClicked),
                 new("MenuAnimationSkipping", "Categories/MenuAnimationSkipping".Localize(), OnQuickMenuAnimationClicked),
@@ -135,6 +136,9 @@ public sealed partial class QuickMenu : Module
                 case "GearSwitcher":
                     SetGearSwitcherEnabled(false);
                     break;
+                case "FpsBoost":
+                    SetFpsBoostEnabled(false);
+                    break;
                 case "BossChallenge":
                     SetBossChallengeMasterEnabled(false);
                     break;
@@ -200,23 +204,5 @@ public sealed partial class QuickMenu : Module
             return $"{label}: {state}";
         }
 
-        private static void CreateQuickMenuIcon(Transform parent, string name, Sprite sprite, float x, float size)
-        {
-            GameObject iconObj = new GameObject(name);
-            iconObj.transform.SetParent(parent, false);
-
-            RectTransform rect = iconObj.AddComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0.5f, 0.5f);
-            rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.anchoredPosition = new Vector2(x, 0f);
-            rect.sizeDelta = new Vector2(size, size);
-
-            Image image = iconObj.AddComponent<Image>();
-            image.sprite = sprite;
-            image.preserveAspect = true;
-            image.color = Color.white;
-            image.raycastTarget = false;
-        }
     }
 }

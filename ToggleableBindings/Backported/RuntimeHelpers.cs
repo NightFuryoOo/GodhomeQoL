@@ -6,9 +6,6 @@ namespace System.Runtime.CompilerServices
 {
     internal static class RuntimeHelpers
     {
-        /// <summary>
-        /// Slices the specified array using the specified range.
-        /// </summary>
         public static T[] GetSubArray<T>(T[] array, Range range)
         {
             if (array == null)
@@ -18,7 +15,6 @@ namespace System.Runtime.CompilerServices
 
             if (default(T) is not null || typeof(T[]) == array.GetType())
             {
-                // We know the type of the array to be exactly T[].
                 if (length == 0)
                     return new T[0];
 
@@ -28,7 +24,6 @@ namespace System.Runtime.CompilerServices
             }
             else
             {
-                // The array is actually a U[] where U:T.
                 var dest = (T[])Array.CreateInstance(array.GetType().GetElementType(), length);
                 Array.Copy(array, offset, dest, 0, length);
                 return dest;

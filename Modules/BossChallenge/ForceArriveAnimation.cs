@@ -156,9 +156,9 @@ public sealed class ForceArriveAnimation : Module
         {
             fsm.ChangeTransition(stateName, eventName, targetState);
         }
-        catch
+        catch (Exception swallowed)
         {
-            // Ignore missing states or transitions.
+            LogSuppressed(swallowed, "ForceArriveAnimation.cs");
         }
     }
 }

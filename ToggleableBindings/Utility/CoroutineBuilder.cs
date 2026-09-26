@@ -68,30 +68,14 @@ namespace ToggleableBindings.Utility
             }
         }
 
-        /// <summary>
-        /// A simple representation of a method instruction that can either be an <see cref="System.Action"/> to invoke or an object to yield return.
-        /// </summary>
         public readonly struct Instruction
         {
-            /// <summary>
-            /// Gets an <see cref="Instruction"/> representing 'yield return <see langword="null"/>'.
-            /// </summary>
             public static Instruction YieldNull { get; } = new();
 
-            /// <summary>
-            /// If not <see langword="null"/>, the action to be invoked.
-            /// </summary>
             public Action? Action { get; }
 
-            /// <summary>
-            /// If <see cref="Action"/> is <see langword="null"/>, the <see cref="object"/> to yield return. Can be <see langword="null"/>.
-            /// </summary>
             public object? Yield { get; }
 
-            /// <summary>
-            /// Gets whether this should be a Yield instruction.
-            /// </summary>
-            /// <returns><see langword="true"/> if <see cref="Action"/> is <see langword="null"/>.</returns>
             public bool IsYield => Action == null;
 
             public Instruction(Action? action) : this()

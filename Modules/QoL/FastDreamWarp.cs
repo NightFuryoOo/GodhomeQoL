@@ -1,5 +1,4 @@
-﻿//using GodhomeQoL.Modules.GodseekerMode;
-using Satchel;
+﻿using Satchel;
 using Satchel.Futils;
 using Osmi.FsmActions;
 using GodhomeQoL.Modules.Tools;
@@ -312,9 +311,9 @@ public sealed class FastDreamWarp : Module
 				state.Actions = (FsmStateAction[])originalActions.Clone();
 			}
 		}
-		catch
+		catch (Exception swallowed)
 		{
-			// ignore restore failures for already-destroyed FSMs
+			LogSuppressed(swallowed, "FastDreamWarp.cs");
 		}
 
 		snapshot.Patched = false;
@@ -363,6 +362,7 @@ public sealed class FastDreamWarp : Module
 
 	private static IEnumerator RestoreTimeScaleAfterWarp(int generation, int handle)
 	{
+		bool timedOutStillStuck = false;
 		try
 		{
 			yield return null;
@@ -387,6 +387,18 @@ public sealed class FastDreamWarp : Module
 			}
 
 			yield return new UnityEngine.WaitUntil(() => GameManager.instance != null && GameManager.instance.gameState == GameState.PLAYING);
+
+			float handoffTimeout = 20f;
+			while (handoffTimeout > 0f && IsStuckInvincibleAfterHandoff())
+			{
+				handoffTimeout -= Time.unscaledDeltaTime;
+				yield return null;
+			}
+
+			if (handoffTimeout <= 0f && IsStuckInvincibleAfterHandoff())
+			{
+				timedOutStillStuck = true;
+			}
 		}
 		finally
 		{
@@ -398,6 +410,21 @@ public sealed class FastDreamWarp : Module
 				timeScaleOverrideHandle = 0;
 				timeScaleOverrideInFlight = false;
 			}
+
+			if (timedOutStillStuck)
+			{
+				LogWarn("FastDreamWarp: timed out after 20s still waiting for the post-warp Dream Return hand-off (isInvincible never cleared) - restored game speed anyway so it doesn't stay stuck slow. The hero is likely still invisible/invincible; this points at the hand-off itself failing to complete, not at this wait.");
+			}
 		}
+	}
+
+	private static bool IsStuckInvincibleAfterHandoff()
+	{
+		if (InvincibilityClaims.HasActiveClaims)
+		{
+			return false;
+		}
+
+		return PlayerData.instance != null && PlayerData.instance.isInvincible;
 	}
 }

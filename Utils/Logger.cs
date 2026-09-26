@@ -34,5 +34,47 @@ namespace GodhomeQoL.Utils
 #else
 		logger.LogWarn(message);
 #endif
+
+        private static readonly Dictionary<string, int> suppressedCounts = new(StringComparer.Ordinal);
+
+        internal static void LogSuppressed(
+            Exception ex,
+            string source,
+            [CallerMemberName] string member = "",
+            [CallerLineNumber] int line = 0)
+        {
+            try
+            {
+                string site = $"{source}:{line}";
+                int count;
+                lock (suppressedCounts)
+                {
+                    suppressedCounts.TryGetValue(site, out count);
+                    suppressedCounts[site] = ++count;
+                }
+
+                if (!IsPowerOfTen(count))
+                {
+                    return;
+                }
+
+                LogWarn(count == 1
+                    ? $"Suppressed exception at {site} ({member}): {ex}"
+                    : $"Suppressed exception at {site} ({member}) x{count}: {ex.GetType().Name}: {ex.Message}");
+            }
+            catch
+            {
+            }
+        }
+
+        private static bool IsPowerOfTen(int value)
+        {
+            while (value >= 10 && value % 10 == 0)
+            {
+                value /= 10;
+            }
+
+            return value == 1;
+        }
     }
 }

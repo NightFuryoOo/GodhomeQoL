@@ -48,6 +48,20 @@ internal sealed class TeleportManager : IDisposable
         GameManager.instance.StartCoroutine(TeleportToBoss(position, scene));
     }
 
+    private static void PlaceHero(Vector3 position)
+    {
+        HeroController.instance.transform.position = position;
+        HeroController.instance.GetComponent<Rigidbody2D>().velocity = Vector2.zero;
+    }
+
+    private static void FadeSceneInIfPresent()
+    {
+        if (GameManager.instance.cameraCtrl != null)
+        {
+            GameManager.instance.cameraCtrl.FadeSceneIn();
+        }
+    }
+
     private IEnumerator TeleportToBoss(Vector3 targetPos, string scene)
     {
         if (GameManager.instance.IsGamePaused())
@@ -156,14 +170,10 @@ internal sealed class TeleportManager : IDisposable
                 if (targetScene.StartsWith("White_Palace", StringComparison.Ordinal) || isDreamRoom)
                 {
                     yield return new WaitForSeconds(0.2f);
-                    if (GameManager.instance.cameraCtrl != null)
-                    {
-                        GameManager.instance.cameraCtrl.FadeSceneIn();
-                    }
+                    FadeSceneInIfPresent();
                 }
 
-                HeroController.instance.transform.position = entryPos;
-                HeroController.instance.GetComponent<Rigidbody2D>().velocity = Vector2.zero;
+                PlaceHero(entryPos);
                 if (shouldSetHazard)
                 {
                     HeroController.instance.SetHazardRespawn(entryPos, true);
@@ -172,25 +182,19 @@ internal sealed class TeleportManager : IDisposable
                 if (isDreamRoom)
                 {
                     yield return new WaitForSeconds(0.5f);
-                    HeroController.instance.transform.position = targetPos;
-                    HeroController.instance.GetComponent<Rigidbody2D>().velocity = Vector2.zero;
+                    PlaceHero(targetPos);
                 }
                 else if (isPantheonI || isPantheonII || isPantheonIII)
                 {
                     GameManager.instance.sceneName = "GG_Atrium";
-                    HeroController.instance.transform.position = targetPos;
-                    HeroController.instance.GetComponent<Rigidbody2D>().velocity = Vector2.zero;
+                    PlaceHero(targetPos);
                     if (shouldSetHazard)
                     {
                         HeroController.instance.SetHazardRespawn(targetPos, true);
                     }
-                    if (GameManager.instance.cameraCtrl != null)
-                    {
-                        GameManager.instance.cameraCtrl.FadeSceneIn();
-                    }
+                    FadeSceneInIfPresent();
                     yield return new WaitForSeconds(0.05f);
-                    HeroController.instance.transform.position = targetPos;
-                    HeroController.instance.GetComponent<Rigidbody2D>().velocity = Vector2.zero;
+                    PlaceHero(targetPos);
                     if (shouldSetHazard)
                     {
                         HeroController.instance.SetHazardRespawn(targetPos, true);
@@ -198,33 +202,22 @@ internal sealed class TeleportManager : IDisposable
                 }
                 else if (isPantheonV || isPantheonVSegmented || isPantheonBench)
                 {
-                    // After entering via gate, place hero at the requested coordinates on the roof, set scene name, fade in, and lock respawn there.
                     GameManager.instance.sceneName = "GG_Atrium_Roof";
-                    HeroController.instance.transform.position = targetPos;
-                    HeroController.instance.GetComponent<Rigidbody2D>().velocity = Vector2.zero;
-                    if (GameManager.instance.cameraCtrl != null)
-                    {
-                        GameManager.instance.cameraCtrl.FadeSceneIn();
-                    }
-                    // Reinforce position once the scene finishes settling to avoid drift/fall.
+                    PlaceHero(targetPos);
+                    FadeSceneInIfPresent();
                     yield return new WaitForSeconds(0.05f);
-                    HeroController.instance.transform.position = targetPos;
-                    HeroController.instance.GetComponent<Rigidbody2D>().velocity = Vector2.zero;
+                    PlaceHero(targetPos);
                 }
             }
             else
             {
-                HeroController.instance.transform.position = targetPos;
-                HeroController.instance.GetComponent<Rigidbody2D>().velocity = Vector2.zero;
+                PlaceHero(targetPos);
             }
 
             if (!isSameScene && (scene.StartsWith("White_Palace", StringComparison.Ordinal) || isDreamRoom))
             {
                 yield return new WaitForEndOfFrame();
-                if (GameManager.instance.cameraCtrl != null)
-                {
-                    GameManager.instance.cameraCtrl.FadeSceneIn();
-                }
+                FadeSceneInIfPresent();
             }
 
             mod.Log.Write("Teleport completed successfully");

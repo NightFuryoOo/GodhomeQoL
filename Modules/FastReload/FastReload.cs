@@ -122,8 +122,6 @@ public sealed class FastReload : Module {
             yield break;
         }
 
-        // If module was enabled mid-fight, capture lazily and then restore
-        // scene-specific setup event before forcing the reload transition.
         BossFightRestartCompatibility.RecordCurrentSetupEvent(scene);
         if (!BossFightRestartCompatibility.TryApplySetupEventForScene(scene)) {
             if (Time.unscaledTime >= nextSetupEventUnavailableMessageAt) {
@@ -182,7 +180,6 @@ public sealed class FastReload : Module {
     private static void CaptureSetupEventForTargetScene(On.GameManager.orig_BeginSceneTransition orig, GameManager self, GameManager.SceneLoadInfo info) {
         string? targetScene = info.SceneName;
         if (IsReloadCandidateScene(targetScene)) {
-            // Capture setup event against the intended target scene before transition consumes it.
             BossFightRestartCompatibility.RecordCurrentSetupEvent(targetScene);
         }
 

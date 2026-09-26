@@ -64,7 +64,6 @@ public sealed class CarefreeMelodyReset : Module {
 
         if (nextIsPantheonArena)
         {
-            // New pantheon attempt starts here; allow one reset at the start.
             pantheonRunActive = true;
             pantheonResetApplied = false;
         }
@@ -78,7 +77,6 @@ public sealed class CarefreeMelodyReset : Module {
         }
         else if (pantheonRunActive && IsHubSceneName(nextName))
         {
-            // Pantheon run ended when returning to Godhome hubs.
             pantheonRunActive = false;
             pantheonResetApplied = false;
         }
@@ -90,12 +88,12 @@ public sealed class CarefreeMelodyReset : Module {
 
         if (nextIsBoss)
         {
-            enteredBossFromWorkshop = string.Equals(lastHubScene, HoGWorkshopScene, StringComparison.OrdinalIgnoreCase);
+            enteredBossFromWorkshop = lastHubScene == null
+                || string.Equals(lastHubScene, HoGWorkshopScene, StringComparison.OrdinalIgnoreCase);
             trackedBossScene = nextName;
         }
         else if (trackedBossScene != null && prevName == trackedBossScene && nextName == trackedBossScene)
         {
-            // Boss reload; keep the flag.
         }
         else if (!nextIsBoss)
         {
@@ -119,7 +117,6 @@ public sealed class CarefreeMelodyReset : Module {
             return;
         }
 
-        // Pantheons can enter via different doors/scenes (not always GG_Boss_Door_Entrance, e.g. P5).
         pantheonRunActive = true;
         pantheonResetApplied = false;
     }
@@ -229,8 +226,9 @@ public sealed class CarefreeMelodyReset : Module {
         {
             return BossSequenceController.IsInSequence;
         }
-        catch
+        catch (Exception swallowed)
         {
+            LogSuppressed(swallowed, "CarefreeMelodyReset.cs");
             return false;
         }
     }

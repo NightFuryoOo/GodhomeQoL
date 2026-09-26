@@ -19,6 +19,8 @@ namespace GodhomeQoL.Settings
         public Dictionary<string, string>? strings;
         public Dictionary<string, object>? enums;
 
+        private static List<(FieldInfo Field, object? Value)>? defaultValues;
+
         [OnSerializing]
         public void OnBeforeSerialize(StreamingContext context) => ReadFields();
 
@@ -95,6 +97,8 @@ namespace GodhomeQoL.Settings
             .Filter(fi => Attribute.IsDefined(fi, typeof(TAttr)))
             ];
 
+            defaultValues ??= CaptureDefaults(fields);
+
             boolFields = ProcessFields<bool>(fields);
             intFields = ProcessFields<int>(fields);
             floatFields = ProcessFields<float>(fields);
@@ -102,6 +106,41 @@ namespace GodhomeQoL.Settings
             enumFields = ProcessFields<object, Enum>(fields);
 
             ReadFields();
+        }
+
+        private static List<(FieldInfo Field, object? Value)> CaptureDefaults(FieldInfo[] fields)
+        {
+            List<(FieldInfo, object?)> captured = [];
+            foreach (FieldInfo fi in fields)
+            {
+                Type type = fi.FieldType;
+                if (type == typeof(bool) || type == typeof(int) || type == typeof(float) || type == typeof(string) || typeof(Enum).IsAssignableFrom(type))
+                {
+                    captured.Add((fi, fi.GetValue(null)));
+                }
+            }
+
+            return captured;
+        }
+
+        internal void ResetFieldsToDefaults()
+        {
+            if (defaultValues == null)
+            {
+                return;
+            }
+
+            foreach ((FieldInfo field, object? value) in defaultValues)
+            {
+                try
+                {
+                    field.SetValue(null, value);
+                }
+                catch (Exception ex)
+                {
+                    LogSuppressed(ex, "SettingBase.cs/" + field.Name);
+                }
+            }
         }
 
         internal IEnumerable<Element> GetMenuElements(string category)
@@ -114,12 +153,10 @@ namespace GodhomeQoL.Settings
             {
                 foreach ((string name, (FieldInfo fi, Func<bool> getter, Action<bool> setter)) in boolFields)
                 {
-                    // FastSuperDash handled via custom UI.
                     if (fi.DeclaringType == typeof(global::GodhomeQoL.Modules.QoL.FastSuperDash))
                     {
                         continue;
                     }
-                    // DreamshieldStartAngle has custom UI; skip auto-generation.
                     if (fi.DeclaringType == typeof(global::GodhomeQoL.Modules.QoL.DreamshieldStartAngle))
                     {
                         continue;
@@ -173,12 +210,10 @@ namespace GodhomeQoL.Settings
             {
                 foreach ((string name, (FieldInfo fi, Func<float> getter, Action<float> setter)) in floatFields)
                 {
-                    // FastSuperDash handled via custom UI.
                     if (fi.DeclaringType == typeof(global::GodhomeQoL.Modules.QoL.FastSuperDash))
                     {
                         continue;
                     }
-                    // DreamshieldStartAngle has its own custom UI; skip auto-generation here.
                     if (fi.DeclaringType == typeof(global::GodhomeQoL.Modules.QoL.DreamshieldStartAngle))
                     {
                         continue;
@@ -306,7 +341,6 @@ namespace GodhomeQoL.Settings
             public override bool Equals(object obj) =>
                 obj is EnumWrapper other && other.Value.Equals(Value);
 
-            // This is unused, just for suppressing the warning.
             public override int GetHashCode() => Value.GetHashCode();
 
             public override string ToString() => $"Settings/{Name}/{Variant}".Localize();

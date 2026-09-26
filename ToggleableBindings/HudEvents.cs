@@ -39,17 +39,6 @@ namespace ToggleableBindings
 
             var stateOut = slideOut.GetState("Out");
             stateOut.AddMethod(() => Out?.Invoke());
-
-            /*var inAction = new CallStaticMethod
-            {
-                Fsm = stateIn.Fsm,
-                Owner = stateIn.Fsm.Owner.gameObject,
-                State = stateIn,
-                className = typeof(HudEvents).FullName,
-                methodName = nameof(OnHudIn),
-                parameters = new FsmVar[0],
-                storeResult = new FsmVar()
-            };*/
         }
     }
 }

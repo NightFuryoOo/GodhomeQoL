@@ -13,7 +13,6 @@ public sealed class DoorDefaultBegin : Module {
 			yield return routine.Current;
 		}
 
-		// Let ShowSequence post-processing settle first.
 		yield return null;
 
 		SelectBegin(self);

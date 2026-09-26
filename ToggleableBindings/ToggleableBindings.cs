@@ -9,14 +9,8 @@ using UnityEngine;
 
 namespace ToggleableBindings
 {
-    /// <summary>
-    /// ToggleableBindings host integrated into GodhomeQoL.
-    /// </summary>
     public sealed partial class ToggleableBindings
     {
-        /// <summary>
-        /// Gets the instance of this host.
-        /// </summary>
         [System.Diagnostics.CodeAnalysis.NotNull]
         public static ToggleableBindings? Instance { get; private set; }
 

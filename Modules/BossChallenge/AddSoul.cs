@@ -28,7 +28,6 @@ public sealed class AddSoul : Module {
 
 	private static IEnumerator ApplySoulWhenReady(int amount) {
 		yield return new WaitUntil(() => Ref.GM != null && Ref.GM.gameState == GameState.PLAYING);
-		// Let restart flows normalize MP for this frame first, then apply configured start soul.
 		yield return null;
 
 		if (Ref.HC == null) {

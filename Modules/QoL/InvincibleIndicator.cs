@@ -100,9 +100,9 @@ public sealed class InvincibleIndicator : Module
                     return true;
                 }
             }
-            catch
+            catch (Exception swallowed)
             {
-                // ignore missing field
+                LogSuppressed(swallowed, "InvincibleIndicator.cs");
             }
         }
 

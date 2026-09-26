@@ -18,7 +18,6 @@ namespace ToggleableBindings.JsonNet
             try
             {
                 return _defaultBinder.BindToType(assemblyName, typeName);
-                //return _binder.BindToType(assemblyName, typeName);
             }
             catch (Exception ex)
             {

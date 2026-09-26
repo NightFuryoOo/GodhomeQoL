@@ -42,10 +42,10 @@ public sealed partial class QuickMenu : Module
             Module? module = GetCollectorPhasesModule();
             UpdateToggleValue(collectorModuleToggleValue, module?.Enabled ?? false);
             UpdateToggleIcon(collectorModuleToggleIcon, module?.Enabled ?? false);
-            UpdateToggleValue(qolCollectorRoarValue, GetCollectorRoarEnabled());
             UpdateToggleValue(collectorImmortalValue, Modules.CollectorPhases.CollectorPhases.CollectorImmortal);
             UpdateToggleValue(ignoreInitialJarLimitValue, Modules.CollectorPhases.CollectorPhases.IgnoreInitialJarLimit);
             UpdateToggleValue(useCustomPhase2ThresholdValue, Modules.CollectorPhases.CollectorPhases.UseCustomPhase2Threshold);
+            UpdateToggleValue(collectorP5HpValue, Modules.CollectorPhases.CollectorPhases.collectorP5Hp);
             UpdateToggleValue(useMaxHpValue, Modules.CollectorPhases.CollectorPhases.UseMaxHP);
             UpdateToggleValue(spawnBuzzerValue, Modules.CollectorPhases.CollectorPhases.spawnBuzzer);
             UpdateToggleValue(spawnRollerValue, Modules.CollectorPhases.CollectorPhases.spawnRoller);
@@ -259,6 +259,7 @@ public sealed partial class QuickMenu : Module
             UpdateToggleValue(qolUnlockRadiantValue, GetUnlockRadiantEnabled());
             UpdateToggleValue(qolInvincibleIndicatorValue, GetInvincibleIndicatorEnabled());
             UpdateToggleValue(qolScreenShakeValue, GetScreenShakeEnabled());
+            UpdateKeybindValue(nailDamageCheckKeyValue, GetNailDamageCheckKeyLabel());
             UpdateQolInteractivity();
         }
 
@@ -288,6 +289,7 @@ public sealed partial class QuickMenu : Module
             UpdateToggleValue(bossAnimGreyPrinceValue, Modules.QoL.SkipCutscenes.GreyPrinceZote);
             UpdateToggleValue(bossAnimCollectorValue, Modules.QoL.SkipCutscenes.Collector);
             UpdateToggleValue(bossAnimSoulMasterValue, Modules.QoL.SkipCutscenes.SoulMasterPhaseTransitionSkip);
+            UpdateToggleValue(bossAnimCollectorRoarValue, GetCollectorRoarEnabled());
             UpdateBossAnimationInteractivity();
         }
 
@@ -307,6 +309,8 @@ public sealed partial class QuickMenu : Module
             UpdateIntInputValue(zoteSummonHoppingHpField, Modules.BossChallenge.ZoteHelper.zoteSummonHoppingHp);
             UpdateToggleValue(zoteUseCustomSummonLimitValue, Modules.BossChallenge.ZoteHelper.zoteUseCustomSummonLimit);
             UpdateIntInputValue(zoteSummonLimitField, Modules.BossChallenge.ZoteHelper.zoteSummonLimit);
+            UpdateToggleValue(zoteDoubleSummonsValue, Modules.BossChallenge.ZoteHelper.zoteDoubleSummons);
+            UpdateToggleValue(zoteAttackSummonsOnlyOnStartValue, Modules.BossChallenge.ZoteHelper.zoteAttackSummonsOnlyOnStart);
 
             if (bossGpzValue != null)
             {

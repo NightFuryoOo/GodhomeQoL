@@ -23,9 +23,6 @@ public static class Exports
         catch (Exception ex) { Logger.Log(ex.Message); }
     }
 
-    //public static void AddFastDashPredicate(Func<Scene, Scene, bool> predicate) =>
-    //	FastDash.predicates.Add(predicate);
-
     public static void AddInfiniteChallengeReturnScenePredicate(Func<GameManager.SceneLoadInfo, bool> predicate)
     {
         _ = AddInfiniteChallengeReturnScenePredicateHandle(predicate);

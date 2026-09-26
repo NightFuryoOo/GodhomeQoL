@@ -17,6 +17,7 @@ public sealed partial class QuickMenu : Module
             SetShowHpOnDeathVisible(false);
             SetMaskDamageVisible(false);
             SetFreezeHitboxesVisible(false);
+            SetFpsBoostVisible(false);
             SetSpeedChangerVisible(false);
             SetTeleportKitVisible(false);
             SetBossChallengeVisible(false);
@@ -110,6 +111,7 @@ public sealed partial class QuickMenu : Module
             bossAnimSavedGreyPrinceZote = settings.BossAnimSavedGreyPrinceZote;
             bossAnimSavedCollector = settings.BossAnimSavedCollector;
             bossAnimSavedSoulMaster = settings.BossAnimSavedSoulMaster;
+            bossAnimSavedCollectorRoar = settings.BossAnimSavedCollectorRoar;
 
             randomPantheonsMasterEnabled = settings.RandomPantheonsEnabled;
             randomPantheonsMasterHasSnapshot = settings.RandomPantheonsHasSnapshot;
@@ -233,6 +235,7 @@ public sealed partial class QuickMenu : Module
             DestroyRoot(ref showHpOnDeathRoot);
             DestroyRoot(ref maskDamageRoot);
             DestroyRoot(ref freezeHitboxesRoot);
+            DestroyRoot(ref fpsBoostRoot);
             DestroyRoot(ref speedChangerRoot);
             DestroyRoot(ref teleportKitRoot);
             DestroyRoot(ref bossChallengeRoot);

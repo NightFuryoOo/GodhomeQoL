@@ -419,7 +419,6 @@ public sealed class OroMatoHelper : Module
         int targetHp = ClampOroMatoHp(oroMatoOroPhase1Hp);
         boss.manageHealth(targetHp);
         hm.hp = targetHp;
-        TrySetMaxHp(hm, targetHp);
     }
 
     private static void ApplyOroPhase2Health(GameObject boss, HealthManager? hm = null)
@@ -438,7 +437,6 @@ public sealed class OroMatoHelper : Module
         int targetHp = ClampOroMatoHp(oroMatoOroPhase2Hp);
         boss.manageHealth(targetHp);
         hm.hp = targetHp;
-        TrySetMaxHp(hm, targetHp);
     }
 
     private static void ApplyMatoHealth(GameObject boss, HealthManager? hm = null)
@@ -457,7 +455,6 @@ public sealed class OroMatoHelper : Module
         int targetHp = ClampOroMatoHp(oroMatoMatoHp);
         boss.manageHealth(targetHp);
         hm.hp = targetHp;
-        TrySetMaxHp(hm, targetHp);
     }
 
     private static void RestoreVanillaHealth(GameObject boss, HealthManager? hm = null)
@@ -481,7 +478,6 @@ public sealed class OroMatoHelper : Module
         int targetHp = ClampOroMatoHp(vanillaHp);
         boss.manageHealth(targetHp);
         hm.hp = targetHp;
-        TrySetMaxHp(hm, targetHp);
     }
 
     private static void RememberVanillaHp(HealthManager hm)
@@ -492,11 +488,7 @@ public sealed class OroMatoHelper : Module
             return;
         }
 
-        int hp = ReadMaxHp(hm);
-        if (hp <= 0)
-        {
-            hp = hm.hp;
-        }
+        int hp = hm.hp;
 
         if (hp > 0)
         {
@@ -511,43 +503,9 @@ public sealed class OroMatoHelper : Module
             return true;
         }
 
-        hp = ReadMaxHp(hm);
-        if (hp <= 0)
-        {
-            hp = hm.hp;
-        }
+        hp = hm.hp;
 
         return hp > 0;
-    }
-
-    private static int ReadMaxHp(HealthManager hm)
-    {
-        try
-        {
-            int maxHp = ReflectionHelper.GetField<HealthManager, int>(hm, "maxHP");
-            if (maxHp > 0)
-            {
-                return maxHp;
-            }
-        }
-        catch
-        {
-            // Ignore if field is unavailable.
-        }
-
-        return hm.hp;
-    }
-
-    private static void TrySetMaxHp(HealthManager hm, int value)
-    {
-        try
-        {
-            ReflectionHelper.SetField(hm, "maxHP", value);
-        }
-        catch
-        {
-            // Ignore if field is unavailable.
-        }
     }
 
     private static int ClampOroMatoHp(int value)

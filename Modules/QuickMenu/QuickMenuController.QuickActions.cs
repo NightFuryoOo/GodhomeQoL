@@ -11,623 +11,166 @@ namespace GodhomeQoL.Modules.Tools;
 public sealed partial class QuickMenu : Module
 {
     private sealed partial class QuickMenuController
-    {        private void OnQuickFastSuperDashClicked()
+    {
+        private void OpenPanelFromQuick(Action<bool> showPanel)
         {
             returnToQuickOnClose = true;
-            SetCollectorVisible(false);
-            SetFastReloadVisible(false);
-            SetDreamshieldVisible(false);
-            SetShowHpOnDeathVisible(false);
-            SetMaskDamageVisible(false);
-            SetFreezeHitboxesVisible(false);
-            SetSpeedChangerVisible(false);
-            SetTeleportKitVisible(false);
-            SetBossChallengeVisible(false);
-            SetTrueBossRushVisible(false);
-            SetAlwaysFuriousVisible(false);
-            SetGearSwitcherVisible(false);
-            SetQolVisible(false);
-            SetMenuAnimationVisible(false);
-            SetBossAnimationVisible(false);
-            SetZoteHelperVisible(false);
-            SetGruzHelperVisible(false);
-            SetHornetHelperVisible(false);
-            SetMawlekHelperVisible(false);
-            SetMassiveMossHelperVisible(false);
-            SetCrystalGuardianHelperVisible(false);
-            SetEnragedGuardianHelperVisible(false);
-            SetHornetSentinelHelperVisible(false);
-            SetAllAdditionalGhostHelpersVisible(false);
-            SetBossManipulateVisible(false);
-            SetCheatsVisible(false);
-            SetOverlayVisible(true);
+            HideAllPanelsExcept(showPanel);
+            showPanel(true);
             SetQuickVisible(false);
+        }
+
+        private void HideAllPanelsExcept(Action<bool> keep)
+        {
+            Action<bool>[] panels =
+            {
+                SetOverlayVisible,
+                SetCollectorVisible,
+                SetFastReloadVisible,
+                SetDreamshieldVisible,
+                SetShowHpOnDeathVisible,
+                SetMaskDamageVisible,
+                SetFreezeHitboxesVisible,
+                SetSpeedChangerVisible,
+                SetTeleportKitVisible,
+                SetBossChallengeVisible,
+                SetTrueBossRushVisible,
+                SetRandomPantheonsVisible,
+                SetAlwaysFuriousVisible,
+                SetGearSwitcherVisible,
+                SetFpsBoostVisible,
+                SetQolVisible,
+                SetMenuAnimationVisible,
+                SetBossAnimationVisible,
+                SetZoteHelperVisible,
+                SetGruzHelperVisible,
+                SetHornetHelperVisible,
+                SetMawlekHelperVisible,
+                SetMassiveMossHelperVisible,
+                SetCrystalGuardianHelperVisible,
+                SetEnragedGuardianHelperVisible,
+                SetHornetSentinelHelperVisible,
+                SetAllAdditionalGhostHelpersVisible,
+                SetBossManipulateVisible,
+                SetCheatsVisible
+            };
+
+            foreach (Action<bool> panel in panels)
+            {
+                if (panel != keep)
+                {
+                    panel(false);
+                }
+            }
+
+            if (gearSwitcherCharmCostVisible)
+            {
+                SetGearSwitcherCharmCostVisible(false);
+            }
+
+            if (gearSwitcherPresetVisible)
+            {
+                SetGearSwitcherPresetVisible(false);
+            }
+        }
+
+        private void OnQuickFastSuperDashClicked()
+        {
+            OpenPanelFromQuick(SetOverlayVisible);
         }
 
         private void OnQuickFastReloadClicked()
         {
-            returnToQuickOnClose = true;
-            SetOverlayVisible(false);
-            SetCollectorVisible(false);
-            SetDreamshieldVisible(false);
-            SetShowHpOnDeathVisible(false);
-            SetMaskDamageVisible(false);
-            SetFreezeHitboxesVisible(false);
-            SetSpeedChangerVisible(false);
-            SetTeleportKitVisible(false);
-            SetBossChallengeVisible(false);
-            SetTrueBossRushVisible(false);
-            SetAlwaysFuriousVisible(false);
-            SetGearSwitcherVisible(false);
-            SetQolVisible(false);
-            SetMenuAnimationVisible(false);
-            SetBossAnimationVisible(false);
-            SetZoteHelperVisible(false);
-            SetGruzHelperVisible(false);
-            SetHornetHelperVisible(false);
-            SetMawlekHelperVisible(false);
-            SetMassiveMossHelperVisible(false);
-            SetCrystalGuardianHelperVisible(false);
-            SetEnragedGuardianHelperVisible(false);
-            SetHornetSentinelHelperVisible(false);
-            SetAllAdditionalGhostHelpersVisible(false);
-            SetBossManipulateVisible(false);
-            SetCheatsVisible(false);
-            SetFastReloadVisible(true);
-            SetQuickVisible(false);
+            OpenPanelFromQuick(SetFastReloadVisible);
         }
 
         private void OnQuickDreamshieldClicked()
         {
-            returnToQuickOnClose = true;
-            SetOverlayVisible(false);
-            SetCollectorVisible(false);
-            SetFastReloadVisible(false);
-            SetShowHpOnDeathVisible(false);
-            SetMaskDamageVisible(false);
-            SetFreezeHitboxesVisible(false);
-            SetSpeedChangerVisible(false);
-            SetTeleportKitVisible(false);
-            SetBossChallengeVisible(false);
-            SetTrueBossRushVisible(false);
-            SetAlwaysFuriousVisible(false);
-            SetGearSwitcherVisible(false);
-            SetQolVisible(false);
-            SetMenuAnimationVisible(false);
-            SetBossAnimationVisible(false);
-            SetZoteHelperVisible(false);
-            SetGruzHelperVisible(false);
-            SetHornetHelperVisible(false);
-            SetMawlekHelperVisible(false);
-            SetMassiveMossHelperVisible(false);
-            SetCrystalGuardianHelperVisible(false);
-            SetEnragedGuardianHelperVisible(false);
-            SetHornetSentinelHelperVisible(false);
-            SetAllAdditionalGhostHelpersVisible(false);
-            SetBossManipulateVisible(false);
-            SetCheatsVisible(false);
-            SetDreamshieldVisible(true);
-            SetQuickVisible(false);
+            OpenPanelFromQuick(SetDreamshieldVisible);
         }
 
         private void OnQuickShowHpOnDeathClicked()
         {
-            returnToQuickOnClose = true;
-            SetOverlayVisible(false);
-            SetCollectorVisible(false);
-            SetFastReloadVisible(false);
-            SetDreamshieldVisible(false);
-            SetMaskDamageVisible(false);
-            SetFreezeHitboxesVisible(false);
-            SetSpeedChangerVisible(false);
-            SetTeleportKitVisible(false);
-            SetBossChallengeVisible(false);
-            SetTrueBossRushVisible(false);
-            SetAlwaysFuriousVisible(false);
-            SetGearSwitcherVisible(false);
-            SetQolVisible(false);
-            SetMenuAnimationVisible(false);
-            SetBossAnimationVisible(false);
-            SetZoteHelperVisible(false);
-            SetGruzHelperVisible(false);
-            SetHornetHelperVisible(false);
-            SetMawlekHelperVisible(false);
-            SetMassiveMossHelperVisible(false);
-            SetCrystalGuardianHelperVisible(false);
-            SetEnragedGuardianHelperVisible(false);
-            SetHornetSentinelHelperVisible(false);
-            SetAllAdditionalGhostHelpersVisible(false);
-            SetBossManipulateVisible(false);
-            SetCheatsVisible(false);
-            SetShowHpOnDeathVisible(true);
-            SetQuickVisible(false);
+            OpenPanelFromQuick(SetShowHpOnDeathVisible);
         }
 
         private void OnQuickMaskDamageClicked()
         {
-            returnToQuickOnClose = true;
-            SetOverlayVisible(false);
-            SetCollectorVisible(false);
-            SetFastReloadVisible(false);
-            SetDreamshieldVisible(false);
-            SetShowHpOnDeathVisible(false);
-            SetMaskDamageVisible(false);
-            SetFreezeHitboxesVisible(false);
-            SetSpeedChangerVisible(false);
-            SetTeleportKitVisible(false);
-            SetBossChallengeVisible(false);
-            SetTrueBossRushVisible(false);
-            SetAlwaysFuriousVisible(false);
-            SetGearSwitcherVisible(false);
-            SetQolVisible(false);
-            SetMenuAnimationVisible(false);
-            SetBossAnimationVisible(false);
-            SetZoteHelperVisible(false);
-            SetGruzHelperVisible(false);
-            SetHornetHelperVisible(false);
-            SetMawlekHelperVisible(false);
-            SetMassiveMossHelperVisible(false);
-            SetCrystalGuardianHelperVisible(false);
-            SetEnragedGuardianHelperVisible(false);
-            SetHornetSentinelHelperVisible(false);
-            SetAllAdditionalGhostHelpersVisible(false);
-            SetBossManipulateVisible(false);
-            SetCheatsVisible(false);
-            SetMaskDamageVisible(true);
-            SetQuickVisible(false);
+            OpenPanelFromQuick(SetMaskDamageVisible);
         }
 
         private void OnQuickFreezeHitboxesClicked()
         {
-            returnToQuickOnClose = true;
-            SetOverlayVisible(false);
-            SetCollectorVisible(false);
-            SetFastReloadVisible(false);
-            SetDreamshieldVisible(false);
-            SetShowHpOnDeathVisible(false);
-            SetMaskDamageVisible(false);
-            SetFreezeHitboxesVisible(false);
-            SetSpeedChangerVisible(false);
-            SetTeleportKitVisible(false);
-            SetBossChallengeVisible(false);
-            SetTrueBossRushVisible(false);
-            SetAlwaysFuriousVisible(false);
-            SetGearSwitcherVisible(false);
-            SetQolVisible(false);
-            SetMenuAnimationVisible(false);
-            SetBossAnimationVisible(false);
-            SetZoteHelperVisible(false);
-            SetGruzHelperVisible(false);
-            SetHornetHelperVisible(false);
-            SetMawlekHelperVisible(false);
-            SetMassiveMossHelperVisible(false);
-            SetCrystalGuardianHelperVisible(false);
-            SetEnragedGuardianHelperVisible(false);
-            SetHornetSentinelHelperVisible(false);
-            SetAllAdditionalGhostHelpersVisible(false);
-            SetBossManipulateVisible(false);
-            SetCheatsVisible(false);
-            SetFreezeHitboxesVisible(true);
-            SetQuickVisible(false);
+            OpenPanelFromQuick(SetFreezeHitboxesVisible);
+        }
+
+        private void OnQuickFpsBoostClicked()
+        {
+            OpenPanelFromQuick(SetFpsBoostVisible);
         }
 
         private void OnQuickSpeedChangerClicked()
         {
-            returnToQuickOnClose = true;
-            SetOverlayVisible(false);
-            SetCollectorVisible(false);
-            SetFastReloadVisible(false);
-            SetDreamshieldVisible(false);
-            SetShowHpOnDeathVisible(false);
-            SetMaskDamageVisible(false);
-            SetFreezeHitboxesVisible(false);
-            SetTeleportKitVisible(false);
-            SetBossChallengeVisible(false);
-            SetTrueBossRushVisible(false);
-            SetAlwaysFuriousVisible(false);
-            SetGearSwitcherVisible(false);
-            SetQolVisible(false);
-            SetMenuAnimationVisible(false);
-            SetBossAnimationVisible(false);
-            SetZoteHelperVisible(false);
-            SetGruzHelperVisible(false);
-            SetHornetHelperVisible(false);
-            SetMawlekHelperVisible(false);
-            SetMassiveMossHelperVisible(false);
-            SetCrystalGuardianHelperVisible(false);
-            SetEnragedGuardianHelperVisible(false);
-            SetHornetSentinelHelperVisible(false);
-            SetAllAdditionalGhostHelpersVisible(false);
-            SetBossManipulateVisible(false);
-            SetCheatsVisible(false);
-            SetSpeedChangerVisible(true);
-            SetQuickVisible(false);
+            OpenPanelFromQuick(SetSpeedChangerVisible);
         }
 
         private void OnQuickTeleportKitClicked()
         {
-            returnToQuickOnClose = true;
-            SetOverlayVisible(false);
-            SetCollectorVisible(false);
-            SetFastReloadVisible(false);
-            SetDreamshieldVisible(false);
-            SetShowHpOnDeathVisible(false);
-            SetMaskDamageVisible(false);
-            SetFreezeHitboxesVisible(false);
-            SetSpeedChangerVisible(false);
-            SetBossChallengeVisible(false);
-            SetTrueBossRushVisible(false);
-            SetAlwaysFuriousVisible(false);
-            SetGearSwitcherVisible(false);
-            SetQolVisible(false);
-            SetMenuAnimationVisible(false);
-            SetBossAnimationVisible(false);
-            SetZoteHelperVisible(false);
-            SetGruzHelperVisible(false);
-            SetHornetHelperVisible(false);
-            SetMawlekHelperVisible(false);
-            SetMassiveMossHelperVisible(false);
-            SetCrystalGuardianHelperVisible(false);
-            SetEnragedGuardianHelperVisible(false);
-            SetHornetSentinelHelperVisible(false);
-            SetAllAdditionalGhostHelpersVisible(false);
-            SetBossManipulateVisible(false);
-            SetCheatsVisible(false);
-            SetTeleportKitVisible(true);
-            SetQuickVisible(false);
+            OpenPanelFromQuick(SetTeleportKitVisible);
         }
 
         private void OnQuickBossChallengeClicked()
         {
-            returnToQuickOnClose = true;
-            SetOverlayVisible(false);
-            SetCollectorVisible(false);
-            SetFastReloadVisible(false);
-            SetDreamshieldVisible(false);
-            SetShowHpOnDeathVisible(false);
-            SetMaskDamageVisible(false);
-            SetFreezeHitboxesVisible(false);
-            SetSpeedChangerVisible(false);
-            SetTeleportKitVisible(false);
-            SetAlwaysFuriousVisible(false);
-            SetGearSwitcherVisible(false);
-            SetQolVisible(false);
-            SetMenuAnimationVisible(false);
-            SetBossAnimationVisible(false);
-            SetZoteHelperVisible(false);
-            SetGruzHelperVisible(false);
-            SetHornetHelperVisible(false);
-            SetMawlekHelperVisible(false);
-            SetMassiveMossHelperVisible(false);
-            SetCrystalGuardianHelperVisible(false);
-            SetEnragedGuardianHelperVisible(false);
-            SetHornetSentinelHelperVisible(false);
-            SetAllAdditionalGhostHelpersVisible(false);
-            SetBossManipulateVisible(false);
-            SetCheatsVisible(false);
-            SetRandomPantheonsVisible(false);
-            SetBossChallengeVisible(true);
-            SetQuickVisible(false);
+            OpenPanelFromQuick(SetBossChallengeVisible);
         }
 
         private void OnQuickBossManipulateClicked()
         {
-            returnToQuickOnClose = true;
             returnToBossManipulateOnClose = false;
-            SetOverlayVisible(false);
-            SetCollectorVisible(false);
-            SetFastReloadVisible(false);
-            SetDreamshieldVisible(false);
-            SetShowHpOnDeathVisible(false);
-            SetMaskDamageVisible(false);
-            SetFreezeHitboxesVisible(false);
-            SetSpeedChangerVisible(false);
-            SetTeleportKitVisible(false);
-            SetBossChallengeVisible(false);
-            SetTrueBossRushVisible(false);
-            SetRandomPantheonsVisible(false);
-            SetAlwaysFuriousVisible(false);
-            SetGearSwitcherVisible(false);
-            SetGearSwitcherCharmCostVisible(false);
-            SetGearSwitcherPresetVisible(false);
-            SetQolVisible(false);
-            SetMenuAnimationVisible(false);
-            SetBossAnimationVisible(false);
-            SetZoteHelperVisible(false);
-            SetGruzHelperVisible(false);
-            SetHornetHelperVisible(false);
-            SetMawlekHelperVisible(false);
-            SetMassiveMossHelperVisible(false);
-            SetCrystalGuardianHelperVisible(false);
-            SetEnragedGuardianHelperVisible(false);
-            SetHornetSentinelHelperVisible(false);
-            SetAllAdditionalGhostHelpersVisible(false);
-            SetBossManipulateVisible(true);
-            SetCheatsVisible(false);
-            SetQuickVisible(false);
+            OpenPanelFromQuick(SetBossManipulateVisible);
         }
 
         private void OnQuickRandomPantheonsClicked()
         {
-            returnToQuickOnClose = true;
-            SetOverlayVisible(false);
-            SetCollectorVisible(false);
-            SetFastReloadVisible(false);
-            SetDreamshieldVisible(false);
-            SetShowHpOnDeathVisible(false);
-            SetMaskDamageVisible(false);
-            SetFreezeHitboxesVisible(false);
-            SetSpeedChangerVisible(false);
-            SetTeleportKitVisible(false);
-            SetBossChallengeVisible(false);
-            SetTrueBossRushVisible(false);
-            SetAlwaysFuriousVisible(false);
-            SetGearSwitcherVisible(false);
-            SetQolVisible(false);
-            SetMenuAnimationVisible(false);
-            SetBossAnimationVisible(false);
-            SetZoteHelperVisible(false);
-            SetGruzHelperVisible(false);
-            SetHornetHelperVisible(false);
-            SetMawlekHelperVisible(false);
-            SetMassiveMossHelperVisible(false);
-            SetCrystalGuardianHelperVisible(false);
-            SetEnragedGuardianHelperVisible(false);
-            SetHornetSentinelHelperVisible(false);
-            SetAllAdditionalGhostHelpersVisible(false);
-            SetBossManipulateVisible(false);
-            SetCheatsVisible(false);
-            SetRandomPantheonsVisible(true);
-            SetQuickVisible(false);
+            OpenPanelFromQuick(SetRandomPantheonsVisible);
         }
 
         private void OnQuickTrueBossRushClicked()
         {
-            returnToQuickOnClose = true;
-            SetOverlayVisible(false);
-            SetCollectorVisible(false);
-            SetFastReloadVisible(false);
-            SetDreamshieldVisible(false);
-            SetShowHpOnDeathVisible(false);
-            SetMaskDamageVisible(false);
-            SetFreezeHitboxesVisible(false);
-            SetSpeedChangerVisible(false);
-            SetTeleportKitVisible(false);
-            SetBossChallengeVisible(false);
-            SetTrueBossRushVisible(false);
-            SetAlwaysFuriousVisible(false);
-            SetGearSwitcherVisible(false);
-            SetQolVisible(false);
-            SetMenuAnimationVisible(false);
-            SetBossAnimationVisible(false);
-            SetZoteHelperVisible(false);
-            SetGruzHelperVisible(false);
-            SetHornetHelperVisible(false);
-            SetMawlekHelperVisible(false);
-            SetMassiveMossHelperVisible(false);
-            SetCrystalGuardianHelperVisible(false);
-            SetEnragedGuardianHelperVisible(false);
-            SetHornetSentinelHelperVisible(false);
-            SetAllAdditionalGhostHelpersVisible(false);
-            SetBossManipulateVisible(false);
-            SetCheatsVisible(false);
-            SetRandomPantheonsVisible(false);
-            SetTrueBossRushVisible(true);
-            SetQuickVisible(false);
+            OpenPanelFromQuick(SetTrueBossRushVisible);
         }
 
         private void OnQuickCheatsClicked()
         {
-            returnToQuickOnClose = true;
-            SetOverlayVisible(false);
-            SetCollectorVisible(false);
-            SetFastReloadVisible(false);
-            SetDreamshieldVisible(false);
-            SetShowHpOnDeathVisible(false);
-            SetMaskDamageVisible(false);
-            SetFreezeHitboxesVisible(false);
-            SetSpeedChangerVisible(false);
-            SetTeleportKitVisible(false);
-            SetBossChallengeVisible(false);
-            SetTrueBossRushVisible(false);
-            SetRandomPantheonsVisible(false);
-            SetAlwaysFuriousVisible(false);
-            SetGearSwitcherVisible(false);
-            SetQolVisible(false);
-            SetMenuAnimationVisible(false);
-            SetBossAnimationVisible(false);
-            SetZoteHelperVisible(false);
-            SetGruzHelperVisible(false);
-            SetHornetHelperVisible(false);
-            SetMawlekHelperVisible(false);
-            SetMassiveMossHelperVisible(false);
-            SetCrystalGuardianHelperVisible(false);
-            SetEnragedGuardianHelperVisible(false);
-            SetHornetSentinelHelperVisible(false);
-            SetAllAdditionalGhostHelpersVisible(false);
-            SetBossManipulateVisible(false);
-            SetCheatsVisible(true);
-            SetQuickVisible(false);
+            OpenPanelFromQuick(SetCheatsVisible);
         }
 
         private void OnQuickAlwaysFuriousClicked()
         {
-            returnToQuickOnClose = true;
-            SetOverlayVisible(false);
-            SetCollectorVisible(false);
-            SetFastReloadVisible(false);
-            SetDreamshieldVisible(false);
-            SetShowHpOnDeathVisible(false);
-            SetMaskDamageVisible(false);
-            SetFreezeHitboxesVisible(false);
-            SetSpeedChangerVisible(false);
-            SetTeleportKitVisible(false);
-            SetBossChallengeVisible(false);
-            SetTrueBossRushVisible(false);
-            SetRandomPantheonsVisible(false);
-            SetGearSwitcherVisible(false);
-            SetAlwaysFuriousVisible(true);
-            SetQolVisible(false);
-            SetMenuAnimationVisible(false);
-            SetBossAnimationVisible(false);
-            SetZoteHelperVisible(false);
-            SetGruzHelperVisible(false);
-            SetHornetHelperVisible(false);
-            SetMawlekHelperVisible(false);
-            SetMassiveMossHelperVisible(false);
-            SetCrystalGuardianHelperVisible(false);
-            SetEnragedGuardianHelperVisible(false);
-            SetHornetSentinelHelperVisible(false);
-            SetAllAdditionalGhostHelpersVisible(false);
-            SetBossManipulateVisible(false);
-            SetCheatsVisible(false);
-            SetQuickVisible(false);
+            OpenPanelFromQuick(SetAlwaysFuriousVisible);
         }
 
         private void OnQuickGearSwitcherClicked()
         {
-            returnToQuickOnClose = true;
-            SetOverlayVisible(false);
-            SetCollectorVisible(false);
-            SetFastReloadVisible(false);
-            SetDreamshieldVisible(false);
-            SetShowHpOnDeathVisible(false);
-            SetMaskDamageVisible(false);
-            SetFreezeHitboxesVisible(false);
-            SetSpeedChangerVisible(false);
-            SetTeleportKitVisible(false);
-            SetBossChallengeVisible(false);
-            SetTrueBossRushVisible(false);
-            SetAlwaysFuriousVisible(false);
-            SetGearSwitcherCharmCostVisible(false);
-            SetGearSwitcherPresetVisible(false);
-            SetQolVisible(false);
-            SetMenuAnimationVisible(false);
-            SetBossAnimationVisible(false);
-            SetZoteHelperVisible(false);
-            SetGruzHelperVisible(false);
-            SetHornetHelperVisible(false);
-            SetMawlekHelperVisible(false);
-            SetMassiveMossHelperVisible(false);
-            SetCrystalGuardianHelperVisible(false);
-            SetEnragedGuardianHelperVisible(false);
-            SetHornetSentinelHelperVisible(false);
-            SetAllAdditionalGhostHelpersVisible(false);
-            SetBossManipulateVisible(false);
-            SetCheatsVisible(false);
-            SetGearSwitcherVisible(true);
-            SetQuickVisible(false);
+            OpenPanelFromQuick(SetGearSwitcherVisible);
         }
 
         private void OnQuickBossAnimationClicked()
         {
-            returnToQuickOnClose = true;
             returnToQolOnClose = false;
-            SetOverlayVisible(false);
-            SetCollectorVisible(false);
-            SetFastReloadVisible(false);
-            SetDreamshieldVisible(false);
-            SetShowHpOnDeathVisible(false);
-            SetMaskDamageVisible(false);
-            SetFreezeHitboxesVisible(false);
-            SetSpeedChangerVisible(false);
-            SetTeleportKitVisible(false);
-            SetBossChallengeVisible(false);
-            SetTrueBossRushVisible(false);
-            SetAlwaysFuriousVisible(false);
-            SetGearSwitcherVisible(false);
-            SetQolVisible(false);
-            SetMenuAnimationVisible(false);
-            SetZoteHelperVisible(false);
-            SetGruzHelperVisible(false);
-            SetHornetHelperVisible(false);
-            SetMawlekHelperVisible(false);
-            SetMassiveMossHelperVisible(false);
-            SetCrystalGuardianHelperVisible(false);
-            SetEnragedGuardianHelperVisible(false);
-            SetHornetSentinelHelperVisible(false);
-            SetAllAdditionalGhostHelpersVisible(false);
-            SetBossManipulateVisible(false);
-            SetCheatsVisible(false);
-            SetBossAnimationVisible(true);
-            SetQuickVisible(false);
+            OpenPanelFromQuick(SetBossAnimationVisible);
         }
 
         private void OnQuickMenuAnimationClicked()
         {
-            returnToQuickOnClose = true;
             returnToQolOnClose = false;
-            SetOverlayVisible(false);
-            SetCollectorVisible(false);
-            SetFastReloadVisible(false);
-            SetDreamshieldVisible(false);
-            SetShowHpOnDeathVisible(false);
-            SetMaskDamageVisible(false);
-            SetFreezeHitboxesVisible(false);
-            SetSpeedChangerVisible(false);
-            SetTeleportKitVisible(false);
-            SetBossChallengeVisible(false);
-            SetTrueBossRushVisible(false);
-            SetAlwaysFuriousVisible(false);
-            SetGearSwitcherVisible(false);
-            SetQolVisible(false);
-            SetBossAnimationVisible(false);
-            SetZoteHelperVisible(false);
-            SetGruzHelperVisible(false);
-            SetHornetHelperVisible(false);
-            SetMawlekHelperVisible(false);
-            SetMassiveMossHelperVisible(false);
-            SetCrystalGuardianHelperVisible(false);
-            SetEnragedGuardianHelperVisible(false);
-            SetHornetSentinelHelperVisible(false);
-            SetAllAdditionalGhostHelpersVisible(false);
-            SetBossManipulateVisible(false);
-            SetCheatsVisible(false);
-            SetMenuAnimationVisible(true);
-            SetQuickVisible(false);
+            OpenPanelFromQuick(SetMenuAnimationVisible);
         }
 
         private void OnQuickQolClicked()
         {
-            returnToQuickOnClose = true;
-            SetOverlayVisible(false);
-            SetCollectorVisible(false);
-            SetFastReloadVisible(false);
-            SetDreamshieldVisible(false);
-            SetShowHpOnDeathVisible(false);
-            SetMaskDamageVisible(false);
-            SetFreezeHitboxesVisible(false);
-            SetSpeedChangerVisible(false);
-            SetTeleportKitVisible(false);
-            SetBossChallengeVisible(false);
-            SetTrueBossRushVisible(false);
-            SetAlwaysFuriousVisible(false);
-            SetGearSwitcherVisible(false);
-            SetMenuAnimationVisible(false);
-            SetBossAnimationVisible(false);
-            SetZoteHelperVisible(false);
-            SetGruzHelperVisible(false);
-            SetHornetHelperVisible(false);
-            SetMawlekHelperVisible(false);
-            SetMassiveMossHelperVisible(false);
-            SetCrystalGuardianHelperVisible(false);
-            SetEnragedGuardianHelperVisible(false);
-            SetHornetSentinelHelperVisible(false);
-            SetAllAdditionalGhostHelpersVisible(false);
-            SetBossManipulateVisible(false);
-            SetCheatsVisible(false);
             returnToQolOnClose = false;
-            SetQolVisible(true);
-            SetQuickVisible(false);
+            OpenPanelFromQuick(SetQolVisible);
         }
     }
 }
-
-
-
-
-
-
-
-
-

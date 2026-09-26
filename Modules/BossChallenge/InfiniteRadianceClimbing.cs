@@ -68,7 +68,7 @@ public sealed class InfiniteRadianceClimbing : Module {
         }
 
         if (running) {
-            Quit(); // re-init without killing the player when re-entering the scene
+            Quit();
         }
 
         running = true;
@@ -339,8 +339,8 @@ public sealed class InfiniteRadianceClimbing : Module {
     private static void TrySetTransition(PlayMakerFSM fsm, string stateName, string eventName, string targetState) {
         try {
             fsm.ChangeTransition(stateName, eventName, targetState);
-        } catch {
-            // Ignore missing states/transitions on restore.
+        } catch (Exception swallowed) {
+            LogSuppressed(swallowed, "InfiniteRadianceClimbing.cs");
         }
     }
 }

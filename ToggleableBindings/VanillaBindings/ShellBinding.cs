@@ -189,7 +189,6 @@ namespace ToggleableBindings.VanillaBindings
             }
             catch
             {
-                // ignore missing field
             }
         }
 
@@ -211,7 +210,6 @@ namespace ToggleableBindings.VanillaBindings
             }
             catch
             {
-                // ignore FSM lookup errors
             }
         }
     }

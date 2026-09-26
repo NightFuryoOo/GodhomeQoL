@@ -107,7 +107,6 @@ public sealed class TrueBossRush : Module
         {
             if (sequence == null)
             {
-                // Unity fake-null for destroyed objects; keep a non-null ref for dictionary removal.
                 if (sequence is not null)
                 {
                     _ = OriginalSequences.Remove(sequence);
@@ -119,7 +118,6 @@ public sealed class TrueBossRush : Module
         {
             if (sequence == null)
             {
-                // Unity fake-null for destroyed objects; keep a non-null ref for dictionary removal.
                 if (sequence is not null)
                 {
                     _ = SequenceDoors.Remove(sequence);
@@ -153,9 +151,9 @@ public sealed class TrueBossRush : Module
                     SyncFirstScene(sequence);
                 }
             }
-            catch
+            catch (Exception swallowed)
             {
-                // Ignore restore failures for unloaded/changed sequences.
+                LogSuppressed(swallowed, "TrueBossRush.cs");
             }
         }
     }
@@ -167,7 +165,6 @@ public sealed class TrueBossRush : Module
             TryRestoreDisabledSequence(sequence);
         }
 
-        // Keep a direct original restore pass as a safety fallback.
         RestoreCachedSequences();
     }
 
@@ -206,9 +203,9 @@ public sealed class TrueBossRush : Module
         {
             Instance.ApplySequence(self.bossSequence);
         }
-        catch
+        catch (Exception swallowed)
         {
-            // ignore first-load door sync failures
+            LogSuppressed(swallowed, "TrueBossRush.cs");
         }
     }
 
@@ -221,9 +218,9 @@ public sealed class TrueBossRush : Module
                 CacheSequenceDoorEntry(door);
             }
         }
-        catch
+        catch (Exception swallowed)
         {
-            // ignore door discovery failures
+            LogSuppressed(swallowed, "TrueBossRush.cs");
         }
     }
 
@@ -292,9 +289,9 @@ public sealed class TrueBossRush : Module
                 }
             }
         }
-        catch
+        catch (Exception swallowed)
         {
-            // ignore global sequence discovery failures
+            LogSuppressed(swallowed, "TrueBossRush.cs");
         }
 
         return knownSequences;
@@ -324,9 +321,9 @@ public sealed class TrueBossRush : Module
                 SyncFirstScene(sequence);
             }
         }
-        catch
+        catch (Exception swallowed)
         {
-            // ignore restore failures for unloaded/changed sequences
+            LogSuppressed(swallowed, "TrueBossRush.cs");
         }
     }
 
@@ -440,9 +437,9 @@ public sealed class TrueBossRush : Module
 
                 Instance.ApplySequence(sequence);
             }
-            catch
+            catch (Exception swallowed)
             {
-                // Ignore refresh failures for partially loaded/changed sequences.
+                LogSuppressed(swallowed, "TrueBossRush.cs");
             }
         }
     }
@@ -478,8 +475,9 @@ public sealed class TrueBossRush : Module
         {
             return BossScenesField.GetValue(sequence) as BossScene[];
         }
-        catch
+        catch (Exception swallowed)
         {
+            LogSuppressed(swallowed, "TrueBossRush.cs");
             return null;
         }
     }
@@ -496,8 +494,9 @@ public sealed class TrueBossRush : Module
             BossScenesField.SetValue(sequence, scenes);
             return true;
         }
-        catch
+        catch (Exception swallowed)
         {
+            LogSuppressed(swallowed, "TrueBossRush.cs");
             return false;
         }
     }
@@ -620,8 +619,9 @@ public sealed class TrueBossRush : Module
             firstScene = sceneName;
             return true;
         }
-        catch
+        catch (Exception swallowed)
         {
+            LogSuppressed(swallowed, "TrueBossRush.cs");
             return false;
         }
     }

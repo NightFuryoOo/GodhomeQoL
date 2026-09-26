@@ -48,6 +48,7 @@ public sealed class QuickMenuMasterSettings
     public bool BossAnimSavedGreyPrinceZote { get; set; }
     public bool BossAnimSavedCollector { get; set; }
     public bool BossAnimSavedSoulMaster { get; set; }
+    public bool BossAnimSavedCollectorRoar { get; set; }
 
     public bool RandomPantheonsEnabled { get; set; } = false;
     public bool RandomPantheonsHasSnapshot { get; set; }

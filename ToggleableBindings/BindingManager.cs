@@ -17,9 +17,6 @@ using TB = ToggleableBindings.ToggleableBindings;
 
 namespace ToggleableBindings
 {
-    /// <summary>
-    /// Manages bindings and provides methods for retrieving, applying, and restoring them.
-    /// </summary>
     public static class BindingManager
     {
         #region Exception Messages
@@ -41,26 +38,11 @@ namespace ToggleableBindings
         [QuickSetting(true, nameof(RegisteredBindings))]
         private static List<Binding> _serializedBindings = new();
 
-        /// <summary>
-        /// Invoked when a binding is successfully registered.
-        /// </summary>
         public static event BindingEventHandler? BindingRegistered;
-        /// <summary>
-        /// Invoked when a binding is successfully deregistered.
-        /// </summary>
         public static event BindingEventHandler? BindingDeregistered;
-        /// <summary>
-        /// Invoked when a registered binding is applied (enabled).
-        /// </summary>
         public static event BindingEventHandler? BindingApplied;
-        /// <summary>
-        /// Invoked when a registered binding is restored (disabled).
-        /// </summary>
         public static event BindingEventHandler? BindingRestored;
 
-        /// <summary>
-        /// Gets a read-only dictionary that provides a view of the currently registered binding types and their associated binding objects.
-        /// </summary>
         public static IReadOnlyDictionary<Type, Binding> RegisteredBindings { get; } = _registeredBindings;
 
         internal static void Initialize()
@@ -97,31 +79,6 @@ namespace ToggleableBindings
 
         private static void CleanUpForQuit()
         {
-            /*
-             * There's probably a better way to do this, but I can't think of it right now.
-             *
-             * We need to ensure that the bindings are restored before actual game data is saved
-             * in case the mod is removed before the next load and one or more bindings affected
-             * the player character's stats or similar.
-             *
-             * We only want to do this if we're not staying in the save file to continue playing,
-             * so we hook the MainMenuOrQuit event first, and THEN add a temporary hook
-             * on SaveSettingsSaved.
-             *
-             * The necessary order:
-             * - SaveIsBeingQuit -> SettingsSaved -> BindingsRestored -> SaveDataSaved -> Quit
-             *
-             * Hooking MainMenuOrQuit alone will break the order as then this would happen before
-             * the settings were saved.
-             *
-             * This involves checking to see if we're going back to the main menu or the
-             * application is closed and then hooking the SaveSettingsSaved (which happens right
-             * before the actual game data is saved) and restoring/deregistering all of the bindings
-             * after the save settings are serialized.
-             *
-             * This ensures that their serializable properties are written to file before we reset them.
-             */
-
             Action<int>? handler = null;
             TB.Instance.Settings.SaveSettingsSaved += handler = (saveSlot) =>
             {
@@ -134,20 +91,6 @@ namespace ToggleableBindings
 
         #region IsBindingRegistered
 
-        /// <summary>
-        /// Checks whether the specified binding is registered.
-        /// <para/>
-        /// Note that this will check if the type of <paramref name="binding"/> is registered first
-        /// and then check for reference equality between the
-        /// specified binding and the registered binding.
-        /// </summary>
-        /// <param name="binding">The binding to check for.</param>
-        /// <returns>
-        /// <see langword="true"/> if the specified binding is registered; otherwise, <see langword="false"/>.
-        /// Returns <see langword="false"/> if the type is registered but the registered binding isn't the
-        /// same reference as <paramref name="binding"/>.
-        /// </returns>
-        /// <exception cref="ArgumentNullException"/>
         public static bool IsBindingRegistered(Binding binding)
         {
             if (binding == null)
@@ -157,13 +100,6 @@ namespace ToggleableBindings
                 return RegisteredBindings.TryGetValue(binding.GetType(), out var registered) && binding == registered;
         }
 
-        /// <summary>
-        /// Checks whether a binding of the specified type is registered.
-        /// </summary>
-        /// <param name="bindingType">The type of the binding to check for.</param>
-        /// <returns><see langword="true"/> if a binding of the specified type is registered; otherwise, <see langword="false"/>.</returns>
-        /// <exception cref="ArgumentException"/>
-        /// <exception cref="ArgumentNullException"/>
         public static bool IsBindingRegistered(Type bindingType)
         {
             TypeIsValidBinding(bindingType, nameof(bindingType)).ThrowIfUnsuccessful();
@@ -172,12 +108,6 @@ namespace ToggleableBindings
                 return RegisteredBindings.ContainsKey(bindingType);
         }
 
-        /// <summary>
-        /// Checks whether a binding with the specified ID is registered.
-        /// </summary>
-        /// <param name="bindingID">The ID of the binding to check for.</param>
-        /// <returns><see langword="true"/> if a binding with the specified ID is registered; otherwise, <see langword="false"/>.</returns>
-        /// <exception cref="ArgumentNullException"/>
         public static bool IsBindingRegistered(string bindingID)
         {
             if (bindingID == null)
@@ -187,9 +117,6 @@ namespace ToggleableBindings
                 return _bindingIDTypeMap.ContainsKey(bindingID);
         }
 
-        /// <typeparam name="T"><inheritdoc cref="IsBindingRegistered(Type)" path="/param[1]"/></typeparam>
-        /// <exception cref="TypeArgumentException"/>
-        /// <inheritdoc cref="IsBindingRegistered(Type)" path="/*[not(self::exception)]"/>
         public static bool IsBindingRegistered<T>() where T : Binding
         {
             TypeIsValidBinding<T>(nameof(T)).ThrowIfUnsuccessful();
@@ -202,17 +129,6 @@ namespace ToggleableBindings
 
         #region RegisterBinding
 
-        /// <summary>
-        /// Registers the specified binding. Only one binding of a given type
-        /// can be registered at a time.
-        /// <para>
-        /// Registering a binding allows it to be applied and restored by the player
-        /// from the bindings menu.
-        /// </para>
-        /// </summary>
-        /// <param name="binding">The binding to register.</param>
-        /// <exception cref="ArgumentNullException"/>
-        /// <exception cref="InvalidOperationException"/>
         public static void RegisterBinding(Binding binding)
         {
             if (binding == null)
@@ -227,13 +143,6 @@ namespace ToggleableBindings
             OnBindingRegistered(binding);
         }
 
-        /// <summary>
-        /// Registers a new binding of the specified type. Only one binding of a given type can be registered at a time.
-        /// <para><inheritdoc cref="RegisterBinding(Binding)"/></para>
-        /// </summary>
-        /// <typeparam name="T">The type of binding to create and register.</typeparam>
-        /// <exception cref="InvalidOperationException"/>
-        /// <exception cref="TypeArgumentException"/>
         public static void RegisterBinding<T>() where T : Binding, new()
         {
             TypeIsValidBinding<T>(nameof(T)).ThrowIfUnsuccessful();
@@ -251,18 +160,6 @@ namespace ToggleableBindings
 
         #region DeregisterBinding
 
-        /// <summary>
-        /// Deregisters the specified binding.
-        /// <para>
-        /// Note: Bindings should generally not be deregistered except in cases 
-        /// such as when unloading a mod.
-        /// If you'd like to control whether or not they can be used
-        /// by the player, you should use <see cref="Binding.CanBeApplied"/> instead.
-        /// </para>
-        /// </summary>
-        /// <param name="binding">The binding to deregister.</param>
-        /// <exception cref="ArgumentNullException"/>
-        /// <exception cref="InvalidOperationException"/>
         public static void DeregisterBinding(Binding binding)
         {
             if (binding == null)
@@ -280,14 +177,6 @@ namespace ToggleableBindings
             OnBindingDeregistered(binding);
         }
 
-        /// <summary>
-        /// Deregisters the binding of the specified type.
-        /// <para><inheritdoc cref="DeregisterBinding(Binding)"/></para>
-        /// </summary>
-        /// <param name="bindingType">The type of the binding to deregister.</param>
-        /// <exception cref="ArgumentException"/>
-        /// <exception cref="ArgumentNullException"/>
-        /// <exception cref="InvalidOperationException"/>
         public static void DeregisterBinding(Type bindingType)
         {
             TypeIsValidBinding(bindingType, nameof(bindingType)).ThrowIfUnsuccessful();
@@ -300,13 +189,6 @@ namespace ToggleableBindings
             DeregisterBinding(binding);
         }
 
-        /// <summary>
-        /// Deregisters the binding with the specified ID.
-        /// <para><inheritdoc cref="DeregisterBinding(Binding)"/></para>
-        /// </summary>
-        /// <param name="bindingID">The ID of the binding to deregister.</param>
-        /// <exception cref="ArgumentNullException"/>
-        /// <exception cref="InvalidOperationException"/>
         public static void DeregisterBinding(string bindingID)
         {
             if (bindingID == null)
@@ -322,10 +204,6 @@ namespace ToggleableBindings
             DeregisterBinding(bindingType);
         }
 
-        /// <typeparam name="T"><inheritdoc cref="DeregisterBinding(Type)" path="/param[1]"/></typeparam>
-        /// <exception cref="InvalidOperationException"/>
-        /// <exception cref="TypeArgumentException"/>
-        /// <inheritdoc cref="DeregisterBinding(Type)" path="/*[not(self::exception)]"/>
         public static void DeregisterBinding<T>() where T : Binding
         {
             TypeIsValidBinding<T>(nameof(T)).ThrowIfUnsuccessful();
@@ -343,14 +221,6 @@ namespace ToggleableBindings
 
         #region GetBinding
 
-        /// <summary>
-        /// Gets the registered binding of the specified type.
-        /// </summary>
-        /// <param name="bindingType">The type of the binding to get.</param>
-        /// <returns>The registered binding of the specified type.</returns>
-        /// <exception cref="ArgumentException"/>
-        /// <exception cref="ArgumentNullException"/>
-        /// <exception cref="InvalidOperationException"/>
         public static Binding GetBinding(Type bindingType)
         {
             TypeIsValidBinding(bindingType, nameof(bindingType)).ThrowIfUnsuccessful();
@@ -358,13 +228,6 @@ namespace ToggleableBindings
             return TypeIsRegisteredBinding(bindingType).GetValueOrThrow();
         }
 
-        /// <summary>
-        /// Gets the registered binding with the specified ID.
-        /// </summary>
-        /// <param name="bindingID">The ID of the binding to get.</param>
-        /// <returns>The registered binding with the specified ID.</returns>
-        /// <exception cref="ArgumentNullException"/>
-        /// <exception cref="InvalidOperationException"/>
         public static Binding GetBinding(string bindingID)
         {
             if (bindingID == null)
@@ -373,10 +236,6 @@ namespace ToggleableBindings
             return IDIsRegisteredBinding(bindingID).GetValueOrThrow();
         }
 
-        /// <typeparam name="T"><inheritdoc cref="GetBinding(Type)" path="/param[1]"/></typeparam>
-        /// <exception cref="InvalidOperationException"/>
-        /// <exception cref="TypeArgumentException"/>
-        /// <inheritdoc cref="GetBinding(Type)" path="/*[not(self::exception)]"/>
         public static T GetBinding<T>() where T : Binding
         {
             TypeIsValidBinding<T>(nameof(T)).ThrowIfUnsuccessful();
@@ -384,12 +243,6 @@ namespace ToggleableBindings
             return TypeIsRegisteredBinding<T>().GetValueOrThrow();
         }
 
-        /// <summary>
-        /// Attempts to get the registered binding of the specified type.
-        /// </summary>
-        /// <param name="bindingType"><inheritdoc cref="GetBinding(Type)"/></param>
-        /// <param name="value">If successful, the matched binding; otherwise, <see langword="null"/>.</param>
-        /// <returns><see langword="true"/> if a binding of the specified type was found; otherwise, <see langword="false"/>.</returns>
         public static bool TryGetBinding([NotNullWhen(true)] Type? bindingType, [NotNullWhen(true)] out Binding? value)
         {
             value = null;
@@ -406,12 +259,6 @@ namespace ToggleableBindings
             return true;
         }
 
-        /// <summary>
-        /// Attempts to get a registered binding with the specified ID.
-        /// </summary>
-        /// <param name="bindingID"><inheritdoc cref="GetBinding(string)" path="/param[1]"/></param>
-        /// <returns><see langword="true"/> if a binding with the specified name was found; otherwise, <see langword="false"/>.</returns>
-        /// <inheritdoc cref="TryGetBinding(Type?, out Binding?)"/>
         public static bool TryGetBinding([NotNullWhen(true)] string? bindingID, [NotNullWhen(true)] out Binding? value)
         {
             value = null;
@@ -427,8 +274,6 @@ namespace ToggleableBindings
             return true;
         }
 
-        /// <typeparam name="T"><inheritdoc cref="TryGetBinding(Type?, out Binding?)" path="/param[1]"/></typeparam>
-        /// <inheritdoc cref="TryGetBinding(Type?, out Binding?)"/>
         public static bool TryGetBinding<T>([NotNullWhen(true)] out T? value) where T : Binding
         {
             value = default;
@@ -449,35 +294,18 @@ namespace ToggleableBindings
 
         #region ApplyBinding
 
-        /// <summary>
-        /// Applies the registered binding of the specified type.
-        /// </summary>
-        /// <param name="bindingType">The type of the binding to apply.</param>
-        /// <exception cref="ArgumentException"/>
-        /// <exception cref="ArgumentNullException"/>
-        /// <exception cref="InvalidOperationException"/>
         public static void ApplyBinding(Type bindingType)
         {
             Binding binding = GetBinding(bindingType);
             binding.Apply();
         }
 
-        /// <summary>
-        /// Applies the registered binding with the specified ID.
-        /// </summary>
-        /// <param name="bindingID">The ID of the binding to apply.</param>
-        /// <exception cref="ArgumentNullException"/>
-        /// <exception cref="InvalidOperationException"/>
         public static void ApplyBinding(string bindingID)
         {
             Binding binding = GetBinding(bindingID);
             binding.Apply();
         }
 
-        /// <typeparam name="T"><inheritdoc cref="ApplyBinding(Type)" path="/param[1]"/></typeparam>
-        /// <exception cref="InvalidOperationException"/>
-        /// <exception cref="TypeArgumentException"/>
-        /// <inheritdoc cref="ApplyBinding(Type)" path="/*[not(self::exception)]"/>
         public static void ApplyBinding<T>() where T : Binding
         {
             Binding binding = GetBinding<T>();
@@ -494,44 +322,24 @@ namespace ToggleableBindings
 
         #region RestoreBinding
 
-        /// <summary>
-        /// Restores the registered binding of the specified type.
-        /// </summary>
-        /// <param name="bindingType">The type of the binding to restore.</param>
-        /// <exception cref="ArgumentException"/>
-        /// <exception cref="ArgumentNullException"/>
-        /// <exception cref="InvalidOperationException"/>
         public static void RestoreBinding(Type bindingType)
         {
             Binding binding = GetBinding(bindingType);
             binding.Restore();
         }
 
-        /// <summary>
-        /// Restores the registered binding with the specified ID.
-        /// </summary>
-        /// <param name="bindingID">The ID of the binding to restore.</param>
-        /// <exception cref="ArgumentNullException"/>
-        /// <exception cref="InvalidOperationException"/>
         public static void RestoreBinding(string bindingID)
         {
             Binding binding = GetBinding(bindingID);
             binding.Restore();
         }
 
-        /// <typeparam name="T"><inheritdoc cref="RestoreBinding(Type)" path="/param[1]"/></typeparam>
-        /// <exception cref="InvalidOperationException"/>
-        /// <exception cref="TypeArgumentException"/>
-        /// <inheritdoc cref="RestoreBinding(Type)" path="/*[not(self::exception)]"/>
         public static void RestoreBinding<T>() where T : Binding
         {
             Binding binding = GetBinding<T>();
             binding.Restore();
         }
 
-        /// <summary>
-        /// Restores all registered bindings.
-        /// </summary>
         public static void RestoreAllBindings()
         {
             lock (_lock)
@@ -551,21 +359,11 @@ namespace ToggleableBindings
 
         #region SetActiveBindings
 
-        /// <summary>
-        /// Applies and restores the registered bindings such that the specified list of bindings
-        /// are the only bindings that are applied.
-        /// </summary>
-        /// <param name="bindings">The bindings to ensure are applied.</param>
         public static void SetActiveBindings(IEnumerable<Binding> bindings)
         {
             SetActiveBindings(bindings.Select(binding => binding.GetType()));
         }
 
-        /// <summary>
-        /// Applies and restores the registered bindings such that the specified list of types
-        /// are the only bindings that are applied.
-        /// </summary>
-        /// <param name="bindingTypes">The types of bindings to ensure are applied.</param>
         public static void SetActiveBindings(IEnumerable<Type> bindingTypes)
         {
             lock (_lock)
@@ -619,19 +417,6 @@ namespace ToggleableBindings
             }
         }
 
-        /// <summary>
-        /// Checks that the passed type != null,
-        /// is not equal to 'typeof(<see cref="Binding"/>)',
-        /// and inherits from <see cref="Binding"/>.
-        /// </summary>
-        /// <param name="type">The type to check.</param>
-        /// <param name="paramName">The name of the parameter to show for argument exceptions.</param>
-        /// <returns>
-        /// <see cref="TryResult.Success"/> if successful;
-        /// otherwise, a <see cref="TryResult"/> containing the exception that would have been thrown.
-        /// </returns>
-        /// <exception cref="ArgumentException"/>
-        /// <exception cref="ArgumentNullException"/>
         private static TryResult TypeIsValidBinding([System.Diagnostics.CodeAnalysis.NotNull] Type? type, string paramName)
         {
             if (type == null)
@@ -648,9 +433,6 @@ namespace ToggleableBindings
             return TryResult.Success;
         }
 
-        /// <typeparam name="T"></typeparam>
-        /// <exception cref="TypeArgumentException"/>
-        /// <inheritdoc cref="TypeIsValidBinding(Type?, string)" path="/*[not(self::exception)]"/>
         private static TryResult TypeIsValidBinding<T>(string typeParamName)
         {
             if (typeof(T) == _baseBindingType)
@@ -659,12 +441,6 @@ namespace ToggleableBindings
             return TryResult.Success;
         }
 
-        /// <summary>
-        /// Checks that the passed type is in the dictionary of registered bindings.
-        /// </summary>
-        /// <param name="type">The type to check.</param>
-        /// <returns><inheritdoc cref="TypeIsValidBinding(Type?, string)"/></returns>
-        /// <exception cref="InvalidOperationException"/>
         private static TryResult<Binding> TypeIsRegisteredBinding(Type type)
         {
             lock (_lock)
@@ -676,12 +452,6 @@ namespace ToggleableBindings
             }
         }
 
-        /// <summary>
-        /// Checks that the passed ID is in the ID-to-type map.
-        /// </summary>
-        /// <param name="id">The ID to check.</param>
-        /// <returns><inheritdoc cref="TypeIsRegisteredBinding(Type)"/></returns>
-        /// <exception cref="InvalidOperationException"/>
         private static TryResult<Binding> IDIsRegisteredBinding(string id)
         {
             lock (_lock)
@@ -693,8 +463,6 @@ namespace ToggleableBindings
             }
         }
 
-        /// <typeparam name="T"><inheritdoc cref="TypeIsRegisteredBinding(Type)" path="/param[1]"/></typeparam>
-        /// <inheritdoc cref="TypeIsRegisteredBinding(Type)"/>
         private static TryResult<T> TypeIsRegisteredBinding<T>() where T : Binding
         {
             lock (_lock)
@@ -734,9 +502,6 @@ namespace ToggleableBindings
 
                     if (RegisteredBindings.TryGetValue(bindingType, out Binding? existingBinding))
                     {
-                        // Replace currently registered runtime instance with deserialized one.
-                        // If runtime instance was already applied, restore it first so no stale
-                        // hooks/effects survive after we swap the registration entry.
                         if (existingBinding.IsApplied)
                             existingBinding.Restore();
 

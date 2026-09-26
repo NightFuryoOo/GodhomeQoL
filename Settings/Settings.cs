@@ -38,11 +38,11 @@ namespace GodhomeQoL
         public void OnLoadLocal(LocalSettings s)
         {
             LocalSettings = s;
+            ApplyPerSaveModuleStates(s.PerSaveModules);
             if (GlobalSettings?.GearSwitcher != null
                 && string.IsNullOrWhiteSpace(GlobalSettings.GearSwitcher.LastPreset)
                 && !string.IsNullOrWhiteSpace(s.GearSwitcherLastPreset))
             {
-                // Legacy fallback: only hydrate global value from local when global is missing.
                 GlobalSettings.GearSwitcher.LastPreset = s.GearSwitcherLastPreset;
                 SaveGlobalSettingsSafe();
             }
@@ -54,7 +54,81 @@ namespace GodhomeQoL
                 LocalSettings.GearSwitcherLastPreset = GlobalSettings.GearSwitcher.LastPreset ?? "FullGear";
             }
 
+            LocalSettings.PerSaveModules = CapturePerSaveModuleStates();
             return LocalSettings;
+        }
+
+        private static List<Module>? perSaveModules;
+
+        private static List<Module> GetPerSaveModules() => perSaveModules ??= ModuleManager.Modules.Values
+            .Where(module => module.Name != "SegmentedP5" && HasLocalSettingFields(module.Type))
+            .ToList();
+
+        private static bool HasLocalSettingFields(Type type) => type
+            .GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly)
+            .Any(field => Attribute.IsDefined(field, typeof(LocalSettingAttribute)));
+
+        internal static Dictionary<string, bool> CapturePerSaveModuleStates()
+        {
+            Dictionary<string, bool> states = new(StringComparer.Ordinal);
+            foreach (Module module in GetPerSaveModules())
+            {
+                if (module.Enabled)
+                {
+                    states[module.Name] = true;
+                }
+            }
+
+            return states;
+        }
+
+        internal static void ApplyPerSaveModuleStates(Dictionary<string, bool>? states)
+        {
+            foreach (Module module in GetPerSaveModules())
+            {
+                bool target = states != null && states.TryGetValue(module.Name, out bool on) && on;
+                if (module.Enabled == target)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    module.Enabled = target;
+                }
+                catch (Exception ex)
+                {
+                    LogSuppressed(ex, "Settings.cs/" + module.Name);
+                }
+            }
+        }
+
+        internal static void ResetPerSaveState()
+        {
+            LocalSettings?.ResetFieldsToDefaults();
+            ApplyPerSaveModuleStates(null);
+
+            QuickMenuMasterSettings? masters = GlobalSettings?.QuickMenuMasters;
+            if (masters != null
+                && (masters.BossManipulateGlobalP5Enabled
+                    || masters.BossManipulateGlobalP5TouchedModules?.Count > 0
+                    || masters.BossManipulateGlobalP5EnabledModules?.Count > 0))
+            {
+                masters.BossManipulateGlobalP5Enabled = false;
+                masters.BossManipulateGlobalP5TouchedModules?.Clear();
+                masters.BossManipulateGlobalP5EnabledModules?.Clear();
+                SaveGlobalSettingsSafe();
+            }
+
+            global::GodhomeQoL.Utils.Logger.LogDebug("Per-save settings reset to defaults");
+        }
+
+        private static void OnActiveSceneChanged(Scene from, Scene to)
+        {
+            if (string.Equals(to.name, "Menu_Title", StringComparison.Ordinal))
+            {
+                ResetPerSaveState();
+            }
         }
 
         private static bool IsFirstRun()

@@ -189,7 +189,6 @@ public sealed class FreezeHitboxes : Module
             }
 
             pendingHitFreeze = true;
-            // Fallback for cases when HP baseline is unavailable (e.g. Infinite HP zeroes TakeHealth).
             pendingHitForceFreeze = baseline < 0;
             pendingHitBaselineTotalHealth = baseline;
             pendingHitFrame = Time.frameCount;
@@ -322,33 +321,6 @@ public sealed class FreezeHitboxes : Module
         }
 
         return PlayerData.instance != null && PlayerData.instance.health <= 0;
-    }
-
-    private static bool IsHeroInvulnerable()
-    {
-        HeroController? hero = HeroController.instance;
-        if (hero != null)
-        {
-            try
-            {
-                if (hero.cState.invulnerable)
-                {
-                    return true;
-                }
-            }
-            catch
-            {
-                // ignore missing field
-            }
-        }
-
-        PlayerData pd = PlayerData.instance;
-        if (pd != null && pd.isInvincible)
-        {
-            return true;
-        }
-
-        return PlayerDataR.isInvincible;
     }
 
 

@@ -3,10 +3,6 @@ using GodhomeQoL.Modules.Tools;
 
 namespace GodhomeQoL.Modules.Misc;
 
-/// <summary>
-/// Lightweight runtime diagnostics for boss-entry lag.
-/// Writes periodic snapshots to ModLog with prefix [PerfProbe].
-/// </summary>
 public sealed class PerformanceProbe : Module
 {
     [GlobalSetting] public static bool PerformanceProbeEnabled = true;
@@ -251,8 +247,9 @@ public sealed class PerformanceProbe : Module
         {
             return BossSequenceController.IsInSequence;
         }
-        catch
+        catch (Exception swallowed)
         {
+            LogSuppressed(swallowed, "PerformanceProbe.cs");
             return false;
         }
     }
@@ -269,8 +266,9 @@ public sealed class PerformanceProbe : Module
 
             return controller.Reflect().bossLevel;
         }
-        catch
+        catch (Exception swallowed)
         {
+            LogSuppressed(swallowed, "PerformanceProbe.cs");
             return -1;
         }
     }

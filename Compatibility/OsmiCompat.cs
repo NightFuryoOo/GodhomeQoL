@@ -56,7 +56,6 @@ namespace Osmi
             }
             catch
             {
-                // Keep localization fallback behavior when resource loading fails.
             }
         }
 
@@ -133,7 +132,6 @@ namespace Osmi.Game
             }
             catch
             {
-                // Ignore if maxHP is not available in the current game version.
             }
         }
     }

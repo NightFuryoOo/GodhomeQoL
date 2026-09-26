@@ -1,12 +1,12 @@
-using HutongGames.PlayMaker;
 using HutongGames.PlayMaker.Actions;
+using HutongGames.PlayMaker;
 using Modding;
-using Satchel;
 using Satchel.Futils;
+using Satchel;
 
 namespace GodhomeQoL.Modules.BossChallenge;
 
-public sealed class TraitorLordHelper : Module
+public sealed class TraitorLordHelper : RageBossHelper
 {
     private const string TraitorLordScene = "GG_Traitor_Lord";
     private const string TraitorLordName = "Mantis Traitor Lord";
@@ -52,11 +52,29 @@ public sealed class TraitorLordHelper : Module
     [LocalSetting]
     internal static int traitorLordPhase2HpBeforeP5 = DefaultTraitorLordPhase2Hp;
 
-    private static readonly Dictionary<int, int> vanillaHpByInstance = new();
-    private static bool moduleActive;
-    private static bool hoGEntryAllowed;
+    private static TraitorLordHelper? instance;
 
-    public override ToggleableLevel ToggleableLevel => ToggleableLevel.ChangeScene;
+    public TraitorLordHelper() => instance = this;
+
+    private protected override int P5Hp => P5TraitorLordHp;
+    private protected override string SceneName => TraitorLordScene;
+    private protected override string BossObjectName => TraitorLordName;
+    private protected override string PhaseFsmName => TraitorLordPhaseFsmName;
+    private protected override string PhaseCheckStateName => TraitorLordPhaseCheckStateName;
+    private protected override int DefaultVanillaHp => DefaultTraitorLordVanillaHp;
+    private protected override int MinHp => MinTraitorLordHp;
+    private protected override int MaxHpLimit => MaxTraitorLordHp;
+    private protected override int MinPhase2Hp => MinTraitorLordPhase2Hp;
+    private protected override bool UseMaxHp { get => traitorLordUseMaxHp; set => traitorLordUseMaxHp = value; }
+    private protected override bool P5HpEnabled { get => traitorLordP5Hp; set => traitorLordP5Hp = value; }
+    private protected override int MaxHp { get => traitorLordMaxHp; set => traitorLordMaxHp = value; }
+    private protected override int MaxHpBeforeP5 { get => traitorLordMaxHpBeforeP5; set => traitorLordMaxHpBeforeP5 = value; }
+    private protected override bool UseMaxHpBeforeP5 { get => traitorLordUseMaxHpBeforeP5; set => traitorLordUseMaxHpBeforeP5 = value; }
+    private protected override bool HasStoredStateBeforeP5 { get => traitorLordHasStoredStateBeforeP5; set => traitorLordHasStoredStateBeforeP5 = value; }
+    private protected override bool UseCustomPhase { get => traitorLordUseCustomPhase; set => traitorLordUseCustomPhase = value; }
+    private protected override int Phase2Hp { get => traitorLordPhase2Hp; set => traitorLordPhase2Hp = value; }
+    private protected override bool UseCustomPhaseBeforeP5 { get => traitorLordUseCustomPhaseBeforeP5; set => traitorLordUseCustomPhaseBeforeP5 = value; }
+    private protected override int Phase2HpBeforeP5 { get => traitorLordPhase2HpBeforeP5; set => traitorLordPhase2HpBeforeP5 = value; }
 
     private protected override void Load()
     {
@@ -67,365 +85,30 @@ public sealed class TraitorLordHelper : Module
         vanillaHpByInstance.Clear();
         On.HealthManager.Awake += OnHealthManagerAwake;
         On.HealthManager.Start += OnHealthManagerStart;
-        On.PlayMakerFSM.OnEnable += OnPlayMakerFsmOnEnable_TraitorLord;
-        On.PlayMakerFSM.Start += OnPlayMakerFsmStart_TraitorLord;
+        On.PlayMakerFSM.OnEnable += OnPlayMakerFsmOnEnable_Boss;
+        On.PlayMakerFSM.Start += OnPlayMakerFsmStart_Boss;
         USceneManager.activeSceneChanged += SceneManager_activeSceneChanged;
         ModHooks.BeforeSceneLoadHook += OnBeforeSceneLoad;
     }
 
     private protected override void Unload()
     {
-        RestoreVanillaHealthIfPresent();
-        RestoreVanillaPhaseThresholdsIfPresent();
+        RestoreVanillaHealthIfPresentCore();
+        RestoreVanillaPhaseThresholdsIfPresentCore();
         moduleActive = false;
         On.HealthManager.Awake -= OnHealthManagerAwake;
         On.HealthManager.Start -= OnHealthManagerStart;
-        On.PlayMakerFSM.OnEnable -= OnPlayMakerFsmOnEnable_TraitorLord;
-        On.PlayMakerFSM.Start -= OnPlayMakerFsmStart_TraitorLord;
+        On.PlayMakerFSM.OnEnable -= OnPlayMakerFsmOnEnable_Boss;
+        On.PlayMakerFSM.Start -= OnPlayMakerFsmStart_Boss;
         USceneManager.activeSceneChanged -= SceneManager_activeSceneChanged;
         ModHooks.BeforeSceneLoadHook -= OnBeforeSceneLoad;
         vanillaHpByInstance.Clear();
         hoGEntryAllowed = false;
     }
 
-    internal static void ReapplyLiveSettings()
+    private protected override bool IsBossPhaseControlFsm(PlayMakerFSM fsm)
     {
-        if (!moduleActive)
-        {
-            return;
-        }
-
-        if (ShouldUseCustomHp())
-        {
-            ApplyTraitorLordHealthIfPresent();
-        }
-        else
-        {
-            RestoreVanillaHealthIfPresent();
-        }
-
-        ApplyPhaseThresholdSettingsIfPresent();
-    }
-
-    internal static void SetP5HpEnabled(bool value)
-    {
-        if (value)
-        {
-            if (!traitorLordP5Hp)
-            {
-                traitorLordMaxHpBeforeP5 = ClampTraitorLordHp(traitorLordMaxHp);
-                traitorLordUseMaxHpBeforeP5 = traitorLordUseMaxHp;
-                traitorLordUseCustomPhaseBeforeP5 = traitorLordUseCustomPhase;
-                traitorLordPhase2HpBeforeP5 = ClampTraitorLordPhase2Hp(traitorLordPhase2Hp, ResolvePhase2MaxHp());
-                traitorLordHasStoredStateBeforeP5 = true;
-            }
-
-            traitorLordP5Hp = true;
-            traitorLordUseMaxHp = true;
-            traitorLordUseCustomPhase = false;
-            traitorLordMaxHp = P5TraitorLordHp;
-        }
-        else
-        {
-            if (traitorLordP5Hp && traitorLordHasStoredStateBeforeP5)
-            {
-                traitorLordMaxHp = ClampTraitorLordHp(traitorLordMaxHpBeforeP5);
-                traitorLordUseMaxHp = traitorLordUseMaxHpBeforeP5;
-                traitorLordUseCustomPhase = traitorLordUseCustomPhaseBeforeP5;
-                traitorLordPhase2Hp = ClampTraitorLordPhase2Hp(traitorLordPhase2HpBeforeP5, ResolvePhase2MaxHp());
-            }
-
-            traitorLordP5Hp = false;
-            traitorLordHasStoredStateBeforeP5 = false;
-        }
-
-        NormalizePhaseThresholdState();
-        ReapplyLiveSettings();
-    }
-
-    private static void NormalizeP5State()
-    {
-        if (!traitorLordP5Hp)
-        {
-            return;
-        }
-
-        if (!traitorLordHasStoredStateBeforeP5)
-        {
-            traitorLordMaxHpBeforeP5 = ClampTraitorLordHp(traitorLordMaxHp);
-            traitorLordUseMaxHpBeforeP5 = traitorLordUseMaxHp;
-            traitorLordUseCustomPhaseBeforeP5 = traitorLordUseCustomPhase;
-            traitorLordPhase2HpBeforeP5 = ClampTraitorLordPhase2Hp(traitorLordPhase2Hp, ResolvePhase2MaxHp());
-            traitorLordHasStoredStateBeforeP5 = true;
-        }
-
-        traitorLordUseMaxHp = true;
-        traitorLordUseCustomPhase = false;
-        traitorLordMaxHp = P5TraitorLordHp;
-        NormalizePhaseThresholdState();
-    }
-
-    private static void NormalizePhaseThresholdState()
-    {
-        traitorLordPhase2Hp = ClampTraitorLordPhase2Hp(traitorLordPhase2Hp, ResolvePhase2MaxHp());
-    }
-
-    internal static void ApplyTraitorLordHealthIfPresent()
-    {
-        if (!moduleActive || !ShouldUseCustomHp())
-        {
-            return;
-        }
-
-        if (!TryFindTraitorLordHealthManager(out HealthManager? hm))
-        {
-            return;
-        }
-
-        if (hm != null && hm.gameObject != null)
-        {
-            ApplyTraitorLordHealth(hm.gameObject, hm);
-        }
-    }
-
-    internal static void RestoreVanillaHealthIfPresent()
-    {
-        if (!TryFindTraitorLordHealthManager(out HealthManager? hm))
-        {
-            return;
-        }
-
-        if (hm != null && hm.gameObject != null)
-        {
-            RestoreVanillaHealth(hm.gameObject, hm);
-        }
-    }
-
-    private static void OnHealthManagerAwake(On.HealthManager.orig_Awake orig, HealthManager self)
-    {
-        orig(self);
-
-        if (!moduleActive || !IsTraitorLord(self))
-        {
-            return;
-        }
-
-        RememberVanillaHp(self);
-        if (!ShouldApplySettings(self.gameObject))
-        {
-            return;
-        }
-
-        if (ShouldUseCustomHp())
-        {
-            ApplyTraitorLordHealth(self.gameObject, self);
-        }
-        else
-        {
-            RestoreVanillaHealth(self.gameObject, self);
-        }
-    }
-
-    private static void OnHealthManagerStart(On.HealthManager.orig_Start orig, HealthManager self)
-    {
-        orig(self);
-
-        if (!moduleActive || !IsTraitorLord(self))
-        {
-            return;
-        }
-
-        RememberVanillaHp(self);
-        if (!ShouldApplySettings(self.gameObject))
-        {
-            return;
-        }
-
-        if (ShouldUseCustomHp())
-        {
-            ApplyTraitorLordHealth(self.gameObject, self);
-            _ = self.StartCoroutine(DeferredApply(self));
-        }
-        else
-        {
-            RestoreVanillaHealth(self.gameObject, self);
-        }
-    }
-
-    private static void OnPlayMakerFsmOnEnable_TraitorLord(On.PlayMakerFSM.orig_OnEnable orig, PlayMakerFSM self)
-    {
-        orig(self);
-
-        if (!moduleActive || self == null || self.gameObject == null || !IsTraitorLordPhaseControlFsm(self))
-        {
-            return;
-        }
-
-        ApplyPhaseThresholdSettings(self);
-    }
-
-    private static void OnPlayMakerFsmStart_TraitorLord(On.PlayMakerFSM.orig_Start orig, PlayMakerFSM self)
-    {
-        orig(self);
-
-        if (!moduleActive || self == null || self.gameObject == null || !IsTraitorLordPhaseControlFsm(self))
-        {
-            return;
-        }
-
-        ApplyPhaseThresholdSettings(self);
-    }
-
-    private static IEnumerator DeferredApply(HealthManager hm)
-    {
-        yield return null;
-
-        if (!moduleActive || hm == null || hm.gameObject == null || !IsTraitorLord(hm))
-        {
-            yield break;
-        }
-
-        if (ShouldUseCustomHp() && ShouldApplySettings(hm.gameObject))
-        {
-            ApplyTraitorLordHealth(hm.gameObject, hm);
-            yield return new WaitForSeconds(0.01f);
-            if (moduleActive && hm != null && hm.gameObject != null && IsTraitorLord(hm) && ShouldUseCustomHp() && ShouldApplySettings(hm.gameObject))
-            {
-                ApplyTraitorLordHealth(hm.gameObject, hm);
-            }
-        }
-
-        ApplyPhaseThresholdSettingsIfPresent();
-    }
-
-    private static void SceneManager_activeSceneChanged(Scene from, Scene to)
-    {
-        UpdateHoGEntryAllowed(from.name, to.name);
-        if (!string.Equals(to.name, TraitorLordScene, StringComparison.Ordinal))
-        {
-            vanillaHpByInstance.Clear();
-            return;
-        }
-
-        if (!moduleActive)
-        {
-            return;
-        }
-
-        if (ShouldUseCustomHp())
-        {
-            ApplyTraitorLordHealthIfPresent();
-        }
-        else
-        {
-            RestoreVanillaHealthIfPresent();
-        }
-
-        ApplyPhaseThresholdSettingsIfPresent();
-    }
-
-    private static string OnBeforeSceneLoad(string newSceneName)
-    {
-        UpdateHoGEntryAllowed(USceneManager.GetActiveScene().name, newSceneName);
-        return newSceneName;
-    }
-
-    private static bool IsTraitorLord(HealthManager hm)
-    {
-        if (hm == null || hm.gameObject == null)
-        {
-            return false;
-        }
-
-        return IsTraitorLordObject(hm.gameObject);
-    }
-
-    private static bool IsTraitorLordObject(GameObject gameObject)
-    {
-        if (gameObject == null)
-        {
-            return false;
-        }
-
-        return string.Equals(gameObject.scene.name, TraitorLordScene, StringComparison.Ordinal)
-            && gameObject.name.StartsWith(TraitorLordName, StringComparison.Ordinal);
-    }
-
-    private static bool ShouldApplySettings(GameObject? gameObject)
-    {
-        if (gameObject == null || !IsTraitorLordObject(gameObject))
-        {
-            return false;
-        }
-
-        return hoGEntryAllowed;
-    }
-
-    private static bool ShouldUseCustomHp() => traitorLordUseMaxHp;
-    private static bool ShouldUseCustomPhaseThreshold() => traitorLordUseCustomPhase && !traitorLordP5Hp;
-
-    internal static void ApplyPhaseThresholdSettingsIfPresent()
-    {
-        if (!moduleActive)
-        {
-            return;
-        }
-
-        foreach (PlayMakerFSM fsm in UObject.FindObjectsOfType<PlayMakerFSM>())
-        {
-            if (fsm == null || fsm.gameObject == null || !IsTraitorLordPhaseControlFsm(fsm))
-            {
-                continue;
-            }
-
-            ApplyPhaseThresholdSettings(fsm);
-        }
-    }
-
-    internal static void RestoreVanillaPhaseThresholdsIfPresent()
-    {
-        foreach (PlayMakerFSM fsm in UObject.FindObjectsOfType<PlayMakerFSM>())
-        {
-            if (fsm == null || fsm.gameObject == null || !IsTraitorLordPhaseControlFsm(fsm))
-            {
-                continue;
-            }
-
-            if (!ShouldApplyPhaseSettings(fsm.gameObject))
-            {
-                continue;
-            }
-
-            SetPhase2ThresholdOnFsm(fsm, GetVanillaPhase2Hp());
-        }
-    }
-
-    private static void UpdateHoGEntryAllowed(string currentScene, string nextScene)
-    {
-        if (string.Equals(nextScene, TraitorLordScene, StringComparison.Ordinal))
-        {
-            if (BossManipulateEntryGuard.IsAllowedBossEntry(currentScene, nextScene))
-            {
-                hoGEntryAllowed = true;
-            }
-            else if (string.Equals(currentScene, TraitorLordScene, StringComparison.Ordinal) && hoGEntryAllowed)
-            {
-                hoGEntryAllowed = true;
-            }
-            else
-            {
-                hoGEntryAllowed = false;
-            }
-
-            return;
-        }
-
-        hoGEntryAllowed = false;
-    }
-
-    private static bool IsTraitorLordPhaseControlFsm(PlayMakerFSM fsm)
-    {
-        if (fsm == null || fsm.gameObject == null || !IsTraitorLordObject(fsm.gameObject))
+        if (fsm == null || fsm.gameObject == null || !IsBossObject(fsm.gameObject))
         {
             return false;
         }
@@ -438,19 +121,9 @@ public sealed class TraitorLordHelper : Module
         return fsm.Fsm?.GetState(TraitorLordPhaseCheckStateName) != null;
     }
 
-    private static bool ShouldApplyPhaseSettings(GameObject? gameObject)
+    private protected override void ApplyPhaseThresholdSettings(PlayMakerFSM fsm)
     {
-        if (gameObject == null)
-        {
-            return false;
-        }
-
-        return IsTraitorLordObject(gameObject) && hoGEntryAllowed;
-    }
-
-    private static void ApplyPhaseThresholdSettings(PlayMakerFSM fsm)
-    {
-        if (fsm == null || fsm.gameObject == null || !IsTraitorLordPhaseControlFsm(fsm))
+        if (fsm == null || fsm.gameObject == null || !IsBossPhaseControlFsm(fsm))
         {
             return;
         }
@@ -461,13 +134,13 @@ public sealed class TraitorLordHelper : Module
         }
 
         int threshold = ShouldUseCustomPhaseThreshold()
-            ? ClampTraitorLordPhase2Hp(traitorLordPhase2Hp, ResolvePhase2MaxHp())
+            ? ClampBossPhase2Hp(traitorLordPhase2Hp, ResolvePhase2MaxHp())
             : GetVanillaPhase2Hp();
 
         SetPhase2ThresholdOnFsm(fsm, threshold);
     }
 
-    private static void SetPhase2ThresholdOnFsm(PlayMakerFSM fsm, int value)
+    private void SetPhase2ThresholdOnFsm(PlayMakerFSM fsm, int value)
     {
         if (fsm == null)
         {
@@ -500,12 +173,12 @@ public sealed class TraitorLordHelper : Module
         }
     }
 
-    private static int GetVanillaPhase2Hp()
+    private protected override int GetVanillaPhase2Hp()
     {
         return DefaultTraitorLordPhase2Hp;
     }
 
-    private static FsmInt? ResolveThresholdOperand(IntCompare compare)
+    private FsmInt? ResolveThresholdOperand(IntCompare compare)
     {
         if (compare == null)
         {
@@ -532,172 +205,35 @@ public sealed class TraitorLordHelper : Module
         return integer2 ?? integer1;
     }
 
-    private static void ApplyTraitorLordHealth(GameObject boss, HealthManager? hm = null)
+    private protected override void RestoreVanillaPhaseThresholdsIfPresentCore()
     {
-        if (!ShouldApplySettings(boss) || !ShouldUseCustomHp())
+        foreach (PlayMakerFSM fsm in UObject.FindObjectsOfType<PlayMakerFSM>())
         {
-            return;
-        }
-
-        hm ??= boss.GetComponent<HealthManager>();
-        if (hm == null)
-        {
-            return;
-        }
-
-        RememberVanillaHp(hm);
-        int targetHp = ClampTraitorLordHp(traitorLordMaxHp);
-        boss.manageHealth(targetHp);
-        hm.hp = targetHp;
-        TrySetMaxHp(hm, targetHp);
-    }
-
-    private static void RestoreVanillaHealth(GameObject boss, HealthManager? hm = null)
-    {
-        if (boss == null || !IsTraitorLordObject(boss))
-        {
-            return;
-        }
-
-        hm ??= boss.GetComponent<HealthManager>();
-        if (hm == null)
-        {
-            return;
-        }
-
-        if (!TryGetVanillaHp(hm, out int vanillaHp))
-        {
-            return;
-        }
-
-        int targetHp = ClampTraitorLordHp(vanillaHp);
-        boss.manageHealth(targetHp);
-        hm.hp = targetHp;
-        TrySetMaxHp(hm, targetHp);
-    }
-
-    private static bool TryFindTraitorLordHealthManager(out HealthManager? hm)
-    {
-        hm = null;
-        foreach (HealthManager candidate in UObject.FindObjectsOfType<HealthManager>())
-        {
-            if (candidate != null && IsTraitorLord(candidate))
+            if (fsm == null || fsm.gameObject == null || !IsBossPhaseControlFsm(fsm))
             {
-                hm = candidate;
-                return true;
+                continue;
             }
-        }
 
-        return false;
-    }
-
-    private static void RememberVanillaHp(HealthManager hm)
-    {
-        int instanceId = hm.GetInstanceID();
-        if (vanillaHpByInstance.ContainsKey(instanceId))
-        {
-            return;
-        }
-
-        int hp = ReadMaxHp(hm);
-        if (hp <= 0)
-        {
-            hp = hm.hp;
-        }
-
-        hp = Math.Max(hp, DefaultTraitorLordVanillaHp);
-        if (hp > 0)
-        {
-            vanillaHpByInstance[instanceId] = hp;
-        }
-    }
-
-    private static bool TryGetVanillaHp(HealthManager hm, out int hp)
-    {
-        if (vanillaHpByInstance.TryGetValue(hm.GetInstanceID(), out hp) && hp > 0)
-        {
-            hp = Math.Max(hp, DefaultTraitorLordVanillaHp);
-            return true;
-        }
-
-        hp = ReadMaxHp(hm);
-        if (hp <= 0)
-        {
-            hp = hm.hp;
-        }
-
-        hp = Math.Max(hp, DefaultTraitorLordVanillaHp);
-        return hp > 0;
-    }
-
-    private static int ReadMaxHp(HealthManager hm)
-    {
-        try
-        {
-            int maxHp = ReflectionHelper.GetField<HealthManager, int>(hm, "maxHP");
-            if (maxHp > 0)
+            if (!ShouldApplyPhaseSettings(fsm.gameObject))
             {
-                return maxHp;
+                continue;
             }
-        }
-        catch
-        {
-            // Ignore if field is unavailable.
-        }
 
-        return hm.hp;
-    }
-
-    private static void TrySetMaxHp(HealthManager hm, int value)
-    {
-        try
-        {
-            ReflectionHelper.SetField(hm, "maxHP", value);
-        }
-        catch
-        {
-            // Ignore if field is unavailable.
+            SetPhase2ThresholdOnFsm(fsm, GetVanillaPhase2Hp());
         }
     }
 
-    private static int ClampTraitorLordHp(int value)
-    {
-        if (value < MinTraitorLordHp)
-        {
-            return MinTraitorLordHp;
-        }
+    internal static void ReapplyLiveSettings() => instance?.ReapplyLiveSettingsCore();
 
-        return value > MaxTraitorLordHp ? MaxTraitorLordHp : value;
-    }
+    internal static void SetP5HpEnabled(bool value) => instance?.SetP5HpEnabledCore(value);
 
-    internal static int GetPhase2MaxHpForUi()
-    {
-        return ResolvePhase2MaxHp();
-    }
+    internal static void ApplyTraitorLordHealthIfPresent() => instance?.ApplyHealthIfPresentCore();
 
-    private static int ClampTraitorLordPhase2Hp(int value, int maxHp)
-    {
-        int clampedMaxHp = ClampTraitorLordHp(maxHp);
-        if (value < MinTraitorLordPhase2Hp)
-        {
-            return MinTraitorLordPhase2Hp;
-        }
+    internal static void RestoreVanillaHealthIfPresent() => instance?.RestoreVanillaHealthIfPresentCore();
 
-        return value > clampedMaxHp ? clampedMaxHp : value;
-    }
+    internal static void ApplyPhaseThresholdSettingsIfPresent() => instance?.ApplyPhaseThresholdSettingsIfPresentCore();
 
-    private static int ResolvePhase2MaxHp()
-    {
-        if (ShouldUseCustomHp())
-        {
-            return ClampTraitorLordHp(traitorLordMaxHp);
-        }
+    internal static void RestoreVanillaPhaseThresholdsIfPresent() => instance?.RestoreVanillaPhaseThresholdsIfPresentCore();
 
-        if (TryFindTraitorLordHealthManager(out HealthManager? hm) && hm != null && TryGetVanillaHp(hm, out int vanillaHp))
-        {
-            return ClampTraitorLordHp(vanillaHp);
-        }
-
-        return DefaultTraitorLordVanillaHp;
-    }
+    internal static int GetPhase2MaxHpForUi() => instance?.GetPhase2MaxHpForUiCore() ?? default;
 }

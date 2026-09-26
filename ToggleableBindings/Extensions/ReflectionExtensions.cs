@@ -7,23 +7,8 @@ using System.Reflection;
 
 namespace ToggleableBindings.Extensions
 {
-    /// <summary>
-    /// Extensions for working with reflection.
-    /// </summary>
     internal static class ReflectionExtensions
     {
-        /*public static T? GetCustomAttribute<T>(this MemberInfo element, bool inherit) where T : Attribute
-        {
-            if (element == null)
-                throw new ArgumentNullException(nameof(element));
-
-            var attrs = element.GetCustomAttributes<T>(inherit).ToArray();
-            if (attrs.Length > 1)
-                throw new AmbiguousMatchException("More than one of the requested attributes was found.");
-
-            return attrs.FirstOrDefault();
-        }*/
-
         public static IEnumerable<T> GetCustomAttributes<T>(this MemberInfo element, bool inherit) where T : Attribute
         {
             if (element == null)

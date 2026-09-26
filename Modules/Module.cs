@@ -16,9 +16,6 @@
 
         public virtual bool Hidden => false;
 
-        // Hidden controls menu visibility only.
-        // AlwaysEnabled is for service modules that should stay loaded
-        // and use their own internal feature toggles.
         public virtual bool AlwaysEnabled => false;
 
         public bool Loaded { get; private set; }

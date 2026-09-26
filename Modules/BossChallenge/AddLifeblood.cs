@@ -32,7 +32,6 @@ public sealed class AddLifeblood : Module {
 		LogDebug("Lifeblood added");
 	}
 
-	// Fix for Toggleable Bindings Shell Binding bug.
 	private static void FixBlueHealthFSM() {
 		PlayMakerFSM fsm = Ref.GC.hudCanvas.Child("Health")!.LocateMyFSM("Blue Health Control");
 		if (fsm.ActiveStateName == "Wait") {

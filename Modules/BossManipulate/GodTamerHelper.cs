@@ -329,7 +329,6 @@ public sealed class GodTamerHelper : Module
         int targetHp = ClampGodTamerHp(configuredHp);
         target.manageHealth(targetHp);
         hm.hp = targetHp;
-        TrySetMaxHp(hm, targetHp);
     }
 
     private static int GetConfiguredHp(GodTamerTarget target)
@@ -363,7 +362,6 @@ public sealed class GodTamerHelper : Module
         int targetHp = ClampGodTamerHp(vanillaHp);
         target.manageHealth(targetHp);
         hm.hp = targetHp;
-        TrySetMaxHp(hm, targetHp);
     }
 
     private static void RememberVanillaHp(HealthManager hm)
@@ -374,11 +372,7 @@ public sealed class GodTamerHelper : Module
             return;
         }
 
-        int hp = ReadMaxHp(hm);
-        if (hp <= 0)
-        {
-            hp = hm.hp;
-        }
+        int hp = hm.hp;
 
         if (hp > 0)
         {
@@ -393,43 +387,9 @@ public sealed class GodTamerHelper : Module
             return true;
         }
 
-        hp = ReadMaxHp(hm);
-        if (hp <= 0)
-        {
-            hp = hm.hp;
-        }
+        hp = hm.hp;
 
         return hp > 0;
-    }
-
-    private static int ReadMaxHp(HealthManager hm)
-    {
-        try
-        {
-            int maxHp = ReflectionHelper.GetField<HealthManager, int>(hm, "maxHP");
-            if (maxHp > 0)
-            {
-                return maxHp;
-            }
-        }
-        catch
-        {
-            // Ignore if field is unavailable.
-        }
-
-        return hm.hp;
-    }
-
-    private static void TrySetMaxHp(HealthManager hm, int value)
-    {
-        try
-        {
-            ReflectionHelper.SetField(hm, "maxHP", value);
-        }
-        catch
-        {
-            // Ignore if field is unavailable.
-        }
     }
 
     private static int ClampGodTamerHp(int value)

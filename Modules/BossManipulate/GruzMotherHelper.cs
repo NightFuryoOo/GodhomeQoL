@@ -327,7 +327,6 @@ public sealed class GruzMotherHelper : Module
         int targetHp = ClampGruzHp(gruzMaxHp);
         gruz.manageHealth(targetHp);
         hm.hp = targetHp;
-        TrySetMaxHp(hm, targetHp);
     }
 
     private static void RestoreVanillaHealth(GameObject gruz, HealthManager? hm = null)
@@ -351,7 +350,6 @@ public sealed class GruzMotherHelper : Module
         int targetHp = ClampGruzHp(vanillaHp);
         gruz.manageHealth(targetHp);
         hm.hp = targetHp;
-        TrySetMaxHp(hm, targetHp);
     }
 
     private static bool TryFindGruzHealthManager(out HealthManager? hm)
@@ -377,11 +375,7 @@ public sealed class GruzMotherHelper : Module
             return;
         }
 
-        int hp = ReadMaxHp(hm);
-        if (hp <= 0)
-        {
-            hp = hm.hp;
-        }
+        int hp = hm.hp;
 
         hp = Math.Max(hp, DefaultGruzVanillaHp);
         if (hp > 0)
@@ -398,44 +392,10 @@ public sealed class GruzMotherHelper : Module
             return true;
         }
 
-        hp = ReadMaxHp(hm);
-        if (hp <= 0)
-        {
-            hp = hm.hp;
-        }
+        hp = hm.hp;
 
         hp = Math.Max(hp, DefaultGruzVanillaHp);
         return hp > 0;
-    }
-
-    private static int ReadMaxHp(HealthManager hm)
-    {
-        try
-        {
-            int maxHp = ReflectionHelper.GetField<HealthManager, int>(hm, "maxHP");
-            if (maxHp > 0)
-            {
-                return maxHp;
-            }
-        }
-        catch
-        {
-            // Ignore if field is unavailable.
-        }
-
-        return hm.hp;
-    }
-
-    private static void TrySetMaxHp(HealthManager hm, int value)
-    {
-        try
-        {
-            ReflectionHelper.SetField(hm, "maxHP", value);
-        }
-        catch
-        {
-            // Ignore if field is unavailable.
-        }
     }
 
     private static int ClampGruzHp(int value)

@@ -20,16 +20,21 @@ public sealed partial class GodhomeQoL : Mod, ITogglableMod, ICustomMenuMod
     public override void Initialize(Dictionary<string, Dictionary<string, GameObject>> preloadedObjects)
     {
         On.GameManager.OnApplicationQuit += OnApplicationQuit;
+        USceneManager.activeSceneChanged += OnActiveSceneChanged;
         ModMenu.InstallHooks();
         ToggleableBindings.ToggleableBindings.Initialize(preloadedObjects);
+        ResetPerSaveState();
         ModuleManager.Load();
         Active = true;
+        SettingsAutoSave.Start();
     }
 
     public void Unload()
     {
         Active = false;
+        SettingsAutoSave.Stop();
         On.GameManager.OnApplicationQuit -= OnApplicationQuit;
+        USceneManager.activeSceneChanged -= OnActiveSceneChanged;
         ModMenu.UninstallHooks();
         ModuleManager.Unload();
         ToggleableBindings.ToggleableBindings.Unload();
@@ -58,7 +63,11 @@ public sealed partial class GodhomeQoL : Mod, ITogglableMod, ICustomMenuMod
         }
     }
 
-    internal static void SaveGlobalSettingsSafe() => Instance?.SaveGlobalSettings();
+    internal static void SaveGlobalSettingsSafe()
+    {
+        Instance?.SaveGlobalSettings();
+        SettingsAutoSave.MarkSaved();
+    }
 
     internal static void MarkMenuDirty() => ModMenu.MarkDirty();
 

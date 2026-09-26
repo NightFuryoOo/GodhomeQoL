@@ -30,6 +30,8 @@ public sealed class InfiniteChallenge : Module
     private static int nextExternalReturnScenePredicateHandle;
     private static bool pendingDeathRestart;
     private static string? pendingDeathSceneName;
+    private static bool autoplayGuardArmed;
+    private static int autoplayGuardGeneration;
 
     public override ToggleableLevel ToggleableLevel => ToggleableLevel.ChangeScene;
 
@@ -136,8 +138,10 @@ public sealed class InfiniteChallenge : Module
         On.BossSceneController.Awake += RecordSetupEvent;
         On.HeroController.Die += RecordBossDeath;
         On.GameManager.BeginSceneTransition += RestartFight;
+        On.tk2dSpriteAnimator.Start += KeepClipStartedBeforeAutoplay;
         pendingDeathRestart = false;
         pendingDeathSceneName = null;
+        autoplayGuardArmed = false;
         BossFightRestartCompatibility.RecordCurrentSetupEvent();
     }
 
@@ -146,8 +150,60 @@ public sealed class InfiniteChallenge : Module
         On.BossSceneController.Awake -= RecordSetupEvent;
         On.HeroController.Die -= RecordBossDeath;
         On.GameManager.BeginSceneTransition -= RestartFight;
+        On.tk2dSpriteAnimator.Start -= KeepClipStartedBeforeAutoplay;
         pendingDeathRestart = false;
         pendingDeathSceneName = null;
+        autoplayGuardArmed = false;
+        autoplayGuardGeneration++;
+    }
+
+    private static void KeepClipStartedBeforeAutoplay(On.tk2dSpriteAnimator.orig_Start orig, tk2dSpriteAnimator self)
+    {
+        try
+        {
+            if (autoplayGuardArmed
+                && BossSceneController.IsBossScene
+                && self.playAutomatically
+                && self.Playing
+                && self.CurrentClip != null
+                && self.CurrentClip != self.DefaultClip)
+            {
+                Log($"InfiniteChallenge: kept clip '{self.CurrentClip.name}' on '{self.gameObject.name}' instead of letting tk2dSpriteAnimator autoplay '{self.DefaultClip?.name}' over it");
+                return;
+            }
+        }
+        catch (Exception swallowed)
+        {
+            LogSuppressed(swallowed, "InfiniteChallenge.cs");
+        }
+
+        orig(self);
+    }
+
+    private static IEnumerator DisarmAutoplayGuardAfterEntry(int generation)
+    {
+        try
+        {
+            float deadline = Time.unscaledTime + 30f;
+            while (!Ref.GM.IsInSceneTransition && Time.unscaledTime < deadline)
+            {
+                yield return null;
+            }
+
+            while (Ref.GM.IsInSceneTransition && Time.unscaledTime < deadline)
+            {
+                yield return null;
+            }
+
+            yield return new WaitForSecondsRealtime(2f);
+        }
+        finally
+        {
+            if (generation == autoplayGuardGeneration)
+            {
+                autoplayGuardArmed = false;
+            }
+        }
     }
 
     private static void RecordSetupEvent(On.BossSceneController.orig_Awake orig, BossSceneController self)
@@ -177,7 +233,6 @@ public sealed class InfiniteChallenge : Module
         string? targetSceneName = info.SceneName;
         if (IsBossFightScene(targetSceneName))
         {
-            // Capture setup event before the transition consumes/clears it.
             BossFightRestartCompatibility.RecordCurrentSetupEvent(targetSceneName);
         }
 
@@ -225,6 +280,8 @@ public sealed class InfiniteChallenge : Module
                 pendingDeathRestart = false;
                 pendingDeathSceneName = null;
 
+                autoplayGuardArmed = true;
+                _ = GlobalCoroutineExecutor.Start(DisarmAutoplayGuardAfterEntry(++autoplayGuardGeneration));
                 _ = GlobalCoroutineExecutor.Start(DelayedEnableRenderer());
                 Ref.HC.EnterWithoutInput(true);
                 Ref.HC.AcceptInput();
@@ -311,8 +368,9 @@ public sealed class InfiniteChallenge : Module
             {
                 ReflectionHelper.SetField(UIManager.instance, "uiState", UIState.PLAYING);
             }
-            catch
+            catch (Exception swallowed)
             {
+                LogSuppressed(swallowed, "InfiniteChallenge.cs");
             }
         }
 
@@ -320,7 +378,6 @@ public sealed class InfiniteChallenge : Module
         Ref.HC.ClearMPSendEvents();
         RefreshBlueHealthHud();
 
-        // HUD blue-mask FSM can initialize a frame later after forced restart.
         yield return null;
         RefreshBlueHealthHud();
 
@@ -334,9 +391,9 @@ public sealed class InfiniteChallenge : Module
         {
             PlayMakerFSM.BroadcastEvent(UpdateBlueHealthEvent);
         }
-        catch
+        catch (Exception swallowed)
         {
-            // Ignore HUD broadcast issues during scene transition.
+            LogSuppressed(swallowed, "InfiniteChallenge.cs");
         }
 
         try
@@ -349,9 +406,9 @@ public sealed class InfiniteChallenge : Module
                 blueHealthControl.SendEvent(LastHpAddedEvent);
             }
         }
-        catch
+        catch (Exception swallowed)
         {
-            // Ignore blue health FSM readiness errors.
+            LogSuppressed(swallowed, "InfiniteChallenge.cs");
         }
     }
 }

@@ -276,9 +276,9 @@ public sealed class InfiniteGrimmPufferfish : Module
         {
             fsm.ChangeTransition(stateName, eventName, targetState);
         }
-        catch
+        catch (Exception swallowed)
         {
-            // ignore missing states or transitions
+            LogSuppressed(swallowed, "InfiniteGrimmPufferfish.cs");
         }
     }
 }

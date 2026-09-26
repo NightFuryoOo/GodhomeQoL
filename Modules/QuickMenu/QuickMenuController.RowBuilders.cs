@@ -8,6 +8,25 @@ public sealed partial class QuickMenu : Module
 {
     private sealed partial class QuickMenuController
     {
+        private GameObject CreateClickableRow(Transform parent, string name, float y, out Image image, out Button button)
+        {
+            GameObject row = CreateRow(parent, name, y, new Vector2(RowWidth, RowHeight));
+            image = row.AddComponent<Image>();
+            image.color = new Color(0f, 0f, 0f, 0f);
+
+            button = row.AddComponent<Button>();
+            button.transition = Selectable.Transition.None;
+            button.targetGraphic = image;
+            return row;
+        }
+
+        private RowHighlight AddRowHighlight(GameObject row, Image image)
+        {
+            RowHighlight highlight = CreateRowHighlight(row, image);
+            AttachRowHighlight(row, highlight);
+            return highlight;
+        }
+
         private void CreateToggleRow(
             Transform parent,
             string name,
@@ -17,13 +36,7 @@ public sealed partial class QuickMenu : Module
             Action<bool> setter,
             out Text valueText)
         {
-            GameObject row = CreateRow(parent, name, y, new Vector2(RowWidth, RowHeight));
-            Image image = row.AddComponent<Image>();
-            image.color = new Color(0f, 0f, 0f, 0f);
-
-            Button button = row.AddComponent<Button>();
-            button.transition = Selectable.Transition.None;
-            button.targetGraphic = image;
+            GameObject row = CreateClickableRow(parent, name, y, out Image image, out Button button);
 
             _ = CreateRowLabel(row.transform, label);
             Text valueLabel = CreateRowValue(row.transform, getter() ? "ON" : "OFF");
@@ -36,8 +49,7 @@ public sealed partial class QuickMenu : Module
                 UpdateToggleValue(valueLabel, newValue);
             });
 
-            RowHighlight highlight = CreateRowHighlight(row, image);
-            AttachRowHighlight(row, highlight);
+            AddRowHighlight(row, image);
         }
 
         private void CreateToggleRowWithIcon(
@@ -50,13 +62,7 @@ public sealed partial class QuickMenu : Module
             out Text valueText,
             out Image? iconImage)
         {
-            GameObject row = CreateRow(parent, name, y, new Vector2(RowWidth, RowHeight));
-            Image image = row.AddComponent<Image>();
-            image.color = new Color(0f, 0f, 0f, 0f);
-
-            Button button = row.AddComponent<Button>();
-            button.transition = Selectable.Transition.None;
-            button.targetGraphic = image;
+            GameObject row = CreateClickableRow(parent, name, y, out Image image, out Button button);
 
             bool initialValue = getter();
             _ = CreateRowLabelWithIcon(row.transform, label, initialValue, out iconImage);
@@ -73,8 +79,7 @@ public sealed partial class QuickMenu : Module
                 UpdateToggleIcon(toggleIcon, current);
             });
 
-            RowHighlight highlight = CreateRowHighlight(row, image);
-            AttachRowHighlight(row, highlight);
+            AddRowHighlight(row, image);
         }
 
         private void CreateCycleRow(
@@ -87,13 +92,7 @@ public sealed partial class QuickMenu : Module
             Action<int> setter,
             out Text valueText)
         {
-            GameObject row = CreateRow(parent, name, y, new Vector2(RowWidth, RowHeight));
-            Image image = row.AddComponent<Image>();
-            image.color = new Color(0f, 0f, 0f, 0f);
-
-            Button button = row.AddComponent<Button>();
-            button.transition = Selectable.Transition.None;
-            button.targetGraphic = image;
+            GameObject row = CreateClickableRow(parent, name, y, out Image image, out Button button);
 
             _ = CreateRowLabel(row.transform, label);
 
@@ -113,8 +112,7 @@ public sealed partial class QuickMenu : Module
                 valueLabel.text = options[next];
             });
 
-            RowHighlight highlight = CreateRowHighlight(row, image);
-            AttachRowHighlight(row, highlight);
+            AddRowHighlight(row, image);
         }
 
         private void CreateSelectRow(
@@ -126,13 +124,7 @@ public sealed partial class QuickMenu : Module
             Action onClick,
             out Text valueText)
         {
-            GameObject row = CreateRow(parent, name, y, new Vector2(RowWidth, RowHeight));
-            Image image = row.AddComponent<Image>();
-            image.color = new Color(0f, 0f, 0f, 0f);
-
-            Button button = row.AddComponent<Button>();
-            button.transition = Selectable.Transition.None;
-            button.targetGraphic = image;
+            GameObject row = CreateClickableRow(parent, name, y, out Image image, out Button button);
 
             _ = CreateRowLabel(row.transform, label);
             Text valueLabel = CreateRowValue(row.transform, valueGetter());
@@ -140,8 +132,7 @@ public sealed partial class QuickMenu : Module
 
             button.onClick.AddListener(() => onClick());
 
-            RowHighlight highlight = CreateRowHighlight(row, image);
-            AttachRowHighlight(row, highlight);
+            AddRowHighlight(row, image);
         }
 
         private void CreateReadOnlyValueRow(
@@ -203,8 +194,7 @@ public sealed partial class QuickMenu : Module
             Button plus = CreateMiniButton(row.transform, "Plus", "+", new Vector2(InputControlPlusRight, 0f));
             plus.onClick.AddListener(() => AdjustIntInputValue(getter, setter, input, 1, minValue, maxValue, baseStep));
 
-            RowHighlight highlight = CreateRowHighlight(row, image);
-            AttachRowHighlight(row, highlight);
+            RowHighlight highlight = AddRowHighlight(row, image);
             AttachRowHighlight(input.gameObject, highlight);
             AttachRowHighlight(minus.gameObject, highlight);
             AttachRowHighlight(plus.gameObject, highlight);
@@ -245,8 +235,7 @@ public sealed partial class QuickMenu : Module
             Button plus = CreateMiniButton(row.transform, "Plus", "+", new Vector2(InputControlPlusRight, 0f));
             plus.onClick.AddListener(() => AdjustFloatInputValue(getter, setter, input, 1, minValue, maxValue, baseStep));
 
-            RowHighlight highlight = CreateRowHighlight(row, image);
-            AttachRowHighlight(row, highlight);
+            RowHighlight highlight = AddRowHighlight(row, image);
             AttachRowHighlight(input.gameObject, highlight);
             AttachRowHighlight(minus.gameObject, highlight);
             AttachRowHighlight(plus.gameObject, highlight);
@@ -312,8 +301,7 @@ public sealed partial class QuickMenu : Module
             slider.onValueChanged.AddListener(OnSpeedChanged);
             speedSlider = slider;
 
-            RowHighlight highlight = CreateRowHighlight(row, image);
-            AttachRowHighlight(row, highlight);
+            RowHighlight highlight = AddRowHighlight(row, image);
             AttachRowHighlight(sliderObj, highlight);
         }
 
@@ -387,8 +375,7 @@ public sealed partial class QuickMenu : Module
 
             slider = sliderComponent;
 
-            RowHighlight highlight = CreateRowHighlight(row, image);
-            AttachRowHighlight(row, highlight);
+            RowHighlight highlight = AddRowHighlight(row, image);
             AttachRowHighlight(sliderObj, highlight);
         }
 
@@ -410,8 +397,7 @@ public sealed partial class QuickMenu : Module
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
 
-            RowHighlight highlight = CreateRowHighlight(row, image);
-            AttachRowHighlight(row, highlight);
+            AddRowHighlight(row, image);
         }
 
         private void CreateKeybindRow(
@@ -423,13 +409,7 @@ public sealed partial class QuickMenu : Module
             Action onClick,
             out Text valueText)
         {
-            GameObject row = CreateRow(parent, name, y, new Vector2(RowWidth, RowHeight));
-            Image image = row.AddComponent<Image>();
-            image.color = new Color(0f, 0f, 0f, 0f);
-
-            Button button = row.AddComponent<Button>();
-            button.transition = Selectable.Transition.None;
-            button.targetGraphic = image;
+            GameObject row = CreateClickableRow(parent, name, y, out Image image, out Button button);
             button.onClick.AddListener(() => onClick());
 
             _ = CreateRowLabel(row.transform, label);
@@ -443,8 +423,7 @@ public sealed partial class QuickMenu : Module
             rect.sizeDelta = new Vector2(240f, RowHeight);
             valueText = valueLabel;
 
-            RowHighlight highlight = CreateRowHighlight(row, image);
-            AttachRowHighlight(row, highlight);
+            AddRowHighlight(row, image);
         }
     }
 }

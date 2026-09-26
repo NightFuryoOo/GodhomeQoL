@@ -72,8 +72,8 @@ public sealed class ShortDeathAnimation : Module {
 				StaticVariableList.SetValue("finishedBossReturning", false);
 			}
 		}
-		catch {
-			// ignore if variable missing
+		catch (Exception swallowed) {
+			LogSuppressed(swallowed, "ShortDeathAnimation.cs");
 		}
 
 		try {
@@ -87,8 +87,8 @@ public sealed class ShortDeathAnimation : Module {
 				dreamReturning.Value = false;
 			}
 		}
-		catch {
-			// ignore if FSM or variable missing
+		catch (Exception swallowed) {
+			LogSuppressed(swallowed, "ShortDeathAnimation.cs");
 		}
 	}
 
@@ -137,7 +137,11 @@ public sealed class ShortDeathAnimation : Module {
 			return;
 		}
 
-		_ = TryInsertAction(fsm, "Bursting");
+		if (TryInsertAction(fsm, "Bursting")) {
+			return;
+		}
+
+		LogWarn("ShortDeathAnimation: could not insert time-scale normalization into any of the states Init / Start / Bursting");
 	}
 
 	private static bool TryInsertAction(PlayMakerFSM fsm, string stateName) {
@@ -145,7 +149,7 @@ public sealed class ShortDeathAnimation : Module {
 			fsm.InsertAction(stateName, new InvokeMethod(BeginTimeScaleNormalization), 0);
 			return true;
 		}
-		catch {
+		catch (Exception) {
 			return false;
 		}
 	}
@@ -180,6 +184,7 @@ public sealed class ShortDeathAnimation : Module {
 
 			float elapsed = 0f;
 			const float timeout = 20f;
+			bool timedOutStillStuck = false;
 
 			while (elapsed < timeout) {
 				GameManager? manager = GameManager.instance;
@@ -193,7 +198,7 @@ public sealed class ShortDeathAnimation : Module {
 					continue;
 				}
 
-				if (manager.gameState == GameState.PLAYING && !IsDeathAnimationActive()) {
+				if (manager.gameState == GameState.PLAYING && !IsDeathAnimationActive() && !IsStuckInvincibleAfterHandoff()) {
 					break;
 				}
 
@@ -201,11 +206,19 @@ public sealed class ShortDeathAnimation : Module {
 				yield return null;
 			}
 
+			if (elapsed >= timeout && IsStuckInvincibleAfterHandoff()) {
+				timedOutStillStuck = true;
+			}
+
 			if (generation == timeScaleOverrideGeneration
 				&& timeScaleOverrideInFlight
 				&& timeScaleOverrideHandle == handle) {
 				SpeedChanger.EndTimeScaleOverride(handle);
 				timeScaleOverrideHandle = 0;
+			}
+
+			if (timedOutStillStuck) {
+				LogWarn("ShortDeathAnimation: timed out after 20s still waiting for the post-death Dream Return hand-off (isInvincible never cleared) - restored game speed anyway so it doesn't stay stuck slow. The hero is likely still invisible/invincible; this points at the hand-off itself failing to complete, not at this wait.");
 			}
 		}
 		finally {
@@ -281,8 +294,8 @@ public sealed class ShortDeathAnimation : Module {
 				state.Actions = (FsmStateAction[])originalActions.Clone();
 			}
 		}
-		catch {
-			// ignore restore failures for already-destroyed FSMs
+		catch (Exception swallowed) {
+			LogSuppressed(swallowed, "ShortDeathAnimation.cs");
 		}
 
 		snapshot.Patched = false;
@@ -304,5 +317,13 @@ public sealed class ShortDeathAnimation : Module {
 
 		GameObject deathPrefab = hero.heroDeathPrefab;
 		return deathPrefab != null && deathPrefab.activeSelf;
+	}
+
+	private static bool IsStuckInvincibleAfterHandoff() {
+		if (InvincibilityClaims.HasActiveClaims) {
+			return false;
+		}
+
+		return PlayerData.instance != null && PlayerData.instance.isInvincible;
 	}
 }

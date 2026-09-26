@@ -124,7 +124,6 @@ public sealed class Cheats : Module
 
             if (IsFalseKnightBody(hm))
             {
-                // These bosses have scripted phase transitions; forcing Die can softlock the fight.
                 hm.hp = 0;
                 killed++;
                 continue;

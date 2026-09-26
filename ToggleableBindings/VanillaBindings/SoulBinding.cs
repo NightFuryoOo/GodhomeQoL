@@ -1,5 +1,6 @@
 ﻿#nullable enable
 
+using HutongGames.PlayMaker;
 using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using System;
@@ -8,6 +9,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using ToggleableBindings.Utility;
 using UnityEngine;
+using Vasi;
 
 namespace ToggleableBindings.VanillaBindings
 {
@@ -19,6 +21,12 @@ namespace ToggleableBindings.VanillaBindings
         private const string MPLoseEvent = "MP LOSE";
         private const string MPReserveDownEvent = "MP RESERVE DOWN";
         private const int HudEventWaitFrames = 600;
+        private const string SoulOrbObjectName = "Soul Orb";
+        private const string SoulOrbFsmName = "Soul Orb Control";
+        private const string SoulOrbIdleState = "Idle";
+        private const string BindingCapName = "Binding Cap";
+        private const string BindingCapFullName = "Binding Cap Full";
+        private static readonly HashSet<int> _patchedSoulOrbFsms = new();
         private readonly List<IDetour> _detours;
         private bool _pendingHudBindDispatch;
 
@@ -56,16 +64,28 @@ namespace ToggleableBindings.VanillaBindings
             yield return new WaitWhile(() => !HeroController.instance);
             yield return null;
 
+            if (!IsApplied)
+            {
+                yield break;
+            }
+
             int mpLeft = Math.Min(PlayerData.instance.MPCharge, 33);
             PlayerData.instance.ClearMP();
             PlayerData.instance.AddMPCharge(mpLeft);
 
             var gm = GameManager.instance;
             yield return new WaitWhile(() => !gm.soulOrb_fsm || !gm.soulVessel_fsm);
+            PatchSoulOrbFsm(gm.soulOrb_fsm);
+            SyncBindingCap();
+            if (!IsApplied)
+            {
+                yield break;
+            }
+
             gm.soulOrb_fsm.SendEvent(MPLoseEvent);
             gm.soulVessel_fsm.SendEvent(MPReserveDownEvent);
             yield return WaitForHudEventReady(BindVesselOrbEvent, HudEventWaitFrames);
-            if (IsHudEventReady(BindVesselOrbEvent))
+            if (IsApplied && IsHudEventReady(BindVesselOrbEvent))
             {
                 EventRegister.SendEvent(BindVesselOrbEvent);
             }
@@ -91,9 +111,15 @@ namespace ToggleableBindings.VanillaBindings
             var gm = GameManager.instance;
             yield return new WaitWhile(() => !gm.soulOrb_fsm);
 
+            if (IsApplied)
+            {
+                yield break;
+            }
+
             gm.soulOrb_fsm.SendEvent(MPLoseEvent);
+            SyncBindingCap();
             yield return WaitForHudEventReady(UnbindVesselOrbEvent, HudEventWaitFrames);
-            if (IsHudEventReady(UnbindVesselOrbEvent))
+            if (!IsApplied && IsHudEventReady(UnbindVesselOrbEvent))
             {
                 EventRegister.SendEvent(UnbindVesselOrbEvent);
             }
@@ -101,6 +127,10 @@ namespace ToggleableBindings.VanillaBindings
 
         private void HudEvents_In()
         {
+            GameManager? gm = GameManager.instance;
+            PatchSoulOrbFsm(gm != null ? gm.soulOrb_fsm : null);
+            SyncBindingCap();
+
             if (IsHudEventReady(BindVesselOrbEvent))
             {
                 EventRegister.SendEvent(BindVesselOrbEvent);
@@ -137,6 +167,73 @@ namespace ToggleableBindings.VanillaBindings
                 }
 
                 yield return null;
+            }
+        }
+
+        private static void PatchSoulOrbFsm(PlayMakerFSM? fsm)
+        {
+            if (fsm == null || fsm.gameObject.name != SoulOrbObjectName || fsm.FsmName != SoulOrbFsmName)
+            {
+                return;
+            }
+
+            int id = fsm.GetInstanceID();
+            if (_patchedSoulOrbFsms.Contains(id))
+            {
+                return;
+            }
+
+            FsmState? idle = fsm.Fsm.GetState(SoulOrbIdleState);
+            if (idle == null)
+            {
+                return;
+            }
+
+            idle.AddMethod(SyncBindingCap);
+            _patchedSoulOrbFsms.Add(id);
+        }
+
+        private static bool IsSoulBound()
+        {
+            if (BindingManager.TryGetBinding(out SoulBinding? binding) && binding.IsApplied)
+            {
+                return true;
+            }
+
+            return BossSequenceController.IsInSequence && BossSequenceController.BoundSoul;
+        }
+
+        internal static void SyncBindingCap()
+        {
+            try
+            {
+                GameManager? gm = GameManager.instance;
+                PlayMakerFSM? orb = gm != null ? gm.soulOrb_fsm : null;
+                if (orb == null)
+                {
+                    return;
+                }
+
+                if (IsSoulBound())
+                {
+                    SetHudChildActive(orb.transform, BindingCapName, true);
+                    return;
+                }
+
+                SetHudChildActive(orb.transform, BindingCapName, false);
+                SetHudChildActive(orb.transform, BindingCapFullName, false);
+            }
+            catch
+            {
+            }
+        }
+
+        private static void SetHudChildActive(Transform parent, string childName, bool active)
+        {
+            Transform? child = parent.Find(childName);
+            if (child != null && child.gameObject.activeSelf != active)
+            {
+                child.gameObject.SetActive(active);
             }
         }
 

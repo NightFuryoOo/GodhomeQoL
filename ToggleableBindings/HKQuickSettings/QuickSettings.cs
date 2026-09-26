@@ -19,45 +19,18 @@ using UnityEngine;
 
 namespace ToggleableBindings.HKQuickSettings
 {
-    // TODO: Refactor at some point.
     internal class QuickSettings
     {
-        /// <summary>
-        /// Called when this <see cref="QuickSettings"/> object finishes initializing.
-        /// </summary>
         public event Action? Initialized;
 
-        /// <summary>
-        /// Called when this <see cref="QuickSettings"/> object finishes unloading.
-        /// </summary>
         public event Action? Unloaded;
 
-        /// <summary>
-        /// Called when the global settings are saved to file.
-        /// </summary>
         public event Action? GlobalSettingsSaved;
 
-        /// <summary>
-        /// Called when the global settings are loaded from file.
-        /// </summary>
         public event Action? GlobalSettingsLoaded;
 
-        /// <summary>
-        /// Called when save-specific settings are saved to file.
-        /// When invoked via <see cref="On.GameManager.SaveGame"/>,
-        /// this is right before the actual game save is saved.
-        /// <para/>
-        /// The first parameter is the save slot ID.
-        /// </summary>
         public event Action<int>? SaveSettingsSaved;
 
-        /// <summary>
-        /// Called when save-specific settings are loaded from file.
-        /// When invoked via <see cref="On.GameManager.LoadGame"/>,
-        /// this is right after the actual game save is loaded.
-        /// <para/>
-        /// The first parameter is the save slot ID.
-        /// </summary>
         public event Action<int>? SaveSettingsLoaded;
 
         private const string SettingsGlobalFileName = "Settings.Global.json";
@@ -89,24 +62,14 @@ namespace ToggleableBindings.HKQuickSettings
 
         private string SettingsDirectory => _baseDataPath + ModName + "." + nameof(QuickSettings) + '/';
 
-        /// <summary>
-        /// Gets the name of the mod that initialized this settings object.
-        /// </summary>
         protected string ModName
         {
             get => _modName ?? throw new InvalidOperationException($"This {nameof(QuickSettings)} object wasn't initialized properly.");
             private set => _modName = value;
         }
 
-        /// <summary>
-        /// Gets the current save slot that's loaded, or <see langword="null"/> if there isn't one.
-        /// </summary>
         public int? CurrentSaveSlot { get; internal set; }
 
-        /// <summary>
-        /// Creates a new <see cref="QuickSettings"/> instance. In the case of this constructor failing,
-        /// you should try using <see cref="QuickSettings(Mod)"/> or <see cref="QuickSettings(Type)"/>.
-        /// </summary>
         public QuickSettings()
         {
             LogDebug("Attempting initialization via parameterless ctor...");
@@ -120,29 +83,14 @@ namespace ToggleableBindings.HKQuickSettings
             Initialize(modType?.Name);
         }
 
-        /// <summary>
-        /// Creates a new <see cref="QuickSettings"/> instance from the
-        /// specified <see cref="Mod"/> instance.
-        /// </summary>
-        /// <param name="mod"></param>
         public QuickSettings(Mod mod) : this(mod.GetType()) { }
 
-        /// <summary>
-        /// Creates a new <see cref="QuickSettings"/> instance from the
-        /// specified mod name.
-        /// </summary>
-        /// <param name="modName"></param>
         public QuickSettings(string modName)
         {
             _owningAssembly = Assembly.GetCallingAssembly();
             Initialize(modName);
         }
 
-        /// <summary>
-        /// Creates a new <see cref="QuickSettings"/> instance from the
-        /// specified <see cref="Type"/>.
-        /// </summary>
-        /// <param name="modType"></param>
         public QuickSettings(Type modType)
         {
             if (!modType.IsAssignableTo(typeof(Mod)))
@@ -151,10 +99,6 @@ namespace ToggleableBindings.HKQuickSettings
             Initialize(modType.Name);
         }
 
-        /// <summary>
-        /// Initializes the <see cref="QuickSettings"/> with the specified <paramref name="modName"/>. Should be called in the constructor.
-        /// </summary>
-        /// <param name="modName"></param>
         [MemberNotNull(nameof(ModName), nameof(_owningAssembly))]
         protected void Initialize(string? modName)
         {
@@ -177,10 +121,6 @@ namespace ToggleableBindings.HKQuickSettings
             Initialized?.Invoke();
         }
 
-        /// <summary>
-        /// Unloads this <see cref="QuickSettings"/> object. This will save all available values to file before cleaning up.
-        /// Once this object is unloaded, you should not attempt to use it again. Create a new <see cref="QuickSettings"/> object instead.
-        /// </summary>
         public void Unload()
         {
             RemoveHooks();
@@ -188,16 +128,6 @@ namespace ToggleableBindings.HKQuickSettings
             Unloaded?.Invoke();
         }
 
-        /// <summary>
-        /// Adds a setting. Functionally equivalent to declaring <see cref="QuickSettingAttribute"/> on a member; you may wish to use that instead.
-        /// <para id="doesNotAutoSave">
-        /// Note: This does not cause a save to occur; if you wish to ensure the new state is saved to file,
-        /// call <see cref="SaveAllSettings"/> or one of the other save methods.
-        /// </para>
-        /// </summary>
-        /// <param name="member">The member to add as a setting.</param>
-        /// <param name="settingName">The optional name of the setting. If <see langword="null"/>, uses <see cref="MemberInfo.Name"/> instead.</param>
-        /// <param name="isPerSave">If <see langword="true"/>, this setting is save slot-specific.</param>
         public void AddSetting(MemberInfo member, string? settingName = null, bool isPerSave = false)
         {
             QuickSettingInfo settingInfo = new(member, settingName, isPerSave);
@@ -205,35 +135,16 @@ namespace ToggleableBindings.HKQuickSettings
             settings.Add(settingInfo);
         }
 
-        /// <summary>
-        /// Removes the setting with the specified name.
-        /// <inheritdoc cref="AddSetting(MemberInfo, string?, bool)" path="//para[@id='doesNotAutoSave']"/>
-        /// </summary>
-        /// <param name="settingName">The name of the setting to remove.</param>
-        /// <inheritdoc cref="RemoveSetting(Func{QuickSettingInfo, bool}, bool)"/>
         public bool RemoveSetting(string settingName, bool isPerSave)
         {
             return RemoveSetting(si => si.Name == settingName, isPerSave);
         }
 
-        /// <summary>
-        /// Removes the setting with the specified <see cref="MemberInfo"/>.
-        /// <inheritdoc cref="AddSetting(MemberInfo, string?, bool)" path="//para[@id='doesNotAutoSave']"/>
-        /// </summary>
-        /// <param name="member">The member to remove as a setting.</param>
-        /// <inheritdoc cref="RemoveSetting(Func{QuickSettingInfo, bool}, bool)"/>
         public bool RemoveSetting(MemberInfo member, bool isPerSave)
         {
             return RemoveSetting(si => si.MemberInfo == member, isPerSave);
         }
 
-        /// <summary>
-        /// Removes the first setting that matches the specified <paramref name="predicate"/>.
-        /// <inheritdoc cref="AddSetting(MemberInfo, string?, bool)" path="//para[@id='doesNotAutoSave']"/>
-        /// </summary>
-        /// <param name="predicate">The predicate to match.</param>
-        /// <param name="isPerSave">If <see langword="true"/>, the setting to remove is save slot-specific.</param>
-        /// <returns><see langword="true"/> if the setting was successfully found and removed; otherwise, <see langword="false"/>.</returns>
         public bool RemoveSetting(Func<QuickSettingInfo, bool> predicate, bool isPerSave)
         {
             var settings = GetSettingsList(isPerSave);
@@ -271,26 +182,11 @@ namespace ToggleableBindings.HKQuickSettings
             return !isPerSave ? _globalSettings : _saveSettings;
         }
 
-        /// <summary>
-        /// Gets the global settings file path. The file is not guaranteed to exist.
-        /// </summary>
-        /// <returns>The path to the global settings file for this mod.</returns>
         public string GetGlobalSettingsPath()
         {
             return SettingsDirectory + SettingsGlobalFileName;
         }
 
-        /// <summary>
-        /// Gets the save settings file path for the specified <paramref name="saveSlotID"/>, or the currently loaded save
-        /// slot if <paramref name="saveSlotID"/> is <see langword="null"/> and one is currently loaded.
-        /// The file is not guaranteed to exist.
-        /// </summary>
-        /// <param name="saveSlotID">The save slot ID to use.</param>
-        /// <returns>
-        /// The path to the save settings file of the specified slot for this mod, or <see langword="null"/>
-        /// if <paramref name="saveSlotID"/> is <see langword="null"/> and no save is currently loaded. The path always
-        /// separates directories using '<c>/</c>'.
-        /// </returns>
         public string? GetSaveSettingsPath(int? saveSlotID = null)
         {
             if (saveSlotID == null && CurrentSaveSlot == null)
@@ -299,9 +195,6 @@ namespace ToggleableBindings.HKQuickSettings
             return SettingsDirectory + string.Format(SettingsSaveFileName, saveSlotID ?? CurrentSaveSlot);
         }
 
-        /// <summary>
-        /// Saves both global and save settings to file. Save settings will only be saved if a save is currently loaded.
-        /// </summary>
         public void SaveAllSettings()
         {
             SaveGlobalSettings();
@@ -309,9 +202,6 @@ namespace ToggleableBindings.HKQuickSettings
                 SaveSaveSettings();
         }
 
-        /// <summary>
-        /// Saves the global settings to file. Called automatically via <see cref="On.GameManager.OnApplicationQuit"/>.
-        /// </summary>
         public void SaveGlobalSettings()
         {
             LogDebug("Saving global settings...");
@@ -384,12 +274,6 @@ namespace ToggleableBindings.HKQuickSettings
             }
         }
 
-        /// <summary>
-        /// Saves the save settings to file. A save must be currently loaded. 
-        /// Called automatically via <see cref="On.GameManager.SaveGame"/> and happens before
-        /// the actual game save is saved.
-        /// </summary>
-        /// <exception cref="InvalidOperationException"/>
         public void SaveSaveSettings()
         {
             if (CurrentSaveSlot == null)
@@ -475,9 +359,6 @@ namespace ToggleableBindings.HKQuickSettings
 
         private static void LogAndIgnoreSerializationBindingErrors(object sender, Newtonsoft.Json.Serialization.ErrorEventArgs args)
         {
-            /*if (args.CurrentObject == args.ErrorContext.OriginalObject
-            && InnerExceptionsAndSelf(args.ErrorContext.Error).OfType<JsonSerializationBinderException>().Any()
-            && args.ErrorContext.OriginalObject.GetType().GetInterfaces().Any(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IList<>)))*/
             if (args.CurrentObject == args.ErrorContext.OriginalObject && AnyBinderExceptions(args.ErrorContext.Error))
             {
                 ToggleableBindings.Instance.LogError(args.ErrorContext.Error.Message);

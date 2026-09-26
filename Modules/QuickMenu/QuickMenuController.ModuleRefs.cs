@@ -37,52 +37,17 @@ public sealed partial class QuickMenu : Module
 
         private Module? GetFastSuperDashModule()
         {
-            if (fastSuperDashModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.QoL.FastSuperDash), out fastSuperDashModule);
-            }
-
-            return fastSuperDashModule;
+            return GetCachedModule(ref fastSuperDashModule, typeof(Modules.QoL.FastSuperDash));
         }
 
         private Module? GetCollectorPhasesModule()
         {
-            if (collectorPhasesModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.CollectorPhases.CollectorPhases), out collectorPhasesModule);
-            }
-
-            return collectorPhasesModule;
+            return GetCachedModule(ref collectorPhasesModule, typeof(Modules.CollectorPhases.CollectorPhases));
         }
 
         private Module? GetFastReloadModule()
         {
-            if (fastReloadModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.FastReload), out fastReloadModule);
-            }
-
-            return fastReloadModule;
-        }
-
-        private Module? GetMaskDamageModule()
-        {
-            if (maskDamageModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(MaskDamage), out maskDamageModule);
-            }
-
-            return maskDamageModule;
-        }
-
-        private Module? GetFreezeHitboxesModule()
-        {
-            if (freezeHitboxesModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(FreezeHitboxes), out freezeHitboxesModule);
-            }
-
-            return freezeHitboxesModule;
+            return GetCachedModule(ref fastReloadModule, typeof(Modules.FastReload));
         }
 
         private SpeedChanger? GetSpeedChangerModule()
@@ -97,352 +62,182 @@ public sealed partial class QuickMenu : Module
 
         private Module? GetTeleportKitModule()
         {
-            if (teleportKitModule == null)
+            return GetCachedModule(ref teleportKitModule, typeof(Modules.QoL.TeleportKit));
+        }
+
+        private Module? GetFpsBoostModule()
+        {
+            if (fpsBoostModule == null)
             {
-                ModuleManager.TryGetModule(typeof(Modules.QoL.TeleportKit), out teleportKitModule);
+                ModuleManager.TryGetModule(typeof(Modules.Performance.FpsBoost), out fpsBoostModule);
             }
 
-            return teleportKitModule;
+            return fpsBoostModule;
         }
 
         private Module? GetZoteHelperModule()
         {
-            if (zoteHelperModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.ZoteHelper), out zoteHelperModule);
-            }
-
-            return zoteHelperModule;
+            return GetCachedModule(ref zoteHelperModule, typeof(Modules.BossChallenge.ZoteHelper));
         }
 
         private Module? GetGruzMotherHelperModule()
         {
-            if (gruzMotherHelperModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.GruzMotherHelper), out gruzMotherHelperModule);
-            }
-
-            return gruzMotherHelperModule;
+            return GetCachedModule(ref gruzMotherHelperModule, typeof(Modules.BossChallenge.GruzMotherHelper));
         }
 
         private Module? GetHornetProtectorHelperModule()
         {
-            if (hornetProtectorHelperModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.HornetProtectorHelper), out hornetProtectorHelperModule);
-            }
-
-            return hornetProtectorHelperModule;
+            return GetCachedModule(ref hornetProtectorHelperModule, typeof(Modules.BossChallenge.HornetProtectorHelper));
         }
 
         private Module? GetBroodingMawlekHelperModule()
         {
-            if (broodingMawlekHelperModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.BroodingMawlekHelper), out broodingMawlekHelperModule);
-            }
-
-            return broodingMawlekHelperModule;
+            return GetCachedModule(ref broodingMawlekHelperModule, typeof(Modules.BossChallenge.BroodingMawlekHelper));
         }
 
         private Module? GetMassiveMossChargerHelperModule()
         {
-            if (massiveMossChargerHelperModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.MassiveMossChargerHelper), out massiveMossChargerHelperModule);
-            }
-
-            return massiveMossChargerHelperModule;
+            return GetCachedModule(ref massiveMossChargerHelperModule, typeof(Modules.BossChallenge.MassiveMossChargerHelper));
         }
 
         private Module? GetCrystalGuardianHelperModule()
         {
-            if (crystalGuardianHelperModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.CrystalGuardianHelper), out crystalGuardianHelperModule);
-            }
-
-            return crystalGuardianHelperModule;
+            return GetCachedModule(ref crystalGuardianHelperModule, typeof(Modules.BossChallenge.CrystalGuardianHelper));
         }
 
         private Module? GetEnragedGuardianHelperModule()
         {
-            if (enragedGuardianHelperModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.EnragedGuardianHelper), out enragedGuardianHelperModule);
-            }
-
-            return enragedGuardianHelperModule;
+            return GetCachedModule(ref enragedGuardianHelperModule, typeof(Modules.BossChallenge.EnragedGuardianHelper));
         }
 
         private Module? GetHornetSentinelHelperModule()
         {
-            if (hornetSentinelHelperModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.HornetSentinelHelper), out hornetSentinelHelperModule);
-            }
-
-            return hornetSentinelHelperModule;
+            return GetCachedModule(ref hornetSentinelHelperModule, typeof(Modules.BossChallenge.HornetSentinelHelper));
         }
 
         private Module? GetInfiniteChallengeModule()
         {
-            if (infiniteChallengeModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.InfiniteChallenge), out infiniteChallengeModule);
-            }
-
-            return infiniteChallengeModule;
+            return GetCachedModule(ref infiniteChallengeModule, typeof(Modules.BossChallenge.InfiniteChallenge));
         }
 
         private Module? GetRandomPantheonsModule()
         {
-            if (randomPantheonsModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.RandomPantheons), out randomPantheonsModule);
-            }
-
-            return randomPantheonsModule;
+            return GetCachedModule(ref randomPantheonsModule, typeof(Modules.BossChallenge.RandomPantheons));
         }
 
         private Module? GetTrueBossRushModule()
         {
-            if (trueBossRushModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.TrueBossRush), out trueBossRushModule);
-            }
-
-            return trueBossRushModule;
+            return GetCachedModule(ref trueBossRushModule, typeof(Modules.BossChallenge.TrueBossRush));
         }
 
         private Module? GetCheatsModule()
         {
-            if (cheatsModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.Cheats.Cheats), out cheatsModule);
-            }
-
-            return cheatsModule;
+            return GetCachedModule(ref cheatsModule, typeof(Modules.Cheats.Cheats));
         }
 
         private Module? GetAlwaysFuriousModule()
         {
-            if (alwaysFuriousModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.AlwaysFurious), out alwaysFuriousModule);
-            }
-
-            return alwaysFuriousModule;
+            return GetCachedModule(ref alwaysFuriousModule, typeof(Modules.BossChallenge.AlwaysFurious));
         }
 
         private Module? GetInfiniteGrimmPufferfishModule()
         {
-            if (infiniteGrimmModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.InfiniteGrimmPufferfish), out infiniteGrimmModule);
-            }
-
-            return infiniteGrimmModule;
+            return GetCachedModule(ref infiniteGrimmModule, typeof(Modules.BossChallenge.InfiniteGrimmPufferfish));
         }
 
         private Module? GetInfiniteRadianceClimbingModule()
         {
-            if (infiniteRadianceModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.InfiniteRadianceClimbing), out infiniteRadianceModule);
-            }
-
-            return infiniteRadianceModule;
+            return GetCachedModule(ref infiniteRadianceModule, typeof(Modules.BossChallenge.InfiniteRadianceClimbing));
         }
 
         private Module? GetForceArriveAnimationModule()
         {
-            if (forceArriveAnimationModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.ForceArriveAnimation), out forceArriveAnimationModule);
-            }
-
-            return forceArriveAnimationModule;
+            return GetCachedModule(ref forceArriveAnimationModule, typeof(Modules.BossChallenge.ForceArriveAnimation));
         }
 
         private Module? GetSegmentedP5Module()
         {
-            if (segmentedP5Module == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.SegmentedP5), out segmentedP5Module);
-            }
-
-            return segmentedP5Module;
+            return GetCachedModule(ref segmentedP5Module, typeof(Modules.BossChallenge.SegmentedP5));
         }
 
         private Module? GetAddLifebloodModule()
         {
-            if (addLifebloodModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.AddLifeblood), out addLifebloodModule);
-            }
-
-            return addLifebloodModule;
+            return GetCachedModule(ref addLifebloodModule, typeof(Modules.BossChallenge.AddLifeblood));
         }
 
         private Module? GetAddSoulModule()
         {
-            if (addSoulModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.AddSoul), out addSoulModule);
-            }
-
-            return addSoulModule;
+            return GetCachedModule(ref addSoulModule, typeof(Modules.BossChallenge.AddSoul));
         }
 
         private Module? GetForceGreyPrinceModule()
         {
-            if (forceGreyPrinceModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.BossChallenge.ForceGreyPrinceEnterType), out forceGreyPrinceModule);
-            }
-
-            return forceGreyPrinceModule;
-        }
-
-        private Module? GetCarefreeMelodyModule()
-        {
-            if (carefreeMelodyModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.QoL.CarefreeMelodyReset), out carefreeMelodyModule);
-            }
-
-            return carefreeMelodyModule;
+            return GetCachedModule(ref forceGreyPrinceModule, typeof(Modules.BossChallenge.ForceGreyPrinceEnterType));
         }
 
         private Module? GetCollectorRoarModule()
         {
-            if (collectorRoarModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.QoL.CollectorRoarMute), out collectorRoarModule);
-            }
-
-            return collectorRoarModule;
+            return GetCachedModule(ref collectorRoarModule, typeof(Modules.QoL.CollectorRoarMute));
         }
 
         private Module? GetUnlockAllModesModule()
         {
-            if (unlockAllModesModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.QoL.UnlockAllModes), out unlockAllModesModule);
-            }
-
-            return unlockAllModesModule;
+            return GetCachedModule(ref unlockAllModesModule, typeof(Modules.QoL.UnlockAllModes));
         }
 
         private Module? GetUnlockPantheonsModule()
         {
-            if (unlockPantheonsModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.QoL.UnlockPantheons), out unlockPantheonsModule);
-            }
-
-            return unlockPantheonsModule;
+            return GetCachedModule(ref unlockPantheonsModule, typeof(Modules.QoL.UnlockPantheons));
         }
 
         private Module? GetUnlockRadianceModule()
         {
-            if (unlockRadianceModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.QoL.UnlockRadiance), out unlockRadianceModule);
-            }
-
-            return unlockRadianceModule;
+            return GetCachedModule(ref unlockRadianceModule, typeof(Modules.QoL.UnlockRadiance));
         }
 
         private Module? GetUnlockRadiantModule()
         {
-            if (unlockRadiantModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.QoL.UnlockRadiant), out unlockRadiantModule);
-            }
-
-            return unlockRadiantModule;
+            return GetCachedModule(ref unlockRadiantModule, typeof(Modules.QoL.UnlockRadiant));
         }
 
         private Module? GetDoorDefaultBeginModule()
         {
-            if (doorDefaultBeginModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.QoL.DoorDefaultBegin), out doorDefaultBeginModule);
-            }
-
-            return doorDefaultBeginModule;
+            return GetCachedModule(ref doorDefaultBeginModule, typeof(Modules.QoL.DoorDefaultBegin));
         }
 
         private Module? GetFasterLoadsModule()
         {
-            if (fasterLoadsModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.QoL.FasterLoads), out fasterLoadsModule);
-            }
-
-            return fasterLoadsModule;
+            return GetCachedModule(ref fasterLoadsModule, typeof(Modules.QoL.FasterLoads));
         }
 
         private Module? GetFastMenusModule()
         {
-            if (fastMenusModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.QoL.FastMenus), out fastMenusModule);
-            }
-
-            return fastMenusModule;
+            return GetCachedModule(ref fastMenusModule, typeof(Modules.QoL.FastMenus));
         }
 
         private Module? GetFastTextModule()
         {
-            if (fastTextModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.QoL.FastText), out fastTextModule);
-            }
-
-            return fastTextModule;
+            return GetCachedModule(ref fastTextModule, typeof(Modules.QoL.FastText));
         }
 
         private Module? GetFastDreamWarpModule()
         {
-            if (fastDreamWarpModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.QoL.FastDreamWarp), out fastDreamWarpModule);
-            }
-
-            return fastDreamWarpModule;
+            return GetCachedModule(ref fastDreamWarpModule, typeof(Modules.QoL.FastDreamWarp));
         }
 
         private Module? GetShortDeathAnimationModule()
         {
-            if (shortDeathAnimationModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.QoL.ShortDeathAnimation), out shortDeathAnimationModule);
-            }
-
-            return shortDeathAnimationModule;
+            return GetCachedModule(ref shortDeathAnimationModule, typeof(Modules.QoL.ShortDeathAnimation));
         }
 
         private Module? GetInvincibleIndicatorModule()
         {
-            if (invincibleIndicatorModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.QoL.InvincibleIndicator), out invincibleIndicatorModule);
-            }
-
-            return invincibleIndicatorModule;
+            return GetCachedModule(ref invincibleIndicatorModule, typeof(Modules.QoL.InvincibleIndicator));
         }
 
         private Module? GetScreenShakeModule()
         {
-            if (screenShakeModule == null)
-            {
-                ModuleManager.TryGetModule(typeof(Modules.QoL.ScreenShake), out screenShakeModule);
-            }
-
-            return screenShakeModule;
+            return GetCachedModule(ref screenShakeModule, typeof(Modules.QoL.ScreenShake));
         }
 
         private static void SetModuleEnabled<T>(bool value) where T : Module

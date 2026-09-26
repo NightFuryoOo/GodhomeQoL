@@ -181,10 +181,8 @@ namespace GodhomeQoL.Modules.BossChallenge
 
             if (door.gameObject != segP5)
             {
-                // Not Segmented P5
                 if (selectBtn != null)
                 {
-                    // Restore navigation
                     MenuButton oldSelectBtn = selectBtn.GetComponent<MenuButton>();
                     Navigation oldNav = oldSelectBtn.navigation;
 
@@ -210,7 +208,6 @@ namespace GodhomeQoL.Modules.BossChallenge
 
             if (selectBtn != null)
             {
-                // Created last time
                 return;
             }
 

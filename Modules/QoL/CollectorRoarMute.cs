@@ -196,11 +196,10 @@ public sealed class CollectorRoarMute : Module
 
         if (new string(br.ReadChars(4)) != "RIFF")
             return null;
-        br.ReadInt32(); // file size
+        br.ReadInt32();
         if (new string(br.ReadChars(4)) != "WAVE")
             return null;
 
-        // fmt chunk
         string fmt = new string(br.ReadChars(4));
         if (fmt != "fmt ")
             return null;
@@ -208,16 +207,14 @@ public sealed class CollectorRoarMute : Module
         short audioFormat = br.ReadInt16();
         short channels = br.ReadInt16();
         int sampleRate = br.ReadInt32();
-        br.ReadInt32(); // byteRate
-        br.ReadInt16(); // blockAlign
+        br.ReadInt32();
+        br.ReadInt16();
         short bitsPerSample = br.ReadInt16();
-        // skip any extra fmt bytes
         if (fmtSize > 16)
         {
             br.ReadBytes(fmtSize - 16);
         }
 
-        // find data chunk
         string dataHeader = new string(br.ReadChars(4));
         while (dataHeader != "data")
         {
@@ -229,7 +226,7 @@ public sealed class CollectorRoarMute : Module
 
         if (audioFormat != 1)
         {
-            return null; // only PCM
+            return null;
         }
 
         int sampleCount = dataSize / (bitsPerSample / 8);

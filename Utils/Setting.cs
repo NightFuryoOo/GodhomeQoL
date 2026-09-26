@@ -1,5 +1,4 @@
-﻿//using setting = GodhomeQoL.Settings;
-namespace GodhomeQoL.Utils
+﻿namespace GodhomeQoL.Utils
 {
     internal static class Setting
     {

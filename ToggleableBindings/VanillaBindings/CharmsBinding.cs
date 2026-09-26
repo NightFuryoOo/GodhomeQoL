@@ -26,8 +26,8 @@ namespace ToggleableBindings.VanillaBindings
         [QuickSetting("EssentialCharms")]
         internal static int[] ExemptCharms =
         {
-            36, // Void Heart
-            40, // Grimmchild
+            36,
+            40,
         };
 
         public static PlayMakerFSM? CharmsMenuFsm
@@ -87,8 +87,6 @@ namespace ToggleableBindings.VanillaBindings
             _previousEquippedCharms = equippedCharms;
             _wasOvercharmed = PlayerData.instance.overcharmed;
 
-            // Creates a lookup where the 'true' key is an enumerable of charms that are exempt, and the 'false' key are the ones that aren't.
-            // If AllowEssentialCharms is false, then no charms are exempt.
             var charmsAllowed = equippedCharms.ToLookup(id => AllowEssentialCharms && ExemptCharms.Contains(id));
 
             PlayerData.instance.equippedCharms = charmsAllowed[true].ToList();

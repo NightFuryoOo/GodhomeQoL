@@ -6,12 +6,6 @@ using System.Runtime.CompilerServices;
 
 namespace ToggleableBindings.HKQuickSettings
 {
-    /// <summary>
-    /// Note: Only works on static members.
-    /// <para/>
-    /// Specifies that the member with this attribute is a setting that will automatically be saved and loaded to the settings files.
-    /// Parameters specify the name and/or whether this setting is save slot-specific.
-    /// </summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
     internal sealed class QuickSettingAttribute : Attribute
     {

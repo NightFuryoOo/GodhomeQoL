@@ -63,4 +63,6 @@ public sealed class GlobalSettings : SettingBase<GlobalSettingAttribute>
     public int QuickMenuOpacity { get; set; } = 100;
 
     public Dictionary<string, string> QuickMenuOverlayHotkeys { get; set; } = new();
+
+    public string NailDamageCheckKeybind { get; set; } = string.Empty;
 }

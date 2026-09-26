@@ -384,7 +384,6 @@ public sealed class DreamshieldStartAngle : Module
         follow.Actions = actions.ToArray();
         if (applyScaledSpeed)
         {
-            // Avoid forcing a transition from unrelated states.
             TryRefreshFollowState(fsm);
         }
 

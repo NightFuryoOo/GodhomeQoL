@@ -559,7 +559,6 @@ public sealed class NailsageSlyHelper : Module
         int targetHp = ClampNailsageSlyHp(nailsageSlyPhase1Hp);
         boss.manageHealth(targetHp);
         hm.hp = targetHp;
-        TrySetMaxHp(hm, targetHp);
     }
 
     private static void ApplyPhase2Health(GameObject boss, HealthManager? hm = null)
@@ -578,7 +577,6 @@ public sealed class NailsageSlyHelper : Module
         int targetHp = ClampNailsageSlyHp(nailsageSlyPhase2Hp);
         boss.manageHealth(targetHp);
         hm.hp = targetHp;
-        TrySetMaxHp(hm, targetHp);
     }
 
     private static void RestoreVanillaHealth(GameObject boss, HealthManager? hm = null)
@@ -602,7 +600,6 @@ public sealed class NailsageSlyHelper : Module
         int targetHp = ClampNailsageSlyHp(vanillaHp);
         boss.manageHealth(targetHp);
         hm.hp = targetHp;
-        TrySetMaxHp(hm, targetHp);
     }
 
     private static void RememberVanillaHp(HealthManager hm)
@@ -613,11 +610,7 @@ public sealed class NailsageSlyHelper : Module
             return;
         }
 
-        int hp = ReadMaxHp(hm);
-        if (hp <= 0)
-        {
-            hp = hm.hp;
-        }
+        int hp = hm.hp;
 
         hp = Math.Max(hp, DefaultNailsageSlyPhase1Hp);
         if (hp > 0)
@@ -634,44 +627,10 @@ public sealed class NailsageSlyHelper : Module
             return true;
         }
 
-        hp = ReadMaxHp(hm);
-        if (hp <= 0)
-        {
-            hp = hm.hp;
-        }
+        hp = hm.hp;
 
         hp = Math.Max(hp, DefaultNailsageSlyPhase1Hp);
         return hp > 0;
-    }
-
-    private static int ReadMaxHp(HealthManager hm)
-    {
-        try
-        {
-            int maxHp = ReflectionHelper.GetField<HealthManager, int>(hm, "maxHP");
-            if (maxHp > 0)
-            {
-                return maxHp;
-            }
-        }
-        catch
-        {
-            // Ignore if field is unavailable.
-        }
-
-        return hm.hp;
-    }
-
-    private static void TrySetMaxHp(HealthManager hm, int value)
-    {
-        try
-        {
-            ReflectionHelper.SetField(hm, "maxHP", value);
-        }
-        catch
-        {
-            // Ignore if field is unavailable.
-        }
     }
 
     private static int ClampNailsageSlyHp(int value)

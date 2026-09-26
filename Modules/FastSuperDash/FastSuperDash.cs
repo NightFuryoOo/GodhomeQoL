@@ -206,7 +206,6 @@ public sealed class FastSuperDash : Module {
 		fsm.InsertAction("Dash Start", dashStartResetAction, 0);
 		snapshot.addedActions.Add(("Dash Start", dashStartResetAction));
 
-		// Keep deterministic result for this module by normalizing speed on dash entry too.
 		InvokeMethod dashStartAction = new(applySpeedMultiplier);
 		fsm.AddAction("Dash Start", dashStartAction);
 		snapshot.addedActions.Add(("Dash Start", dashStartAction));
@@ -286,7 +285,6 @@ public sealed class FastSuperDash : Module {
 			() => module?.Enabled ?? menuEnabled
 		);
 
-		// Always visible
 		instantToggle.isVisible = true;
 		everywhereToggle.isVisible = true;
 		speedSlider.isVisible = true;
