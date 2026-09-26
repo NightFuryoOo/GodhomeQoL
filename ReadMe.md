@@ -6,5 +6,6 @@ GodhomeQoL provides a carefully selected set of features **built upon** and insp
 
 *   **HollowKnight.QoL** by fifty-six: [https://github.com/fifty-six/HollowKnight.QoL](https://github.com/fifty-six/HollowKnight.QoL)
 *   **HollowKnight.GodSeekerPlus** by Clazex: [https://github.com/Clazex/HollowKnight.GodSeekerPlus](https://github.com/Clazex/HollowKnight.GodSeekerPlus)
+*   **ShowHPOnDeath** by FIN: [https://github.com/F1NS3N/ShowHPOnDeath](https://github.com/F1NS3N)
 
 This mod emphasizes stability and predictability.
