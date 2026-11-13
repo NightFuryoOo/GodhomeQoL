@@ -73,8 +73,10 @@ public sealed partial class QuickMenu : Module
             SetHornetSentinelHelperVisible(false);
             SetAllAdditionalGhostHelpersVisible(false);
             SetCheatsVisible(false);
+            SetHitCounterVisible(false);
             SetSettingsPresetsVisible(false);
             SetBossHistoryVisible(false);
+            SetCustomPantheonVisible(false);
             SetTrueBossRushVisible(false);
 
             ApplyInitialDefaults();
@@ -117,6 +119,7 @@ public sealed partial class QuickMenu : Module
             RefreshShowHpOnDeathUi();
             RefreshMaskDamageUi();
             RefreshFreezeHitboxesUi();
+            RefreshHitCounterUi();
             RefreshFpsBoostUi();
             RefreshSpeedChangerUi();
             RefreshTeleportKitUi();

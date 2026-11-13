@@ -95,7 +95,7 @@ public sealed partial class QuickMenu : Module
 
         private void UpdateGearSwitcherInteractivity()
         {
-            SetContentInteractivity(gearSwitcherContent, GetGearSwitcherEnabled(), "GearSwitcherEnableRow");
+            SetContentInteractivity(gearSwitcherContent, GetGearSwitcherEnabled() || IsGearSwitcherChainMode, "GearSwitcherEnableRow");
         }
 
         private void UpdateZoteHelperInteractivity()

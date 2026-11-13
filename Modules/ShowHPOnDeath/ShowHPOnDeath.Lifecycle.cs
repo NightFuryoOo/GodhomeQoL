@@ -25,12 +25,44 @@ public sealed partial class ShowHPOnDeath : Module
         }
     }
 
+    internal static bool IsFeatureEnabled => Settings.EnabledMod;
+
+    internal static void SyncFeatureState(bool previous)
+    {
+        bool target = Settings.EnabledMod;
+        if (previous != target)
+        {
+            SetFeatureEnabled(target);
+        }
+    }
+
+    internal static int OpacityPercent => Mathf.RoundToInt(ShowHPOnDeathDisplay.Opacity * 100f);
+
+    internal static int ScalePercent => Mathf.RoundToInt(ShowHPOnDeathDisplay.Scale * 100f);
+
+    internal static void SetOpacityPercent(float percent)
+    {
+        float clamped = Mathf.Clamp(Mathf.Round(percent), ShowHPOnDeathDisplay.MinOpacity * 100f, ShowHPOnDeathDisplay.MaxOpacity * 100f);
+        Settings.HudOpacity = clamped / 100f;
+        ShowHPOnDeathDisplay.Instance?.ApplyStyle();
+    }
+
+    internal static void SetScalePercent(float percent)
+    {
+        float clamped = Mathf.Clamp(Mathf.Round(percent), ShowHPOnDeathDisplay.MinScale * 100f, ShowHPOnDeathDisplay.MaxScale * 100f);
+        Settings.HudScale = clamped / 100f;
+        ShowHPOnDeathDisplay.Instance?.ApplyStyle();
+    }
+
     internal static void ResetFeatureDefaults()
     {
         SetFeatureEnabled(false);
         Settings.ShowPB = true;
         Settings.HideAfter10Sec = true;
         Settings.HudFadeSeconds = 5f;
+        Settings.HudOpacity = 1f;
+        Settings.HudScale = 1f;
+        ShowHPOnDeathDisplay.Instance?.ApplyStyle();
     }
 
     private protected override void Load()
@@ -142,6 +174,24 @@ public sealed partial class ShowHPOnDeath : Module
             false
         );
         elements.Add(fadeSlider);
+
+        elements.Add(new CustomSlider(
+            "ShowHPOnDeath/HudOpacity".Localize(),
+            SetOpacityPercent,
+            () => OpacityPercent,
+            ShowHPOnDeathDisplay.MinOpacity * 100f,
+            ShowHPOnDeathDisplay.MaxOpacity * 100f,
+            true
+        ));
+
+        elements.Add(new CustomSlider(
+            "ShowHPOnDeath/HudScale".Localize(),
+            SetScalePercent,
+            () => ScalePercent,
+            ShowHPOnDeathDisplay.MinScale * 100f,
+            ShowHPOnDeathDisplay.MaxScale * 100f,
+            true
+        ));
 
         Menu menu = new("ShowHPOnDeath".Localize(), elements.ToArray());
         return menu.GetMenuScreen(parent);

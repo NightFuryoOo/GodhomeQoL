@@ -15,6 +15,12 @@ public sealed partial class QuickMenu : Module
     {
 		private void OnGearSwitcherBackClicked()
 		{
+			if (IsGearSwitcherChainMode)
+			{
+				SetGearSwitcherVisible(value: false);
+				ExitGearSwitcherChainMode(reopen: true);
+				return;
+			}
 			bool flag = returnToQuickOnClose;
 			returnToQuickOnClose = false;
 			if (flag)

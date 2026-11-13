@@ -2,6 +2,9 @@ namespace GodhomeQoL.Modules.Tools;
 
 public sealed class FreezeHitboxes : Module
 {
+    [GlobalSetting]
+    public static float FreezeHintTextScale = 1f;
+
     public override bool DefaultEnabled => false;
     public override bool Hidden => true;
     public override bool AlwaysEnabled => true;

@@ -17,6 +17,8 @@ public sealed partial class QuickMenu : Module
                 || showHpOnDeathVisible
                 || maskDamageVisible
                 || freezeHitboxesVisible
+                || hitCounterVisible
+                || hitCounterMoveMode
                 || fpsBoostVisible
                 || speedChangerVisible
                 || teleportKitVisible
@@ -30,6 +32,7 @@ public sealed partial class QuickMenu : Module
                 || gearSwitcherPresetVisible
                 || settingsPresetsVisible
                 || bossHistoryVisible
+                || customPantheonVisible
                 || qolVisible
                 || menuAnimationVisible
                 || bossAnimationVisible
@@ -61,6 +64,7 @@ public sealed partial class QuickMenu : Module
         {
             if (IsAnyUiVisible())
             {
+                LeaveCustomPantheonModes();
                 returnToQuickOnClose = false;
                 returnToBossManipulateOnClose = false;
                 returnToQolOnClose = false;
@@ -72,6 +76,8 @@ public sealed partial class QuickMenu : Module
                 SetShowHpOnDeathVisible(false);
                 SetMaskDamageVisible(false);
                 SetFreezeHitboxesVisible(false);
+                StopHitCounterMove(false);
+                SetHitCounterVisible(false);
                 SetFpsBoostVisible(false);
                 SetSpeedChangerVisible(false);
                 SetTeleportKitVisible(false);
@@ -81,6 +87,7 @@ public sealed partial class QuickMenu : Module
                 SetCheatsVisible(false);
                 SetSettingsPresetsVisible(false);
                 SetBossHistoryVisible(false);
+                SetCustomPantheonVisible(false);
                 SetAlwaysFuriousVisible(false);
                 SetGearSwitcherVisible(false);
                 SetGearSwitcherCharmCostVisible(false);
@@ -222,6 +229,7 @@ public sealed partial class QuickMenu : Module
                 EnableUiInteraction();
                 EnableCursorHook();
                 uiActive = true;
+                HitCounter.SetBrowsing(true);
                 return;
             }
 
@@ -232,6 +240,7 @@ public sealed partial class QuickMenu : Module
                 TryRestoreSelectionAfterQuickMenuClose();
                 gamepadReleasePending = gamepadMode;
                 uiActive = false;
+                HitCounter.SetBrowsing(false);
             }
         }
 

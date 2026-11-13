@@ -275,6 +275,128 @@ public sealed partial class QuickMenu : Module
             shadow.effectDistance = new Vector2(2f, -2f);
         }
 
+        private static readonly Color HkValueColor = new(0.902f, 0.749f, 0.384f, 1f);
+        private static readonly Color HkOffValueColor = new(0.62f, 0.6f, 0.56f, 1f);
+        private static readonly Color HkInputFillColor = new(0f, 0f, 0f, 0.5f);
+        private const float HkSymbolLength = 11f;
+        private const float HkSymbolThickness = 2f;
+
+        private static void StyleHkMiniButton(GameObject buttonObject, Image plate, Text label)
+        {
+            plate.sprite = GetHkChamferSprite(false);
+            plate.type = Image.Type.Sliced;
+            plate.color = HkGroupFillColor;
+            _ = AddHkChamferFrame(buttonObject.transform);
+
+            label.font = GetHkButtonFont();
+            label.color = HkQuickEntryTextColor;
+            label.transform.SetAsLastSibling();
+            if (label.text == "-" || label.text == "+")
+            {
+                AddHkSymbolBar(buttonObject.transform, HkSymbolLength, HkSymbolThickness);
+                if (label.text == "+")
+                {
+                    AddHkSymbolBar(buttonObject.transform, HkSymbolThickness, HkSymbolLength);
+                }
+
+                label.enabled = false;
+            }
+
+            AddHkPlateHover(buttonObject, plate, HkGroupFillColor);
+        }
+
+        private static Image AddHkChamferFrame(Transform parent)
+        {
+            GameObject frameObject = new("Frame");
+            frameObject.transform.SetParent(parent, false);
+            RectTransform frameRect = frameObject.AddComponent<RectTransform>();
+            frameRect.anchorMin = Vector2.zero;
+            frameRect.anchorMax = Vector2.one;
+            frameRect.offsetMin = Vector2.zero;
+            frameRect.offsetMax = Vector2.zero;
+            Image frame = frameObject.AddComponent<Image>();
+            frame.sprite = GetHkChamferSprite(true);
+            frame.type = Image.Type.Sliced;
+            frame.color = HkFrameNeutralColor;
+            frame.raycastTarget = false;
+            return frame;
+        }
+
+        private static void AddHkSymbolBar(Transform parent, float width, float height)
+        {
+            GameObject bar = new("Symbol");
+            bar.transform.SetParent(parent, false);
+            RectTransform rect = bar.AddComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = Vector2.zero;
+            rect.sizeDelta = new Vector2(width, height);
+            Image image = bar.AddComponent<Image>();
+            image.color = HkQuickEntryTextColor;
+            image.raycastTarget = false;
+        }
+
+        private static void StyleHkRowLabel(Text label)
+        {
+            label.color = HkQuickEntryTextColor;
+        }
+
+        private static void StyleHkRowValue(Text value)
+        {
+            value.color = HkValueColor;
+        }
+
+        private static void StyleHkInputField(GameObject fieldObject, Image plate, InputField input, Text text)
+        {
+            plate.sprite = GetHkChamferSprite(false);
+            plate.type = Image.Type.Sliced;
+            plate.color = HkInputFillColor;
+            Image frame = AddHkChamferFrame(fieldObject.transform);
+
+            input.transition = Selectable.Transition.None;
+            input.caretColor = HkValueColor;
+            input.selectionColor = new Color(HkValueColor.r, HkValueColor.g, HkValueColor.b, 0.35f);
+            text.color = HkQuickEntryTextColor;
+            text.transform.SetAsLastSibling();
+
+            HkInputFocus focus = fieldObject.AddComponent<HkInputFocus>();
+            focus.Input = input;
+            focus.Frame = frame;
+            AddHkPlateHover(fieldObject, plate, HkInputFillColor);
+        }
+
+        private sealed class HkInputFocus : MonoBehaviour
+        {
+            internal InputField? Input;
+            internal Image? Frame;
+            private bool lastFocused;
+
+            private void OnEnable()
+            {
+                lastFocused = false;
+                Apply();
+            }
+
+            private void Update()
+            {
+                bool focused = Input != null && Input.isFocused;
+                if (focused != lastFocused)
+                {
+                    lastFocused = focused;
+                    Apply();
+                }
+            }
+
+            private void Apply()
+            {
+                if (Frame != null)
+                {
+                    Frame.color = lastFocused ? HkFrameOnColor : HkFrameNeutralColor;
+                }
+            }
+        }
+
         private static void AddHkPlateHover(GameObject target, Image plate, Color normal)
         {
             HkPlateHover hover = target.AddComponent<HkPlateHover>();

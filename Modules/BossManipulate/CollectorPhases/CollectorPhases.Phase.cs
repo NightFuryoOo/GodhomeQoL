@@ -26,66 +26,68 @@ public sealed partial class CollectorPhases : Module
             return;
         }
 
-        ApplyPhaseThreshold(fsm);
         ApplyPhaseThresholdHook(fsm);
-    }
-
-    private static void ApplyPhaseThreshold(PlayMakerFSM fsm)
-    {
-        if (!UseCustomPhase2Threshold)
-        {
-            return;
-        }
-
-        try
-        {
-            foreach (FsmState state in fsm.FsmStates)
-            {
-                if (state?.Actions == null)
-                {
-                    continue;
-                }
-
-                foreach (IntCompare cmp in state.Actions.OfType<IntCompare>())
-                {
-                    if (cmp.integer2 != null)
-                    {
-                        cmp.integer2.Value = CustomPhase2Threshold;
-                    }
-                }
-            }
-        }
-        catch (Exception swallowed)
-        {
-            LogSuppressed(swallowed, "CollectorPhases.Phase.cs");
-        }
     }
 
     private static void ApplyPhaseThresholdHook(PlayMakerFSM fsm)
     {
-        if (!UseCustomPhase2Threshold)
-        {
-            return;
-        }
-
         try
         {
             FsmState? check = fsm.Fsm.GetState("Check");
-            if (check == null)
+            if (check == null || !patchedPhaseControls.Add(fsm.GetInstanceID()))
             {
                 return;
             }
 
-            check.InsertCustomAction(() =>
+            FsmInt[] thresholds = check.Actions
+                .OfType<IntCompare>()
+                .Select(cmp => cmp.integer2)
+                .Where(value => value != null)
+                .ToArray();
+            if (thresholds.Length == 0)
             {
-                foreach (IntCompare cmp in check.Actions.OfType<IntCompare>())
+                return;
+            }
+
+            int[] vanillaThresholds = new int[thresholds.Length];
+            bool overridden = false;
+
+            void SyncThreshold()
+            {
+                if (moduleActive && UseCustomPhase2Threshold)
                 {
-                    if (cmp.integer2 != null)
+                    if (!overridden)
                     {
-                        cmp.integer2.Value = CustomPhase2Threshold;
+                        for (int i = 0; i < thresholds.Length; i++)
+                        {
+                            vanillaThresholds[i] = thresholds[i].Value;
+                        }
+
+                        overridden = true;
+                    }
+
+                    foreach (FsmInt threshold in thresholds)
+                    {
+                        threshold.Value = CustomPhase2Threshold;
                     }
                 }
-            }, 0);
+                else if (overridden)
+                {
+                    for (int i = 0; i < thresholds.Length; i++)
+                    {
+                        thresholds[i].Value = vanillaThresholds[i];
+                    }
+
+                    overridden = false;
+                }
+            }
+
+            check.InsertCustomAction(SyncThreshold, 0);
+            fsm.Fsm.GetState("Set")?.AddCustomAction(() =>
+            {
+                overridden = false;
+                SyncThreshold();
+            });
         }
         catch (Exception swallowed)
         {

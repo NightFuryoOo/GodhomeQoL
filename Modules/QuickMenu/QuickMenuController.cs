@@ -419,6 +419,11 @@ public sealed partial class QuickMenu : Module
         private Text? fastDreamWarpKeyValue;
         private Text? showHpFadeValue;
         private Slider? showHpFadeSlider;
+        private Text? showHpOpacityValue;
+        private Slider? showHpOpacitySlider;
+        private Text? showHpScaleValue;
+        private Slider? showHpScaleSlider;
+        private bool showHpSliderSync;
         private Text? maskDamageToggleValue;
         private Image? maskDamageToggleIcon;
         private Text? maskDamageShowUiValue;
@@ -597,6 +602,8 @@ public sealed partial class QuickMenu : Module
         private Text? qolUnlockRadiantValue;
         private Text? qolInvincibleIndicatorValue;
         private Text? qolScreenShakeValue;
+        private Text? qolCursorLockValue;
+        private Text? qolBlackTransitionsValue;
         private Text? nailDamageCheckKeyValue;
         private Text? qolEnableValue;
         private Image? qolEnableIcon;
@@ -610,6 +617,8 @@ public sealed partial class QuickMenu : Module
         private bool qolSavedUnlockRadiant;
         private bool qolSavedInvincibleIndicator;
         private bool qolSavedScreenShake;
+        private bool qolSavedCursorLock;
+        private bool qolSavedBlackTransitions;
         private Text? menuAnimDoorDefaultValue;
         private Text? menuAnimFasterLoadsValue;
         private Text? menuAnimFastMenusValue;
@@ -751,6 +760,8 @@ public sealed partial class QuickMenu : Module
         private Module? shortDeathAnimationModule;
         private Module? invincibleIndicatorModule;
         private Module? screenShakeModule;
+        private Module? cursorLockModule;
+        private Module? blackTransitionsModule;
         private Module? fpsBoostModule;
         private Module? zoteHelperModule;
         private Module? gruzMotherHelperModule;

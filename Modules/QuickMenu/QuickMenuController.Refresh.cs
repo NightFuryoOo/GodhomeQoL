@@ -114,6 +114,11 @@ public sealed partial class QuickMenu : Module
                 showHpFadeSlider.value = Mathf.Clamp(fade, showHpFadeSlider.minValue, showHpFadeSlider.maxValue);
             }
 
+            showHpSliderSync = true;
+            SyncShowHpPercentSlider(showHpOpacitySlider, showHpOpacityValue, ShowHPOnDeath.OpacityPercent);
+            SyncShowHpPercentSlider(showHpScaleSlider, showHpScaleValue, ShowHPOnDeath.ScalePercent);
+            showHpSliderSync = false;
+
             UpdateShowHpOnDeathInteractivity();
         }
 
@@ -127,6 +132,7 @@ public sealed partial class QuickMenu : Module
             UpdateToggleIcon(maskDamageShowUiIcon, showUi);
             UpdateFloatInputValue(maskDamageMultiplierField, MaskDamage.GetMultiplier());
             UpdateKeybindValue(maskDamageToggleUiKeyValue, GetMaskDamageToggleUiKeyLabel());
+            RefreshTextScaleSliders();
 
             UpdateMaskDamageInteractivity();
         }
@@ -138,6 +144,7 @@ public sealed partial class QuickMenu : Module
             UpdateToggleIcon(freezeHitboxesToggleIcon, enabled);
             UpdateKeybindValue(freezeHitboxesModeValue, GetFreezeHitboxesModeLabel());
             UpdateKeybindValue(freezeHitboxesUnfreezeKeyValue, GetFreezeHitboxesKeyLabel());
+            RefreshTextScaleSliders();
 
             UpdateFreezeHitboxesInteractivity();
         }
@@ -153,6 +160,7 @@ public sealed partial class QuickMenu : Module
             UpdateKeybindValue(speedChangerInputKeyValue, FormatSpeedChangerKeyLabel(SpeedChanger.inputSpeedKeybind));
 
             UpdateKeybindValue(speedChangerDisplayValue, GetSpeedChangerDisplayValue());
+            RefreshTextScaleSliders();
 
             UpdateSpeedChangerInteractivity();
         }
@@ -165,6 +173,7 @@ public sealed partial class QuickMenu : Module
             UpdateKeybindValue(teleportKitMenuKeyValue, GetTeleportKitMenuKeyLabel());
             UpdateKeybindValue(teleportKitSaveKeyValue, GetTeleportKitSaveKeyLabel());
             UpdateKeybindValue(teleportKitTeleportKeyValue, GetTeleportKitTeleportKeyLabel());
+            UpdateKeybindValue(teleportKitControllerButtonValue, GetTeleportKitControllerButtonLabel());
 
             UpdateTeleportKitInteractivity();
         }
@@ -260,7 +269,10 @@ public sealed partial class QuickMenu : Module
             UpdateToggleValue(qolUnlockRadiantValue, GetUnlockRadiantEnabled());
             UpdateToggleValue(qolInvincibleIndicatorValue, GetInvincibleIndicatorEnabled());
             UpdateToggleValue(qolScreenShakeValue, GetScreenShakeEnabled());
+            UpdateToggleValue(qolCursorLockValue, GetCursorLockEnabled());
+            UpdateToggleValue(qolBlackTransitionsValue, GetBlackTransitionsEnabled());
             UpdateKeybindValue(nailDamageCheckKeyValue, GetNailDamageCheckKeyLabel());
+            RefreshTextScaleSliders();
             UpdateQolInteractivity();
         }
 

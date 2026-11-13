@@ -329,6 +329,34 @@ public sealed partial class QuickMenu : Module
             }
         }
 
+        private bool GetCursorLockEnabled()
+        {
+            return GetCursorLockModule()?.Enabled ?? false;
+        }
+
+        private void SetCursorLockEnabled(bool value)
+        {
+            Module? module = GetCursorLockModule();
+            if (module != null)
+            {
+                module.Enabled = value;
+            }
+        }
+
+        private bool GetBlackTransitionsEnabled()
+        {
+            return GetBlackTransitionsModule()?.Enabled ?? false;
+        }
+
+        private void SetBlackTransitionsEnabled(bool value)
+        {
+            Module? module = GetBlackTransitionsModule();
+            if (module != null)
+            {
+                module.Enabled = value;
+            }
+        }
+
         private int GetBossGpzIndex()
         {
             Module? module = GetForceGreyPrinceModule();

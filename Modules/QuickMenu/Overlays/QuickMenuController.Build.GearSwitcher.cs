@@ -145,7 +145,7 @@ public sealed partial class QuickMenu : Module
             CreateGearSwitcherCharmPromptRow(content, rowY);
 
             lastY = rowY;
-            rowY += charmPromptSpacing;
+            rowY += charmPromptSpacing + GearSwitcherEquippedCharmsSpace;
             CreateSelectRow(
                 content,
                 "GearSwitcherPresetRow",

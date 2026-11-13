@@ -2,6 +2,9 @@ namespace GodhomeQoL.Modules.Tools;
 
 public sealed class NailDamageCheck : Module
 {
+    [GlobalSetting]
+    public static float NailDamageTextScale = 1f;
+
     private const float DisplaySeconds = 3f;
 
     public override bool DefaultEnabled => true;
@@ -48,7 +51,7 @@ public sealed class NailDamageCheck : Module
             HideDisplay();
         }
 
-        if (QuickMenu.IsAnyUiVisible() || QuickMenu.IsHotkeyInputBlocked())
+        if (!IsQolMasterEnabled() || QuickMenu.IsAnyUiVisible() || QuickMenu.IsHotkeyInputBlocked())
         {
             return;
         }
@@ -59,6 +62,8 @@ public sealed class NailDamageCheck : Module
             ShowNailDamage();
         }
     }
+
+    private static bool IsQolMasterEnabled() => GodhomeQoL.GlobalSettings.QuickMenuMasters?.QolEnabled ?? true;
 
     private static void ShowNailDamage()
     {
@@ -71,6 +76,13 @@ public sealed class NailDamageCheck : Module
         display ??= new NailDamageCheckDisplay();
         display.Display($"Nail Damage: {pd.nailDamage}");
         hideAtTime = Time.unscaledTime + DisplaySeconds;
+    }
+
+    internal static void PreviewText()
+    {
+        display ??= new NailDamageCheckDisplay();
+        display.ApplyScale();
+        display.Preview($"Nail Damage: {PlayerData.instance?.nailDamage ?? 5}");
     }
 
     private static void HideDisplay()
@@ -89,73 +101,15 @@ public sealed class NailDamageCheck : Module
 
 internal sealed class NailDamageCheckDisplay
 {
-    private string displayText = "";
-    private readonly Vector2 textSize = new(500, 100);
-    private readonly Vector2 textPosition = new(0.985f, 0.965f);
+    private readonly HudLabel label = new("NailDamageCheckCanvas", Vector2.one, new Vector2(-29f, -38f), 26, () => HudTextScales.NailDamageText);
 
-    private GameObject? canvas;
-    private UnityEngine.UI.Text? text;
+    public void Destroy() => label.Destroy();
 
-    public NailDamageCheckDisplay() => Create();
+    public void Hide() => label.Hide();
 
-    private void Create()
-    {
-        if (canvas != null)
-        {
-            return;
-        }
+    public void Display(string value) => label.Show(value);
 
-        canvas = CanvasUtil.CreateCanvas(RenderMode.ScreenSpaceOverlay, new Vector2(1920, 1080), "NailDamageCheckCanvas");
+    internal void ApplyScale() => label.ApplyScale();
 
-        CanvasGroup canvasGroup = canvas.GetComponent<CanvasGroup>();
-        canvasGroup.interactable = false;
-        canvasGroup.blocksRaycasts = false;
-
-        UObject.DontDestroyOnLoad(canvas);
-
-        text = CanvasUtil.CreateTextPanel(
-            canvas,
-            "",
-            28,
-            TextAnchor.UpperRight,
-            new CanvasUtil.RectData(textSize, Vector2.zero, textPosition, textPosition, new Vector2(1f, 1f)),
-            CanvasUtil.GetFont("Perpetua")
-        ).GetComponent<UnityEngine.UI.Text>();
-    }
-
-    public void Destroy()
-    {
-        if (canvas != null)
-        {
-            UObject.Destroy(canvas);
-        }
-
-        canvas = null;
-        text = null;
-    }
-
-    public void Hide()
-    {
-        if (canvas != null)
-        {
-            canvas.SetActive(false);
-        }
-    }
-
-    private void Update()
-    {
-        if (text == null || canvas == null)
-        {
-            return;
-        }
-
-        text.text = displayText;
-        canvas.SetActive(true);
-    }
-
-    public void Display(string value)
-    {
-        displayText = value.Trim();
-        Update();
-    }
+    internal void Preview(string value) => label.Preview(value);
 }

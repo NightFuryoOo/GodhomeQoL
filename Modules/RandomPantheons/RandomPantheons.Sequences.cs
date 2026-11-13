@@ -15,7 +15,7 @@ public sealed partial class RandomPantheons : Module
         string playerData
     )
     {
-        if (!PantheonSequenceCompatibility.ShouldSkipRandomPantheons())
+        if (!PantheonSequenceCompatibility.ShouldSkipRandomPantheons() && !CustomPantheonRunner.IsCustomSequence(sequence))
         {
             if (!AnyPantheonEnabled)
             {

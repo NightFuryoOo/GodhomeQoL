@@ -57,6 +57,10 @@ public sealed partial class QuickMenu : Module
 
 		private GearPreset GetSelectedPreset()
 		{
+			if (gearSwitcherChainTarget != null)
+			{
+				return gearSwitcherChainTarget;
+			}
 			if (GearSwitcherSettings.Presets == null || GearSwitcherSettings.Presets.Count == 0)
 			{
 				GearSwitcherSettings.Presets = GearPresetDefaults.CreateDefaults();

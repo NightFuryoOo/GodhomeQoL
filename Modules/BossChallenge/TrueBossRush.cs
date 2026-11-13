@@ -334,7 +334,7 @@ public sealed class TrueBossRush : Module
         string playerData
     )
     {
-        if (!PantheonSequenceCompatibility.ShouldSkipTrueBossRush() && AnyPantheonEnabled)
+        if (!PantheonSequenceCompatibility.ShouldSkipTrueBossRush() && AnyPantheonEnabled && !CustomPantheonRunner.IsCustomSequence(sequence))
         {
             try
             {

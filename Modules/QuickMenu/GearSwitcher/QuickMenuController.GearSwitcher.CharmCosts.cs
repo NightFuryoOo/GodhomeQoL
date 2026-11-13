@@ -188,7 +188,7 @@ public sealed partial class QuickMenu : Module
 				int num2 = Math.Max(0, Math.Min(99, gearSwitcherCharmCostHighlightEntry.DefaultCost(selectedPreset)));
 				bool flag = num != num2;
 				gearSwitcherCharmCostHighlightEntry.Glow.enabled = flag;
-				gearSwitcherCharmCostHighlightEntry.ValueText.color = (flag ? GearSwitcherCharmCostChangedValueColor : Color.white);
+				gearSwitcherCharmCostHighlightEntry.ValueText.color = (flag ? GearSwitcherCharmCostChangedValueColor : HkQuickEntryTextColor);
 			}
 		}
 
@@ -252,20 +252,30 @@ public sealed partial class QuickMenu : Module
 
 		private static readonly Color GearSwitcherCharmPickDimColor = new Color(0.4f, 0.4f, 0.4f, 0.9f);
 
-		private static readonly Color GearSwitcherCharmPickMessageColor = new Color(1f, 0.55f, 0.45f, 1f);
+		private const string CharmInfoLabelHex = "EDE6D6";
+
+		private const string CharmInfoValueHex = "E6BF62";
+
+		private const string CharmInfoHintHex = "A8A399";
+
+		private const string CharmInfoWarnHex = "EB7366";
+
+		private const string CharmsBoundMessage = "Charms Binding is on in this gear: charms can't be equipped";
+
+		private const string CharmBindingBadgeName = "CharmBindingBadge";
 
 		private void OnGearSwitcherCharmIconClicked(int charmId)
 		{
 			GearPreset preset = GetSelectedPreset();
 			bool equip = !GearSwitcher.IsCharmSelected(preset, charmId);
 			string? message = null;
-			switch (GearSwitcher.TrySetCharmEquipped(gearSwitcherSelectedPreset, preset, charmId, equip))
+			switch (GearSwitcher.TrySetCharmEquipped(IsGearSwitcherChainMode ? string.Empty : gearSwitcherSelectedPreset, preset, charmId, equip))
 			{
 			case GearSwitcher.CharmSelectResult.BuiltinGear:
 				message = "Charms can only be chosen on your own gears";
 				break;
 			case GearSwitcher.CharmSelectResult.CharmsBound:
-				message = "Charms are bound by this gear";
+				message = CharmsBoundMessage;
 				break;
 			case GearSwitcher.CharmSelectResult.NoNotches:
 				message = "No free notches: take a charm off first";
@@ -278,13 +288,57 @@ public sealed partial class QuickMenu : Module
 		private void UpdateGearSwitcherCharmIcons()
 		{
 			GearPreset preset = GetSelectedPreset();
+			bool bound = GearSwitcher.IsCharmSelectionLocked(preset);
+			Sprite? chain = bound ? GetCharmsBindingBadgeSprite() : null;
 			foreach (KeyValuePair<int, Image> entry in gearSwitcherCharmIcons)
 			{
 				if (entry.Value != null)
 				{
-					entry.Value.color = GearSwitcher.IsCharmSelected(preset, entry.Key) ? Color.white : GearSwitcherCharmPickDimColor;
+					entry.Value.color = !bound && GearSwitcher.IsCharmSelected(preset, entry.Key) ? Color.white : GearSwitcherCharmPickDimColor;
+					SetCharmBindingBadge(entry.Value, chain);
 				}
 			}
+		}
+
+		private Sprite? GetCharmsBindingBadgeSprite()
+		{
+			charmsBindingSelectedSprite ??= GetBindingSelectedSprite<CharmsBinding>();
+			charmsBindingSprite ??= LoadCollectorIconSprite("Charms Binding.png", "CharmsBinding") ?? GetBindingDefaultSprite<CharmsBinding>();
+			return charmsBindingSelectedSprite ?? charmsBindingSprite;
+		}
+
+		private static void SetCharmBindingBadge(Image icon, Sprite? chain)
+		{
+			Transform? existing = icon.transform.Find(CharmBindingBadgeName);
+			if (chain == null)
+			{
+				if (existing != null)
+				{
+					existing.gameObject.SetActive(false);
+				}
+				return;
+			}
+			Image badge;
+			if (existing == null)
+			{
+				GameObject badgeObject = new GameObject(CharmBindingBadgeName);
+				badgeObject.transform.SetParent(icon.transform, worldPositionStays: false);
+				RectTransform rect = badgeObject.AddComponent<RectTransform>();
+				rect.anchorMin = new Vector2(0.15f, 0.15f);
+				rect.anchorMax = new Vector2(0.85f, 0.85f);
+				rect.offsetMin = Vector2.zero;
+				rect.offsetMax = Vector2.zero;
+				badge = badgeObject.AddComponent<Image>();
+				badge.preserveAspect = true;
+				badge.raycastTarget = false;
+				badge.color = new Color(1f, 1f, 1f, 0.95f);
+			}
+			else
+			{
+				existing.gameObject.SetActive(true);
+				badge = existing.GetComponent<Image>();
+			}
+			badge.sprite = chain;
 		}
 
 		private void UpdateGearSwitcherCharmNotches(string? message = null)
@@ -295,18 +349,29 @@ public sealed partial class QuickMenu : Module
 				return;
 			}
 			GearPreset preset = GetSelectedPreset();
+			label.color = Color.white;
+			if (message == null && GearSwitcher.IsCharmSelectionLocked(preset))
+			{
+				message = CharmsBoundMessage;
+			}
 			if (message != null)
 			{
-				label.text = message;
-				label.color = GearSwitcherCharmPickMessageColor;
+				label.text = $"<color=#{CharmInfoWarnHex}>{message}</color>";
 				return;
 			}
 			int used = GearSwitcher.GetPlannedNotchesUsed(preset);
 			int slots = GearSwitcher.GetPresetNotchSlots(preset);
 			bool overcharmed = used > slots;
-			string temporary = IsBuiltinPresetName(gearSwitcherSelectedPreset) ? " - temporary, resets when you switch gear" : string.Empty;
-			label.text = (overcharmed ? $"Notches {used}/{slots} (Overcharmed)" : $"Notches {used}/{slots}") + temporary;
-			label.color = overcharmed ? GearSwitcherCharmPickMessageColor : Color.white;
+			string text = $"<color=#{CharmInfoLabelHex}>Notches</color>   <color=#{(overcharmed ? CharmInfoWarnHex : CharmInfoValueHex)}>{used} / {slots}</color>";
+			if (overcharmed)
+			{
+				text += $"   <color=#{CharmInfoWarnHex}>Overcharmed</color>";
+			}
+			if (IsBuiltinPresetName(gearSwitcherSelectedPreset))
+			{
+				text += $"   <color=#{CharmInfoHintHex}>temporary, resets when you switch gear</color>";
+			}
+			label.text = text;
 		}
 
 		private Text? EnsureGearSwitcherCharmNotchText()
@@ -325,6 +390,7 @@ public sealed partial class QuickMenu : Module
 				return null;
 			}
 			Text text = CreateText(panel, "CharmNotchInfo", string.Empty, 24, TextAnchor.MiddleCenter);
+			text.supportRichText = true;
 			text.resizeTextForBestFit = true;
 			text.resizeTextMaxSize = 24;
 			text.resizeTextMinSize = 16;

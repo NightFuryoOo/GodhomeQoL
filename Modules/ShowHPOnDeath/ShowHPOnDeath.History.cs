@@ -36,6 +36,7 @@ public sealed partial class ShowHPOnDeath : Module
     {
         orig(self, saveSlot, callback);
         BossHistory.DeleteSlot(saveSlot);
+        HitCounterRecords.DeleteSlot(saveSlot);
     }
 
     private static void OnStartNewGame(On.GameManager.orig_StartNewGame orig, GameManager self, bool permadeathMode, bool bossRushMode)
@@ -43,6 +44,7 @@ public sealed partial class ShowHPOnDeath : Module
         if (self.profileID > 0)
         {
             BossHistory.DeleteSlot(self.profileID);
+            HitCounterRecords.DeleteSlot(self.profileID);
         }
 
         orig(self, permadeathMode, bossRushMode);

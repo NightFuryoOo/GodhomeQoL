@@ -43,6 +43,7 @@ public sealed partial class GearSwitcher : Module
             }
         }
 
+        result.Remove(TemporaryPresetName);
         Settings.PresetOrder = result;
         return result;
     }
@@ -291,6 +292,26 @@ public sealed partial class GearSwitcher : Module
         return $"{prefix}{index}";
     }
 
+    internal static void SelectPresetWithoutApplying(string presetName)
+    {
+        presetName = NormalizeBuiltinPresetName(presetName);
+        if (!TryGetPreset(presetName, out _))
+        {
+            return;
+        }
+
+        string? previousPreset = Settings.LastPreset;
+        if (!string.IsNullOrEmpty(previousPreset)
+            && string.Equals(NormalizeBuiltinPresetName(previousPreset!), presetName, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        ForgetTemporaryBuiltinCharms(previousPreset);
+        Settings.LastPreset = presetName;
+        GodhomeQoL.SaveGlobalSettingsSafe();
+    }
+
     internal static void ApplyPreset(string presetName, bool allowQueue)
     {
         if (!IsGloballyEnabled)
@@ -334,6 +355,7 @@ public sealed partial class GearSwitcher : Module
             return;
         }
 
+        int keptHealth = PreserveHealthOnApply && PlayerData.instance != null ? PlayerData.instance.health : 0;
         IsApplyingPreset = true;
         try
         {
@@ -350,6 +372,11 @@ public sealed partial class GearSwitcher : Module
         finally
         {
             IsApplyingPreset = false;
+            if (keptHealth > 0)
+            {
+                SetChainHealth(keptHealth);
+            }
+
             AlwaysFurious.NotifyGearSwitcherApplied();
             ScheduleShellBindingResync();
         }

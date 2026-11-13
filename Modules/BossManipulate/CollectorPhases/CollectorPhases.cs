@@ -50,6 +50,9 @@ public sealed partial class CollectorPhases : Module
     internal static bool collectorHasStoredMaxHpBeforeP5 = false;
 
     [LocalSetting]
+    internal static bool collectorUseMaxHpBeforeP5 = false;
+
+    [LocalSetting]
     internal static bool UseCustomPhase2Threshold = false;
 
     [LocalSetting]
@@ -78,6 +81,7 @@ public sealed partial class CollectorPhases : Module
 
     private static bool moduleActive;
     private static bool hoGEntryAllowed;
+    private static readonly HashSet<int> patchedPhaseControls = new();
 
     public override ToggleableLevel ToggleableLevel => ToggleableLevel.ChangeScene;
 

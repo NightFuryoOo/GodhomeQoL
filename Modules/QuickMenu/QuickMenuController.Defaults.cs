@@ -130,6 +130,11 @@ public sealed partial class QuickMenu : Module
             SetModuleEnabled<Modules.QoL.ShortDeathAnimation>(true);
             SetModuleEnabled<Modules.QoL.InvincibleIndicator>(true);
             SetModuleEnabled<Modules.QoL.ScreenShake>(true);
+            SetModuleEnabled<Modules.QoL.CursorLock>(false);
+            SetModuleEnabled<Modules.QoL.BlackTransitions>(false);
+            SetModuleEnabled<HitCounter>(false);
+            HitCounter.ResetSettings();
+            HudTextScales.ResetAll();
             Modules.QoL.SkipCutscenes.HallOfGodsStatues = true;
             SetModuleEnabled<Modules.QoL.UnlockAllModes>(true);
             SetModuleEnabled<Modules.QoL.UnlockPantheons>(true);

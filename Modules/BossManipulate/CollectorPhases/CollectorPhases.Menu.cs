@@ -164,10 +164,11 @@ public sealed partial class CollectorPhases : Module
     {
         collectorPhase = 3;
         collectorMaxHP = DefaultCollectorHp;
-        UseMaxHP = true;
+        UseMaxHP = false;
         collectorP5Hp = false;
         collectorMaxHPBeforeP5 = DefaultCollectorHp;
         collectorHasStoredMaxHpBeforeP5 = false;
+        collectorUseMaxHpBeforeP5 = false;
         UseCustomPhase2Threshold = false;
         CustomPhase2Threshold = 850;
         buzzerHP = DefaultBuzzerHp;

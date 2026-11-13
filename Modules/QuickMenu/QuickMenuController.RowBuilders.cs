@@ -40,6 +40,7 @@ public sealed partial class QuickMenu : Module
 
             _ = CreateRowLabel(row.transform, label);
             Text valueLabel = CreateRowValue(row.transform, getter() ? "ON" : "OFF");
+            UpdateToggleValue(valueLabel, getter());
             valueText = valueLabel;
 
             button.onClick.AddListener(() =>
@@ -67,6 +68,7 @@ public sealed partial class QuickMenu : Module
             bool initialValue = getter();
             _ = CreateRowLabelWithIcon(row.transform, label, initialValue, out iconImage);
             Text valueLabel = CreateRowValue(row.transform, initialValue ? "ON" : "OFF");
+            UpdateToggleValue(valueLabel, initialValue);
             valueText = valueLabel;
             Image? toggleIcon = iconImage;
 
@@ -156,6 +158,7 @@ public sealed partial class QuickMenu : Module
             rect.pivot = new Vector2(1f, 0.5f);
             rect.anchoredPosition = new Vector2(-20f, 0f);
             rect.sizeDelta = new Vector2(280f, RowHeight);
+            StyleHkRowValue(valueLabel);
 
             valueText = valueLabel;
         }

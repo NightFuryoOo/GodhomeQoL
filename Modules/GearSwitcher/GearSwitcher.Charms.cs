@@ -31,7 +31,7 @@ public sealed partial class GearSwitcher : Module
 
     internal static void ApplyCharmCostsImmediate(GearPreset preset)
     {
-        if (!IsGloballyEnabled)
+        if (!IsGloballyEnabled || IsEditOnly(preset))
         {
             return;
         }

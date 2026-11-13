@@ -18,6 +18,7 @@ public sealed partial class QuickMenu : Module
                 || IsMaskDamageRebinding()
                 || IsNailDamageCheckRebinding()
                 || IsFreezeHitboxesRebinding()
+                || IsHitCounterRebinding()
                 || IsCheatsKillAllRebinding()
                 || IsSpeedChangerRebinding()
                 || IsTeleportKitRebinding()
@@ -37,6 +38,9 @@ public sealed partial class QuickMenu : Module
                 || gearSwitcherPresetDeleteVisible
                 || settingsPresetConfirmVisible
                 || bossHistoryConfirmVisible
+                || customPantheonConfirmVisible
+                || IsCustomPantheonNameFocused()
+                || IsModTextFieldFocused()
                 || IsBossHistorySearchFocused()
                 || gearSwitcherResetConfirmVisible
                 || quickSettingsResetConfirmVisible

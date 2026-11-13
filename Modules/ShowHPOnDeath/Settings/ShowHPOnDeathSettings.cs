@@ -10,6 +10,8 @@ public sealed class ShowHPOnDeathSettings
     public bool ShowPB = true;
     public bool HideAfter10Sec = true;
     public float HudFadeSeconds = 5f;
+    public float HudOpacity = 1f;
+    public float HudScale = 1f;
 
     [JsonConverter(typeof(PlayerActionSetConverter))]
     public ShowHPOnDeathKeyBinds Keybinds = new();

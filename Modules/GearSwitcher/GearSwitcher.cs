@@ -20,6 +20,7 @@ public sealed partial class GearSwitcher : Module
     private const string BindVesselOrbEvent = "BIND VESSEL ORB";
     private const string UnbindVesselOrbEvent = "UNBIND VESSEL ORB";
     private const string MPLoseEvent = "MP LOSE";
+    private const string MPSetEvent = "MP SET";
     private const string MPReserveUpEvent = "MP RESERVE UP";
     private const string MPReserveDownEvent = "MP RESERVE DOWN";
     private const string UpdateBlueHealthEvent = "UPDATE BLUE HEALTH";

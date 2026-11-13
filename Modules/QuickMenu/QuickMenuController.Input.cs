@@ -10,6 +10,9 @@ public sealed partial class QuickMenu : Module
     {
         private void Update()
         {
+            UpdateTypingGameInputBlock();
+            UpdateCustomPantheonBossEdit();
+            UpdateCustomPantheonDrag();
             bool wasRebinding = IsAnyRebinding();
             bool suppressHotkeysThisFrame = overlayHotkeySuppressFrames > 0;
             if (overlayHotkeySuppressFrames > 0)
@@ -40,6 +43,13 @@ public sealed partial class QuickMenu : Module
             {
                 HandleFreezeHitboxesRebind();
             }
+
+            if (hitCounterVisible)
+            {
+                HandleHitCounterRebind();
+            }
+
+            HandleHitCounterMoveInput();
 
             if (cheatsVisible)
             {
@@ -136,7 +146,7 @@ public sealed partial class QuickMenu : Module
                 && !teleportKitGameplayMenuVisible
                 && canUseSettingsUiHotkeys);
 
-            if (quickVisible || quickSettingsVisible || overlayVisible || collectorVisible || fastReloadVisible || dreamshieldVisible || showHpOnDeathVisible || maskDamageVisible || freezeHitboxesVisible || fpsBoostVisible || speedChangerVisible || teleportKitVisible || bossChallengeVisible || randomPantheonsVisible || trueBossRushVisible || cheatsVisible || alwaysFuriousVisible || gearSwitcherVisible || gearSwitcherCharmCostVisible || gearSwitcherPresetVisible || settingsPresetsVisible || bossHistoryVisible || qolVisible || menuAnimationVisible || bossAnimationVisible || zoteHelperVisible || gruzHelperVisible || hornetHelperVisible || mawlekHelperVisible || massiveMossHelperVisible || crystalGuardianHelperVisible || enragedGuardianHelperVisible || hornetSentinelHelperVisible || IsAnyAdditionalGhostHelperVisible() || bossManipulateVisible || bossManipulateOtherRoomsVisible || gruzMotherP1HelperVisible || vengeflyKingP1HelperVisible || broodingMawlekP1HelperVisible || noskP2HelperVisible || uumuuP3HelperVisible || soulWarriorP1HelperVisible || noEyesP4HelperVisible || marmuP2HelperVisible || xeroP2HelperVisible || markothP4HelperVisible || gorbP1HelperVisible)
+            if (quickVisible || quickSettingsVisible || overlayVisible || collectorVisible || fastReloadVisible || dreamshieldVisible || showHpOnDeathVisible || maskDamageVisible || freezeHitboxesVisible || hitCounterVisible || hitCounterMoveMode || fpsBoostVisible || speedChangerVisible || teleportKitVisible || bossChallengeVisible || randomPantheonsVisible || trueBossRushVisible || cheatsVisible || alwaysFuriousVisible || gearSwitcherVisible || gearSwitcherCharmCostVisible || gearSwitcherPresetVisible || settingsPresetsVisible || bossHistoryVisible || customPantheonVisible || qolVisible || menuAnimationVisible || bossAnimationVisible || zoteHelperVisible || gruzHelperVisible || hornetHelperVisible || mawlekHelperVisible || massiveMossHelperVisible || crystalGuardianHelperVisible || enragedGuardianHelperVisible || hornetSentinelHelperVisible || IsAnyAdditionalGhostHelperVisible() || bossManipulateVisible || bossManipulateOtherRoomsVisible || gruzMotherP1HelperVisible || vengeflyKingP1HelperVisible || broodingMawlekP1HelperVisible || noskP2HelperVisible || uumuuP3HelperVisible || soulWarriorP1HelperVisible || noEyesP4HelperVisible || marmuP2HelperVisible || xeroP2HelperVisible || markothP4HelperVisible || gorbP1HelperVisible)
             {
                 MaintainUiInteraction();
             }
@@ -152,7 +162,7 @@ public sealed partial class QuickMenu : Module
 
         private void LateUpdate()
         {
-            if (quickVisible || quickSettingsVisible || overlayVisible || collectorVisible || fastReloadVisible || dreamshieldVisible || showHpOnDeathVisible || maskDamageVisible || freezeHitboxesVisible || fpsBoostVisible || speedChangerVisible || teleportKitVisible || bossChallengeVisible || randomPantheonsVisible || trueBossRushVisible || cheatsVisible || alwaysFuriousVisible || gearSwitcherVisible || gearSwitcherCharmCostVisible || gearSwitcherPresetVisible || settingsPresetsVisible || bossHistoryVisible || qolVisible || menuAnimationVisible || bossAnimationVisible || zoteHelperVisible || gruzHelperVisible || hornetHelperVisible || mawlekHelperVisible || massiveMossHelperVisible || crystalGuardianHelperVisible || enragedGuardianHelperVisible || hornetSentinelHelperVisible || IsAnyAdditionalGhostHelperVisible() || bossManipulateVisible || bossManipulateOtherRoomsVisible || gruzMotherP1HelperVisible || vengeflyKingP1HelperVisible || broodingMawlekP1HelperVisible || noskP2HelperVisible || uumuuP3HelperVisible || soulWarriorP1HelperVisible || noEyesP4HelperVisible || marmuP2HelperVisible || xeroP2HelperVisible || markothP4HelperVisible || gorbP1HelperVisible)
+            if (quickVisible || quickSettingsVisible || overlayVisible || collectorVisible || fastReloadVisible || dreamshieldVisible || showHpOnDeathVisible || maskDamageVisible || freezeHitboxesVisible || hitCounterVisible || hitCounterMoveMode || fpsBoostVisible || speedChangerVisible || teleportKitVisible || bossChallengeVisible || randomPantheonsVisible || trueBossRushVisible || cheatsVisible || alwaysFuriousVisible || gearSwitcherVisible || gearSwitcherCharmCostVisible || gearSwitcherPresetVisible || settingsPresetsVisible || bossHistoryVisible || customPantheonVisible || qolVisible || menuAnimationVisible || bossAnimationVisible || zoteHelperVisible || gruzHelperVisible || hornetHelperVisible || mawlekHelperVisible || massiveMossHelperVisible || crystalGuardianHelperVisible || enragedGuardianHelperVisible || hornetSentinelHelperVisible || IsAnyAdditionalGhostHelperVisible() || bossManipulateVisible || bossManipulateOtherRoomsVisible || gruzMotherP1HelperVisible || vengeflyKingP1HelperVisible || broodingMawlekP1HelperVisible || noskP2HelperVisible || uumuuP3HelperVisible || soulWarriorP1HelperVisible || noEyesP4HelperVisible || marmuP2HelperVisible || xeroP2HelperVisible || markothP4HelperVisible || gorbP1HelperVisible)
             {
                 MaintainUiInteraction();
             }
@@ -175,6 +185,7 @@ public sealed partial class QuickMenu : Module
                 || fastReloadVisible
                 || dreamshieldVisible
                 || showHpOnDeathVisible
+                || hitCounterVisible
                 || fpsBoostVisible
                 || speedChangerVisible
                 || teleportKitVisible
@@ -188,6 +199,7 @@ public sealed partial class QuickMenu : Module
                 || gearSwitcherPresetVisible
                 || settingsPresetsVisible
                 || bossHistoryVisible
+                || customPantheonVisible
                 || qolVisible
                 || menuAnimationVisible
                 || bossAnimationVisible

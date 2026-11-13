@@ -15,7 +15,7 @@ public sealed partial class FlukemarmHelper : Module
     private const int DefaultFlukemarmSummonLimit = 6;
     private const int DefaultFlukemarmVanillaSummonLimit = 8;
     private const int P5FlukeFlyHp = 35;
-    private const int MinSummonLimit = DefaultFlukemarmSummonLimit;
+    internal const int MinSummonLimit = 1;
     private const int MaxSummonLimit = 999;
 
     internal static void ApplySummonLimitSettingsIfPresent()
@@ -75,6 +75,7 @@ public sealed partial class FlukemarmHelper : Module
             : GetVanillaSummonLimit(fsm);
         SyncFlukeFlyPoolSize(fsm, targetLimit);
         SetSummonLimitOnFlukemarmFsm(fsm, targetLimit);
+        TryApplySpawnPatch(fsm);
     }
 
     private static void SyncFlukeFlyPoolSize(PlayMakerFSM fsm, int targetLimit)

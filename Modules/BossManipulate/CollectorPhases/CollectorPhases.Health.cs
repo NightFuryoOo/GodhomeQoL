@@ -77,6 +77,7 @@ public sealed partial class CollectorPhases : Module
             if (!collectorP5Hp)
             {
                 collectorMaxHPBeforeP5 = ClampCollectorHp(collectorMaxHP);
+                collectorUseMaxHpBeforeP5 = UseMaxHP;
                 collectorHasStoredMaxHpBeforeP5 = true;
             }
 
@@ -89,6 +90,7 @@ public sealed partial class CollectorPhases : Module
             if (collectorP5Hp && collectorHasStoredMaxHpBeforeP5)
             {
                 collectorMaxHP = ClampCollectorHp(collectorMaxHPBeforeP5);
+                UseMaxHP = collectorUseMaxHpBeforeP5;
             }
 
             collectorP5Hp = false;
@@ -108,6 +110,7 @@ public sealed partial class CollectorPhases : Module
         if (!collectorHasStoredMaxHpBeforeP5)
         {
             collectorMaxHPBeforeP5 = ClampCollectorHp(collectorMaxHP);
+            collectorUseMaxHpBeforeP5 = UseMaxHP;
             collectorHasStoredMaxHpBeforeP5 = true;
         }
 

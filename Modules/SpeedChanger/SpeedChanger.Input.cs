@@ -17,6 +17,10 @@ public sealed partial class SpeedChanger : Module {
 	}
 
 	private void ListenForToggle() {
+		if (chainSpeedActive) {
+			return;
+		}
+
 		if (toggleKey != KeyCode.None && toggleKey == suppressToggleKey) {
 			if (Input.GetKey(toggleKey)) {
 				return;

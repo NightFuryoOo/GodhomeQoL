@@ -43,6 +43,7 @@ public sealed partial class FlukemarmHelper : Module
         vanillaHpByInstance.Clear();
         vanillaSummonLimitByFsm.Clear();
         customFlukeFlyPoolEntries.Clear();
+        ClearSpawnPatches();
         vanillaFlukeFlyPoolSize = -1;
         hoGEntryAllowed = false;
     }
@@ -216,6 +217,7 @@ public sealed partial class FlukemarmHelper : Module
 
     private static void SceneManager_activeSceneChanged(Scene from, Scene to)
     {
+        ClearSpawnPatches();
         UpdateHoGEntryAllowed(from.name, to.name);
         if (!string.Equals(to.name, FlukemarmScene, StringComparison.Ordinal))
         {

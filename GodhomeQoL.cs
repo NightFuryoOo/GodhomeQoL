@@ -24,7 +24,9 @@ public sealed partial class GodhomeQoL : Mod, ITogglableMod, ICustomMenuMod
         ModHooks.SavegameLoadHook += OnSavegameLoad;
         ModMenu.InstallHooks();
         ToggleableBindings.ToggleableBindings.Initialize(preloadedObjects);
+        global::GodhomeQoL.Modules.BossChallenge.CustomPantheonStatue.Install();
         ResetPerSaveState();
+        global::GodhomeQoL.Modules.BossChallenge.CustomPantheonIsolation.CaptureDefaults();
         ModuleManager.Load();
         Active = true;
         SettingsAutoSave.Start();
@@ -40,13 +42,16 @@ public sealed partial class GodhomeQoL : Mod, ITogglableMod, ICustomMenuMod
         ModMenu.UninstallHooks();
         ModuleManager.Unload();
         ToggleableBindings.ToggleableBindings.Unload();
+        global::GodhomeQoL.Modules.BossChallenge.CustomPantheonStatue.Uninstall();
     }
 
     private void OnApplicationQuit(On.GameManager.orig_OnApplicationQuit orig, GameManager self)
     {
         try
         {
+            global::GodhomeQoL.Modules.BossChallenge.CustomPantheonRunner.StopForQuit();
             ForceDisableSessionScopedModesForNextSession();
+            SaveGlobalSettingsSafe();
         }
         finally
         {

@@ -118,10 +118,11 @@ namespace ToggleableBindings.VanillaBindings
 
             gm.soulOrb_fsm.SendEvent(MPLoseEvent);
             SyncBindingCap();
-            yield return WaitForHudEventReady(UnbindVesselOrbEvent, HudEventWaitFrames);
-            if (!IsApplied && IsHudEventReady(UnbindVesselOrbEvent))
+            string vesselEvent = IsSoulBound() ? BindVesselOrbEvent : UnbindVesselOrbEvent;
+            yield return WaitForHudEventReady(vesselEvent, HudEventWaitFrames);
+            if (!IsApplied && IsHudEventReady(vesselEvent))
             {
-                EventRegister.SendEvent(UnbindVesselOrbEvent);
+                EventRegister.SendEvent(vesselEvent);
             }
         }
 
@@ -193,7 +194,7 @@ namespace ToggleableBindings.VanillaBindings
             _patchedSoulOrbFsms.Add(id);
         }
 
-        private static bool IsSoulBound()
+        internal static bool IsSoulBound()
         {
             if (BindingManager.TryGetBinding(out SoulBinding? binding) && binding.IsApplied)
             {

@@ -139,7 +139,7 @@ public sealed partial class GearSwitcher : Module
 
     internal static void ApplyBindingsImmediate(GearPreset preset)
     {
-        if (!IsGloballyEnabled)
+        if (!IsGloballyEnabled || IsEditOnly(preset))
         {
             return;
         }
@@ -422,7 +422,7 @@ public sealed partial class GearSwitcher : Module
             TryRestartHudChild($"Soul Orb/Vessels/Vessel {vessel}");
         }
 
-        if (IsBindingApplied<SoulBinding>() && IsHudEventRegistered(BindVesselOrbEvent))
+        if (SoulBinding.IsSoulBound() && IsHudEventRegistered(BindVesselOrbEvent))
         {
             EventRegister.SendEvent(BindVesselOrbEvent);
         }
@@ -457,13 +457,12 @@ public sealed partial class GearSwitcher : Module
         {
             bool nailApplied = IsBindingApplied<NailBinding>();
             bool charmsApplied = IsBindingApplied<CharmsBinding>();
-            bool soulApplied = IsBindingApplied<SoulBinding>();
 
             EventRegister.SendEvent(nailApplied ? ShowBoundNailEvent : HideBoundNailEvent);
             EventRegister.SendEvent(charmsApplied ? ShowBoundCharmsEvent : HideBoundCharmsEvent);
             if (includeSoul)
             {
-                TryResyncSoulBindingIndicator(soulApplied);
+                TryResyncSoulBindingIndicator(SoulBinding.IsSoulBound());
             }
 
             PlayMakerFSM.BroadcastEvent(CharmIndicatorCheckEvent);
@@ -475,12 +474,25 @@ public sealed partial class GearSwitcher : Module
         }
     }
 
+    private static void SendSoulOrbResync(GameManager? gm, bool soulBound)
+    {
+        PlayMakerFSM? orb = gm?.soulOrb_fsm;
+        if (orb == null)
+        {
+            return;
+        }
+
+        PlayerData? pd = PlayerData.instance;
+        bool boundAndFull = soulBound && pd != null && pd.MPCharge > 0 && pd.MPCharge >= pd.maxMP;
+        orb.SendEvent(boundAndFull ? MPSetEvent : MPLoseEvent);
+    }
+
     private static void TryResyncSoulBindingIndicator(bool soulApplied)
     {
         try
         {
             GameManager? gm = GameManager.instance;
-            gm?.soulOrb_fsm?.SendEvent(MPLoseEvent);
+            SendSoulOrbResync(gm, soulApplied);
             SoulBinding.SyncBindingCap();
             if (soulApplied)
             {
@@ -542,7 +554,7 @@ public sealed partial class GearSwitcher : Module
         try
         {
             GameManager? gm = GameManager.instance;
-            gm?.soulOrb_fsm?.SendEvent(MPLoseEvent);
+            SendSoulOrbResync(gm, soulApplied);
             if (soulApplied)
             {
                 gm?.soulVessel_fsm?.SendEvent(MPReserveDownEvent);

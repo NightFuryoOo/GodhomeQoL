@@ -99,6 +99,46 @@ public sealed partial class QuickMenu : Module
 
             lastY = rowY + 40f;
             rowY += RowSpacing + 40f;
+            CreateFloatSliderRow(
+                content,
+                "ShowHPOnDeathOpacityRow",
+                "ShowHPOnDeath/HudOpacity".Localize(),
+                rowY,
+                rowY + 40f,
+                ShowHPOnDeathDisplay.MinOpacity * 100f,
+                ShowHPOnDeathDisplay.MaxOpacity * 100f,
+                ShowHPOnDeath.OpacityPercent,
+                0,
+                out showHpOpacityValue,
+                out showHpOpacitySlider
+            );
+            if (showHpOpacitySlider != null)
+            {
+                showHpOpacitySlider.onValueChanged.AddListener(OnShowHpOpacityChanged);
+            }
+
+            lastY = rowY + 40f;
+            rowY += RowSpacing + 40f;
+            CreateFloatSliderRow(
+                content,
+                "ShowHPOnDeathScaleRow",
+                "ShowHPOnDeath/HudScale".Localize(),
+                rowY,
+                rowY + 40f,
+                ShowHPOnDeathDisplay.MinScale * 100f,
+                ShowHPOnDeathDisplay.MaxScale * 100f,
+                ShowHPOnDeath.ScalePercent,
+                0,
+                out showHpScaleValue,
+                out showHpScaleSlider
+            );
+            if (showHpScaleSlider != null)
+            {
+                showHpScaleSlider.onValueChanged.AddListener(OnShowHpScaleChanged);
+            }
+
+            lastY = rowY + 40f;
+            rowY += RowSpacing + 40f;
 
             CreateButtonRow(content, "ShowHPOnDeathHistoryRow", "ShowHPOnDeath/History".Localize(), rowY, OnShowHpOnDeathHistoryClicked);
             lastY = rowY;

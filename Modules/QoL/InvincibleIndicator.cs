@@ -1,25 +1,28 @@
 using GodhomeQoL.Modules.Tools;
-using UnityEngine.UI;
-using QolCanvasUtil = GodhomeQoL.Modules.Tools.CanvasUtil;
 
 namespace GodhomeQoL.Modules.QoL;
 
 public sealed class InvincibleIndicator : Module
 {
+    [GlobalSetting]
+    public static float InvincibleTextScale = 1f;
+
     public override bool DefaultEnabled => true;
 
     private const float InvincibleThresholdSeconds = 10f;
     private const string IndicatorText = "Invincible ON";
-    private const int IndicatorSortOrder = 10060;
+    private const int IndicatorSortOrder = HudLabel.BelowReplayLoggerSortOrder;
     private const int IndicatorFontSize = 34;
 
     private float invincibleTimer;
     private bool indicatorVisible;
     private InvincibleIndicatorDisplay? display;
+    private static InvincibleIndicatorDisplay? previewDisplay;
 
     private protected override void Load()
     {
-        display ??= new InvincibleIndicatorDisplay(IndicatorSortOrder);
+        display ??= previewDisplay ?? new InvincibleIndicatorDisplay(IndicatorSortOrder);
+        previewDisplay = display;
         invincibleTimer = 0f;
         indicatorVisible = false;
         display.Hide();
@@ -35,6 +38,11 @@ public sealed class InvincibleIndicator : Module
         if (display != null)
         {
             display.Destroy();
+            if (ReferenceEquals(previewDisplay, display))
+            {
+                previewDisplay = null;
+            }
+
             display = null;
         }
     }
@@ -137,63 +145,27 @@ public sealed class InvincibleIndicator : Module
         return heroBoxTransform.gameObject.activeInHierarchy;
     }
 
+    internal static void PreviewText()
+    {
+        previewDisplay ??= new InvincibleIndicatorDisplay(IndicatorSortOrder);
+        previewDisplay.Preview(IndicatorText);
+    }
+
     private sealed class InvincibleIndicatorDisplay
     {
-        private readonly GameObject canvas;
-        private readonly Text text;
+        private readonly HudLabel label;
 
         public InvincibleIndicatorDisplay(int sortOrder)
         {
-            canvas = QolCanvasUtil.CreateCanvas(
-                RenderMode.ScreenSpaceOverlay,
-                new Vector2(1920f, 1080f),
-                "InvincibleIndicatorCanvas",
-                sortOrder
-            );
-
-            CanvasGroup group = canvas.GetComponent<CanvasGroup>();
-            group.interactable = false;
-            group.blocksRaycasts = false;
-
-            UObject.DontDestroyOnLoad(canvas);
-
-            text = QolCanvasUtil.CreateTextPanel(
-                canvas,
-                string.Empty,
-                IndicatorFontSize,
-                TextAnchor.LowerLeft,
-                new QolCanvasUtil.RectData(
-                    new Vector2(400f, 60f),
-                    new Vector2(260f, 914f),
-                    new Vector2(0f, 0f),
-                    new Vector2(0f, 0f),
-                    new Vector2(0f, 0f)),
-                QolCanvasUtil.GetFont("Perpetua")
-            ).GetComponent<Text>();
-
-            text.color = new Color(1f, 1f, 1f, 0.95f);
-            Outline outline = text.gameObject.AddComponent<Outline>();
-            outline.effectColor = Color.black;
-            outline.effectDistance = new Vector2(2f, -2f);
-            outline.useGraphicAlpha = true;
-            text.gameObject.SetActive(false);
+            label = new HudLabel("InvincibleIndicatorCanvas", Vector2.zero, new Vector2(256f, 910f), IndicatorFontSize, () => HudTextScales.InvincibleText, sortOrder, highlight: true);
         }
 
-        public void Show(string message)
-        {
-            text.text = message;
-            text.gameObject.SetActive(true);
-            canvas.SetActive(true);
-        }
+        public void Show(string message) => label.Show(message);
 
-        public void Hide()
-        {
-            text.gameObject.SetActive(false);
-        }
+        public void Hide() => label.Hide();
 
-        public void Destroy()
-        {
-            UObject.Destroy(canvas);
-        }
+        public void Preview(string message) => label.Preview(message);
+
+        public void Destroy() => label.Destroy();
     }
 }

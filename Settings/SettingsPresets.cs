@@ -8,6 +8,10 @@ namespace GodhomeQoL
 
         private const string GearSectionKey = "GearSwitcherLastPreset";
 
+        private const string GearEnabledSectionKey = "GearSwitcherEnabled";
+
+        private const string TeleportButtonSectionKey = "TeleportKitControllerButton";
+
         private static readonly HashSet<string> PresetHubScenes = new(StringComparer.Ordinal)
         {
             "GG_Workshop",
@@ -135,6 +139,8 @@ namespace GodhomeQoL
         internal static void ApplySettingsPreset(SettingsPreset preset)
         {
             SettingsPreset before = CaptureSettingsPreset(preset.Name);
+            bool showHpBefore = Modules.Tools.ShowHPOnDeath.IsFeatureEnabled;
+            bool dreamshieldBefore = Modules.QoL.DreamshieldStartAngle.startAngleEnabled;
             HashSet<string> changedTypes = ChangedValueTypes(before.GlobalValues, preset.GlobalValues);
             changedTypes.UnionWith(ChangedValueTypes(before.LocalValues, preset.LocalValues));
             HashSet<string> changedSections = ChangedSections(before.Sections, preset.Sections);
@@ -174,6 +180,7 @@ namespace GodhomeQoL
                 }
             }
 
+            SyncAlwaysOnFeatures(showHpBefore, dreamshieldBefore);
             ApplyPresetGear(preset.Sections, changedSections);
 
             GlobalSettings.ActiveSettingsPreset = preset.Name;
@@ -184,6 +191,27 @@ namespace GodhomeQoL
 
         private static IEnumerable<Module> PresetModules() => ModuleManager.Modules.Values
             .Where(module => !module.Hidden && !module.AlwaysEnabled);
+
+        private static void SyncAlwaysOnFeatures(bool showHpBefore, bool dreamshieldBefore)
+        {
+            try
+            {
+                Modules.Tools.ShowHPOnDeath.SyncFeatureState(showHpBefore);
+            }
+            catch (Exception ex)
+            {
+                LogSuppressed(ex, "SettingsPresets.cs/ShowHPOnDeath");
+            }
+
+            try
+            {
+                Modules.QoL.DreamshieldStartAngle.SyncEnabledState(dreamshieldBefore);
+            }
+            catch (Exception ex)
+            {
+                LogSuppressed(ex, "SettingsPresets.cs/Dreamshield");
+            }
+        }
 
         private static void SetPresetModuleEnabled(Module module, bool value)
         {
@@ -293,7 +321,9 @@ namespace GodhomeQoL
                 ["QuickMenuMasters"] = JsonConvert.SerializeObject(settings.QuickMenuMasters),
                 ["QuickMenuOverlayHotkeys"] = JsonConvert.SerializeObject(settings.QuickMenuOverlayHotkeys ?? new Dictionary<string, string>()),
                 ["NailDamageCheck"] = JsonConvert.SerializeObject(settings.NailDamageCheckKeybind ?? string.Empty),
-                [GearSectionKey] = JsonConvert.SerializeObject(settings.GearSwitcher?.LastPreset ?? "FullGear")
+                [GearSectionKey] = JsonConvert.SerializeObject(settings.GearSwitcher?.LastPreset ?? "FullGear"),
+                [GearEnabledSectionKey] = JsonConvert.SerializeObject(settings.GearSwitcher?.Enabled ?? false),
+                [TeleportButtonSectionKey] = JsonConvert.SerializeObject(settings.TeleportKitControllerButton)
             };
         }
 
@@ -317,28 +347,64 @@ namespace GodhomeQoL
             {
                 settings.NailDamageCheckKeybind = nailKey ?? string.Empty;
             }
+
+            if (TryReadPresetSection(sections, TeleportButtonSectionKey, out string? teleportButton)
+                && !string.IsNullOrEmpty(teleportButton))
+            {
+                settings.TeleportKitControllerButton = teleportButton!;
+            }
         }
 
         private static void ApplyPresetGear(Dictionary<string, string> sections, HashSet<string> changedSections)
         {
-            if (!changedSections.Contains(GearSectionKey)
-                || !TryReadPresetSection(sections, GearSectionKey, out string? gear)
-                || string.IsNullOrWhiteSpace(gear)
-                || !ModuleManager.IsModuleLoaded<Modules.Tools.GearSwitcher>())
+            if (!ModuleManager.IsModuleLoaded<Modules.Tools.GearSwitcher>())
             {
                 return;
             }
 
-            Dictionary<string, GearPreset>? gears = GlobalSettings.GearSwitcher?.Presets;
-            string? match = gears?.Keys.FirstOrDefault(name => string.Equals(name, gear, StringComparison.OrdinalIgnoreCase));
-            if (match == null)
+            bool gearChanged = changedSections.Contains(GearSectionKey);
+            string? match = null;
+            if (gearChanged
+                && TryReadPresetSection(sections, GearSectionKey, out string? gear)
+                && !string.IsNullOrWhiteSpace(gear))
             {
-                return;
+                Dictionary<string, GearPreset>? gears = GlobalSettings.GearSwitcher?.Presets;
+                match = gears?.Keys.FirstOrDefault(name => string.Equals(name, gear, StringComparison.OrdinalIgnoreCase));
             }
+
+            bool wasEnabled = Modules.Tools.GearSwitcher.IsGloballyEnabled;
+            bool enable = TryReadPresetSection(sections, GearEnabledSectionKey, out bool storedEnabled)
+                ? storedEnabled
+                : wasEnabled;
 
             try
             {
-                Modules.Tools.GearSwitcher.ApplyPreset(match, allowQueue: true);
+                if (!enable)
+                {
+                    if (wasEnabled)
+                    {
+                        Modules.Tools.GearSwitcher.DisableAndRestoreState();
+                    }
+
+                    if (match != null)
+                    {
+                        Modules.Tools.GearSwitcher.SelectPresetWithoutApplying(match);
+                    }
+
+                    return;
+                }
+
+                if (!wasEnabled)
+                {
+                    Modules.Tools.GearSwitcher.PrepareForEnable();
+                    Modules.Tools.GearSwitcher.IsGloballyEnabled = true;
+                }
+
+                string? target = match ?? (wasEnabled ? null : GlobalSettings.GearSwitcher?.LastPreset ?? "FullGear");
+                if (target != null)
+                {
+                    Modules.Tools.GearSwitcher.ApplyPreset(target, allowQueue: true);
+                }
             }
             catch (Exception ex)
             {

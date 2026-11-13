@@ -2,6 +2,9 @@ namespace GodhomeQoL.Modules.Tools;
 
 public sealed class MaskDamage : Module
 {
+    [GlobalSetting]
+    public static float MaskDamageTextScale = 1f;
+
     private const float HalfMultiplier = 0.5f;
     private const int MinMultiplier = 1;
     private const int MaxMultiplier = 999;
@@ -31,6 +34,54 @@ public sealed class MaskDamage : Module
         ModHooks.AfterTakeDamageHook -= OnAfterTakeDamage;
         ModHooks.HeroUpdateHook -= OnHeroUpdate;
         DestroyDisplay();
+    }
+
+    private static bool chainActive;
+    private static bool chainSavedEnabled;
+    private static float chainSavedMultiplier = 1f;
+
+    internal static void ApplyChainDamage(float multiplier)
+    {
+        if (!chainActive)
+        {
+            chainActive = true;
+            chainSavedEnabled = Settings.Enabled;
+            chainSavedMultiplier = Settings.DamageMultiplier;
+        }
+
+        float normalized = NormalizeMultiplier(multiplier);
+        Settings.DamageMultiplier = normalized;
+        Settings.Enabled = !Mathf.Approximately(normalized, 1f);
+        if (Settings.Enabled && Settings.ShowUI)
+        {
+            EnsureDisplay();
+            UpdateDisplay();
+        }
+        else
+        {
+            HideDisplay();
+        }
+    }
+
+    internal static void EndChainDamage()
+    {
+        if (!chainActive)
+        {
+            return;
+        }
+
+        chainActive = false;
+        Settings.Enabled = chainSavedEnabled;
+        Settings.DamageMultiplier = chainSavedMultiplier;
+        if (Settings.Enabled && Settings.ShowUI)
+        {
+            EnsureDisplay();
+            UpdateDisplay();
+        }
+        else
+        {
+            HideDisplay();
+        }
     }
 
     internal static float GetMultiplier() =>
@@ -112,6 +163,13 @@ public sealed class MaskDamage : Module
 
         EnsureDisplay();
         display?.Display($"Damage Multiplier: {FormatMultiplierLabel(GetMultiplier())}");
+    }
+
+    internal static void PreviewText()
+    {
+        EnsureDisplay();
+        display?.ApplyScale();
+        display?.Preview($"Damage Multiplier: {FormatMultiplierLabel(GetMultiplier())}");
     }
 
     private static float NormalizeMultiplier(float value)
@@ -221,73 +279,62 @@ public sealed class MaskDamage : Module
 
 internal sealed class MaskDamageDisplay
 {
-    private string displayText = "";
-    private readonly Vector2 textSize = new(800, 500);
-    private readonly Vector2 textPosition = new(0.310f, 0.243f);
+    private const float Left = 16f;
+    private const float Bottom = 12f;
+    private const float Gap = 10f;
 
-    private GameObject? canvas;
-    private UnityEngine.UI.Text? text;
+    private HudLabel? label;
 
     public MaskDamageDisplay() => Create();
 
     private void Create()
     {
-        if (canvas != null)
+        if (label != null)
         {
             return;
         }
 
-        canvas = CanvasUtil.CreateCanvas(RenderMode.ScreenSpaceOverlay, new Vector2(1920, 1080), "MaskDamageCanvas");
+        label = new HudLabel("MaskDamageCanvas", Vector2.zero, new Vector2(Left, Bottom), 24, () => HudTextScales.MaskDamageText);
+        label.AddUpdater(Place);
+    }
 
-        CanvasGroup canvasGroup = canvas.GetComponent<CanvasGroup>();
-        canvasGroup.interactable = false;
-        canvasGroup.blocksRaycasts = false;
+    private void Place()
+    {
+        if (label == null)
+        {
+            return;
+        }
 
-        UObject.DontDestroyOnLoad(canvas);
-
-        text = CanvasUtil.CreateTextPanel(
-            canvas,
-            "",
-            24,
-            TextAnchor.LowerLeft,
-            new CanvasUtil.RectData(textSize, Vector2.zero, textPosition, textPosition),
-            CanvasUtil.GetFont("Perpetua")
-        ).GetComponent<UnityEngine.UI.Text>();
+        HudLabel? speed = ModDisplay.Instance?.MainLabel;
+        float x = speed != null && speed.IsShown ? speed.Offset.x + speed.ScaledWidth + Gap : Left;
+        label.Offset = new Vector2(x, Bottom);
     }
 
     public void Destroy()
     {
-        if (canvas != null)
-        {
-            UObject.Destroy(canvas);
-        }
-
-        canvas = null;
-        text = null;
+        label?.Destroy();
+        label = null;
     }
 
     public void Hide()
     {
-        if (canvas != null)
-        {
-            canvas.SetActive(false);
-        }
-    }
-
-    private void Update()
-    {
-        if (text == null || canvas == null)
-        {
-            return;
-        }
-
-        text.text = displayText;
-        canvas.SetActive(true);
+        label?.Hide();
     }
 
     public void Display(string value)
     {
-        displayText = value.Trim();
-        Update();
+        label?.Show(value);
+        Place();
+    }
+
+    internal void ApplyScale()
+    {
+        label?.ApplyScale();
+    }
+
+    internal void Preview(string value)
+    {
+        label?.Preview(value);
+        Place();
     }
 }

@@ -89,6 +89,7 @@ public sealed partial class QuickMenu : Module
             MaskDamage.SetMultiplier(1f);
             MaskDamage.SetUiVisible(true);
             MaskDamage.SetToggleUiKeybind(string.Empty);
+            HudTextScales.MaskDamageText = 1f;
             RefreshMaskDamageUi();
             UpdateQuickMenuEntryStateColors();
         }
@@ -114,6 +115,7 @@ public sealed partial class QuickMenu : Module
             SetFreezeHitboxesEnabled(false);
             FreezeHitboxes.SetAnyHitsMode(false);
             FreezeHitboxes.SetUnfreezeKeybind(string.Empty);
+            HudTextScales.FreezeHint = 1f;
             RefreshFreezeHitboxesUi();
             UpdateQuickMenuEntryStateColors();
         }
@@ -156,6 +158,7 @@ public sealed partial class QuickMenu : Module
             SpeedChanger.toggleKeybind = string.Empty;
             SpeedChanger.inputSpeedKeybind = string.Empty;
             SpeedChanger.speed = 1f;
+            HudTextScales.SpeedText = 1f;
             ApplySpeedChangerDisplayStyle(0);
             RefreshSpeedChangerKeybinds();
             RefreshSpeedChangerUi();

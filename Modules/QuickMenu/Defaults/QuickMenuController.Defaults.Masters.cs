@@ -184,6 +184,8 @@ public sealed partial class QuickMenu : Module
             settings.QolSavedUnlockRadiant = qolSavedUnlockRadiant;
             settings.QolSavedInvincibleIndicator = qolSavedInvincibleIndicator;
             settings.QolSavedScreenShake = qolSavedScreenShake;
+            settings.QolSavedCursorLock = qolSavedCursorLock;
+            settings.QolSavedBlackTransitions = qolSavedBlackTransitions;
 
             settings.MenuAnimEnabled = menuAnimMasterEnabled;
             settings.MenuAnimHasSnapshot = menuAnimMasterHasSnapshot;

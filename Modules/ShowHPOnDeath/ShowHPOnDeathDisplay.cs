@@ -17,6 +17,12 @@ internal sealed class ShowHPOnDeathDisplay
     private const float ValueWidth = 130f;
     private const float PbWidth = 90f;
 
+    internal const float MinOpacity = 0.2f;
+    internal const float MaxOpacity = 1f;
+    internal const float MinScale = 0.5f;
+    internal const float MaxScale = 1.5f;
+    private const int PreviewSortOrder = 32000;
+
     private static readonly Color PlateColor = new(0.02f, 0.015f, 0.01f, 0.84f);
     private static readonly Color GoldColor = new(0.902f, 0.749f, 0.384f, 1f);
     private static readonly Color NameColor = new(0.93f, 0.9f, 0.84f, 1f);
@@ -26,6 +32,8 @@ internal sealed class ShowHPOnDeathDisplay
     private static readonly Color LineColor = new(0.902f, 0.749f, 0.384f, 0.55f);
 
     private GameObject? canvas;
+    private Canvas? canvasComponent;
+    private int baseSortOrder;
     private CanvasGroup? group;
     private Fader? fader;
     private GameObject? panel;
@@ -36,6 +44,31 @@ internal sealed class ShowHPOnDeathDisplay
         Create();
     }
 
+    internal static float Opacity => Mathf.Clamp(GodhomeQoL.GlobalSettings.ShowHPOnDeath?.HudOpacity ?? 1f, MinOpacity, MaxOpacity);
+
+    internal static float Scale => Mathf.Clamp(GodhomeQoL.GlobalSettings.ShowHPOnDeath?.HudScale ?? 1f, MinScale, MaxScale);
+
+    internal void ApplyStyle()
+    {
+        if (panel != null)
+        {
+            panel.transform.localScale = new Vector3(Scale, Scale, 1f);
+        }
+
+        if (fader != null && fader.Target > 0f)
+        {
+            fader.Target = Opacity;
+        }
+    }
+
+    private void SetPreviewLayer(bool preview)
+    {
+        if (canvasComponent != null)
+        {
+            canvasComponent.sortingOrder = preview ? PreviewSortOrder : baseSortOrder;
+        }
+    }
+
     private void Create()
     {
         if (canvas != null)
@@ -44,6 +77,8 @@ internal sealed class ShowHPOnDeathDisplay
         }
 
         canvas = CanvasUtil.CreateCanvas(RenderMode.ScreenSpaceOverlay, new Vector2(1920, 1080), "ShowHPOnDeathCanvas");
+        canvasComponent = canvas.GetComponent<Canvas>();
+        baseSortOrder = canvasComponent != null ? canvasComponent.sortingOrder : 0;
         group = canvas.GetComponent<CanvasGroup>();
         group.interactable = false;
         group.blocksRaycasts = false;
@@ -61,13 +96,14 @@ internal sealed class ShowHPOnDeathDisplay
         }
 
         canvas = null;
+        canvasComponent = null;
         group = null;
         fader = null;
         panel = null;
         Instance = null;
     }
 
-    public void Display(string value)
+    public void Display(string value, bool preview = false)
     {
         if (canvas == null || fader == null)
         {
@@ -84,9 +120,10 @@ internal sealed class ShowHPOnDeathDisplay
 
         fader.OnHidden = null;
         ClearPanel();
+        SetPreviewLayer(preview);
         BuildPanel(text);
         canvas.SetActive(true);
-        fader.Target = 1f;
+        fader.Target = Opacity;
     }
 
     private void ClearPanel()
@@ -97,6 +134,7 @@ internal sealed class ShowHPOnDeathDisplay
         }
 
         panel = null;
+        SetPreviewLayer(false);
     }
 
     private void BuildPanel(string text)
@@ -137,6 +175,7 @@ internal sealed class ShowHPOnDeathDisplay
         }
 
         panelRect.sizeDelta = new Vector2(PanelWidth, y + Padding - 6f);
+        panel.transform.localScale = new Vector3(Scale, Scale, 1f);
     }
 
     private float AddTitle(string title, float y)

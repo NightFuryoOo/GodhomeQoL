@@ -20,12 +20,14 @@ public sealed partial class QuickMenu : Module
                 new("ShowHPOnDeath", "ShowHPOnDeath".Localize(), OnQuickShowHpOnDeathClicked),
                 new("MaskDamage", "Modules/MaskDamage".Localize(), OnQuickMaskDamageClicked),
                 new("FreezeHitboxes", "Freeze Hitboxes", OnQuickFreezeHitboxesClicked),
+                new("HitCounter", "Modules/HitCounter".Localize(), OnQuickHitCounterClicked),
                 new("SpeedChanger", "SpeedChanger".Localize(), OnQuickSpeedChangerClicked),
                 new("TeleportKit", "TeleportKit".Localize(), OnQuickTeleportKitClicked),
                 new("BossChallenge", "Categories/BossChallenge".Localize(), OnQuickBossChallengeClicked),
                 new("BossManipulate", "Categories/BossManipulate".Localize(), OnQuickBossManipulateClicked),
                 new("RandomPantheons", "Modules/RandomPantheons".Localize(), OnQuickRandomPantheonsClicked),
                 new("TrueBossRush", "Modules/TrueBossRush".Localize(), OnQuickTrueBossRushClicked),
+                new("CustomPantheon", "CustomPantheon/Title".Localize(), OnQuickCustomPantheonClicked),
                 new("Cheats", "Modules/Cheats".Localize(), OnQuickCheatsClicked),
                 new("AlwaysFurious", "Modules/AlwaysFurious".Localize(), OnQuickAlwaysFuriousClicked),
                 new("GearSwitcher", "Modules/GearSwitcher".Localize(), OnQuickGearSwitcherClicked),
@@ -130,6 +132,9 @@ public sealed partial class QuickMenu : Module
                     break;
                 case "FreezeHitboxes":
                     SetFreezeHitboxesEnabled(false);
+                    break;
+                case "HitCounter":
+                    SetHitCounterEnabled(false);
                     break;
                 case "AlwaysFurious":
                     SetAlwaysFuriousEnabled(false);

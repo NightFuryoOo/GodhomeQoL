@@ -27,6 +27,8 @@ public sealed class QuickMenuMasterSettings
     public bool QolSavedUnlockRadiant { get; set; }
     public bool QolSavedInvincibleIndicator { get; set; }
     public bool QolSavedScreenShake { get; set; }
+    public bool QolSavedCursorLock { get; set; }
+    public bool QolSavedBlackTransitions { get; set; }
 
     public bool MenuAnimEnabled { get; set; } = true;
     public bool MenuAnimHasSnapshot { get; set; }

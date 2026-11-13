@@ -52,6 +52,7 @@ public sealed partial class SpeedChanger : Module {
 	[GlobalSetting] public static string toggleKeybind = string.Empty;
 	[GlobalSetting] public static string inputSpeedKeybind = string.Empty;
 	[GlobalSetting] public static float speed = 1f;
+	[GlobalSetting] public static float SpeedChangerTextScale = 1f;
 
 	private KeyCode toggleKey;
 	private KeyCode inputSpeedKey;
@@ -106,103 +107,64 @@ public sealed partial class SpeedChanger : Module {
 internal sealed class ModDisplay {
 	internal static ModDisplay? Instance;
 
-	private string DisplayText = "";
-	private Vector2 TextSize = new(800, 500);
-	private Vector2 TextPosition = new(0.22f, 0.243f);
-	private Vector2 InputTextSize = new(500, 80);
-	private Vector2 InputTextPosition = new(0.02f, 0.08f);
+	private const float Left = 16f;
+	private const float Bottom = 12f;
+	private const float Gap = 6f;
 
-	private GameObject? canvas;
-	private UnityEngine.UI.Text? text;
-	private UnityEngine.UI.Text? inputText;
+	private HudLabel? label;
+	private HudLabel? inputLabel;
 
 	public ModDisplay() => Create();
 
+	internal HudLabel? MainLabel => label;
+
 	private void Create() {
-		if (canvas != null) {
+		if (label != null) {
 			return;
 		}
 
-		canvas = CanvasUtil.CreateCanvas(RenderMode.ScreenSpaceOverlay, new Vector2(1920, 1080));
+		label = new HudLabel("SpeedChangerCanvas", Vector2.zero, new Vector2(Left, Bottom), 24, () => HudTextScales.SpeedText);
+		inputLabel = new HudLabel("SpeedChangerInputCanvas", Vector2.zero, new Vector2(Left, Bottom), 22, () => HudTextScales.SpeedText);
+		inputLabel.AddUpdater(PlaceInput);
+	}
 
-		CanvasGroup canvasGroup = canvas.GetComponent<CanvasGroup>();
-		canvasGroup.interactable = false;
-		canvasGroup.blocksRaycasts = false;
-
-		UObject.DontDestroyOnLoad(canvas);
-
-		text = CanvasUtil.CreateTextPanel(
-			canvas, "", 24, TextAnchor.LowerLeft,
-			new CanvasUtil.RectData(TextSize, Vector2.zero, TextPosition, TextPosition),
-			CanvasUtil.GetFont("Perpetua")
-		).GetComponent<UnityEngine.UI.Text>();
-
-		inputText = CanvasUtil.CreateTextPanel(
-			canvas, "", 22, TextAnchor.LowerLeft,
-			new CanvasUtil.RectData(InputTextSize, new Vector2(30, 30), new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(0f, 0f)),
-			CanvasUtil.GetFont("Perpetua")
-		).GetComponent<UnityEngine.UI.Text>();
-		inputText.color = new Color(1f, 1f, 1f, 0.9f);
-		inputText.gameObject.SetActive(false);
+	private void PlaceInput() {
+		if (label != null && inputLabel != null) {
+			inputLabel.Offset = new Vector2(Left, label.IsShown ? Bottom + label.ScaledHeight + Gap : Bottom);
+		}
 	}
 
 	public void Destroy() {
-		if (canvas != null) {
-			UObject.Destroy(canvas);
-		}
-
-		canvas = null;
-		text = null;
-		inputText = null;
-	}
-
-	public void Update() {
-		if (text != null && canvas != null) {
-			text.text = DisplayText;
-			canvas.SetActive(true);
-		}
+		label?.Destroy();
+		inputLabel?.Destroy();
+		label = null;
+		inputLabel = null;
 	}
 
 	public void DisplayInput(string value) {
-		if (inputText == null) {
-			return;
-		}
-
-		inputText.text = value;
-		inputText.gameObject.SetActive(true);
+		inputLabel?.Show(value);
+		PlaceInput();
 	}
 
 	public void HideInput() {
-		if (inputText == null) {
-			return;
-		}
-
-		inputText.gameObject.SetActive(false);
+		inputLabel?.Hide();
 	}
 
 	public void Display(string value) {
-		DisplayText = value.Trim();
-		Update();
+		label?.Show(value);
+	}
+
+	internal void ApplyScale() {
+		label?.ApplyScale();
+		inputLabel?.ApplyScale();
+	}
+
+	internal void Preview(string value) {
+		label?.Preview(value);
 	}
 }
 
 internal static class CanvasUtil {
-	internal struct RectData {
-		internal Vector2 size;
-		internal Vector2 position;
-		internal Vector2 anchorMin;
-		internal Vector2 anchorMax;
-		internal Vector2 pivot;
-
-		internal RectData(Vector2 size, Vector2 position, Vector2 anchorMin, Vector2 anchorMax, Vector2? pivot = null) {
-			this.size = size;
-			this.position = position;
-			this.anchorMin = anchorMin;
-			this.anchorMax = anchorMax;
-			this.pivot = pivot ?? new Vector2(0.5f, 0.5f);
-		}
-	}
-
 	internal static GameObject CreateCanvas(RenderMode renderMode, Vector2 referenceResolution, string name = "SpeedChangerCanvas", int sortOrder = 9999) {
 		GameObject canvasObject = new(name);
 		Canvas canvas = canvasObject.AddComponent<Canvas>();
@@ -219,46 +181,5 @@ internal static class CanvasUtil {
 		canvasObject.AddComponent<CanvasGroup>();
 
 		return canvasObject;
-	}
-
-	internal static GameObject CreateTextPanel(GameObject parent, string text, int fontSize, TextAnchor anchor, RectData rectData, Font? font = null) {
-		GameObject go = new("SpeedChangerText");
-		go.transform.SetParent(parent.transform, false);
-
-		UnityEngine.UI.Text txt = go.AddComponent<UnityEngine.UI.Text>();
-		txt.text = text;
-		txt.fontSize = fontSize;
-		txt.alignment = anchor;
-		txt.horizontalOverflow = HorizontalWrapMode.Overflow;
-		txt.verticalOverflow = VerticalWrapMode.Overflow;
-		txt.font = font ?? GetFont("Arial");
-		txt.color = Color.white;
-
-		RectTransform rect = go.GetComponent<RectTransform>();
-		rect.sizeDelta = rectData.size;
-		rect.pivot = rectData.pivot;
-		rect.anchorMin = rectData.anchorMin;
-		rect.anchorMax = rectData.anchorMax;
-		rect.anchoredPosition = rectData.position;
-
-		return go;
-	}
-
-	internal static Font GetFont(string fontName) {
-		Font? existing = Resources.FindObjectsOfTypeAll<Font>().FirstOrDefault(f => f != null && f.name.Equals(fontName, StringComparison.OrdinalIgnoreCase));
-		if (existing != null) {
-			return existing;
-		}
-
-		try {
-			Font? builtin = Resources.GetBuiltinResource<Font>("Arial.ttf");
-			if (builtin != null) {
-				return builtin;
-			}
-		} catch (Exception swallowed) {
-			LogSuppressed(swallowed, "SpeedChanger.cs");
-		}
-
-		return Font.CreateDynamicFontFromOSFont("Arial", 14);
 	}
 }

@@ -141,6 +141,11 @@ public sealed partial class QuickMenu : Module
                 AddOwner("Freeze Hitboxes Unfreeze Hotkey");
             }
 
+            if (KeyCodeMatchesRawKeybind(HitCounter.ToggleKeybind, key))
+            {
+                AddOwner("HitCounter/ToggleKey".Localize());
+            }
+
             if (KeyCodeMatchesRawKeybind(Modules.Cheats.Cheats.GetKillAllHotkeyRaw(), key))
             {
                 AddOwner("Settings/Cheats/KillAllHotkey".Localize());

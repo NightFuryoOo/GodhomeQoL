@@ -279,6 +279,7 @@ public sealed partial class QuickMenu : Module
                 "ShowHPOnDeath" => GetShowHpOnDeathEnabled(),
                 "MaskDamage" => GetMaskDamageEnabled(),
                 "FreezeHitboxes" => GetFreezeHitboxesEnabled(),
+                "HitCounter" => GetHitCounterEnabled(),
                 "FpsBoost" => GetFpsBoostEnabled(),
                 "SpeedChanger" => GetSpeedChangerEnabled(),
                 "TeleportKit" => GetTeleportKitEnabled(),
@@ -306,6 +307,7 @@ public sealed partial class QuickMenu : Module
                 "ShowHPOnDeath" => showHpOnDeathVisible,
                 "MaskDamage" => maskDamageVisible,
                 "FreezeHitboxes" => freezeHitboxesVisible,
+                "HitCounter" => hitCounterVisible,
                 "FpsBoost" => fpsBoostVisible,
                 "SpeedChanger" => speedChangerVisible,
                 "TeleportKit" => teleportKitVisible,
@@ -364,6 +366,9 @@ public sealed partial class QuickMenu : Module
                 case "FreezeHitboxes":
                     SetFreezeHitboxesVisible(true);
                     break;
+                case "HitCounter":
+                    SetHitCounterVisible(true);
+                    break;
                 case "FpsBoost":
                     SetFpsBoostVisible(true);
                     break;
@@ -408,6 +413,7 @@ public sealed partial class QuickMenu : Module
 
         private void CloseAllOverlaysForHotkey()
         {
+            LeaveCustomPantheonModes();
             returnToBossManipulateOnClose = false;
             SetOverlayVisible(false);
             SetCollectorVisible(false);
@@ -416,6 +422,8 @@ public sealed partial class QuickMenu : Module
             SetShowHpOnDeathVisible(false);
             SetMaskDamageVisible(false);
             SetFreezeHitboxesVisible(false);
+            StopHitCounterMove(false);
+            SetHitCounterVisible(false);
             SetFpsBoostVisible(false);
             SetSpeedChangerVisible(false);
             SetTeleportKitVisible(false);
@@ -425,6 +433,7 @@ public sealed partial class QuickMenu : Module
             SetCheatsVisible(false);
             SetSettingsPresetsVisible(false);
             SetBossHistoryVisible(false);
+            SetCustomPantheonVisible(false);
             SetAlwaysFuriousVisible(false);
             SetGearSwitcherVisible(false);
             SetGearSwitcherCharmCostVisible(false);

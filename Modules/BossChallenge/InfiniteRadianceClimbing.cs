@@ -11,6 +11,10 @@ public sealed class InfiniteRadianceClimbing : Module {
     private static readonly float heroY = 34.6678f;
     private const float pitAscendTargetY = 30f;
     private const float pitAscendTolerance = 0.05f;
+    private const string AnyRadianceAssembly = "AnyRadiance";
+    private const string AnyRadianceTwoComponent = "Radiance";
+    private static readonly Vector2 anyRadianceTwoStart = new(64.66f, 34.6f);
+    private static readonly Vector2 anyRadianceTwoPlatform = new(64.66f, 32.5f);
 
     private sealed class TransitionSnapshot {
         public string StateName = string.Empty;
@@ -32,6 +36,8 @@ public sealed class InfiniteRadianceClimbing : Module {
     private static int invincibilityClaimHandle;
     private static FsmPatchSnapshot? bossControlSnapshot;
     private static FsmPatchSnapshot? radianceControlSnapshot;
+    private static bool anyRadianceTwo;
+    private static GameObject? startPlatform;
 
     public override ToggleableLevel ToggleableLevel => ToggleableLevel.ChangeScene;
 
@@ -108,7 +114,7 @@ public sealed class InfiniteRadianceClimbing : Module {
         if (spawnActions.Length > 2) {
             spawnPlatsState.Actions = [
                 spawnActions[2],
-                new InvokeMethod(() => fsm.gameObject.manageHealth(int.MaxValue))
+                new InvokeMethod(() => fsm.gameObject.manageHealth(ClimbHealth(fsm.gameObject)))
             ];
 
             if (spawnPlatsState.Actions[0] is SendEventByName sendEvent) {
@@ -123,16 +129,20 @@ public sealed class InfiniteRadianceClimbing : Module {
         FsmState screamState = fsm.GetValidState("Scream");
         FsmStateAction[] screamActions = screamState.Actions ?? Array.Empty<FsmStateAction>();
         if (screamActions.Length > 7) {
-            screamState.Actions = [
-                screamActions[0],
-                new InvokeMethod(() => {
-                    if (radCtrl != null) {
-                        rewindCoro ??= radCtrl.StartCoroutine(Rewind());
-                    }
-                }),
-                new Wait() { time = 60f },
-                screamActions[7]
-            ];
+            FsmStateAction[] patched = new FsmStateAction[screamActions.Length];
+            patched[0] = screamActions[0];
+            patched[1] = new InvokeMethod(() => {
+                if (radCtrl != null) {
+                    rewindCoro ??= radCtrl.StartCoroutine(Rewind());
+                }
+            });
+            patched[2] = new Wait() { time = 60f };
+            for (int i = 3; i < patched.Length; i++) {
+                patched[i] = new InvokeMethod(() => { });
+            }
+
+            patched[7] = screamActions[7];
+            screamState.Actions = patched;
         } else {
             LogWarn($"InfiniteRadianceClimbing: unexpected action layout in Scream (count={screamActions.Length}).");
         }
@@ -144,11 +154,21 @@ public sealed class InfiniteRadianceClimbing : Module {
         Ref.HC.RelinquishControl();
         flasher.FlashingSuperDash();
 
+        anyRadianceTwo = radCtrl != null && IsAnyRadianceTwo(radCtrl.gameObject);
+        if (anyRadianceTwo) {
+            yield return ShowStartPlatform();
+        }
+
         yield return new WaitForSeconds(0.5f);
 
-        Ref.HC.transform.SetPosition2D(heroX, heroY);
+        Vector2 start = StartPosition();
+        Ref.HC.transform.SetPosition2D(start.x, start.y);
         Ref.HC.FaceRight();
         Ref.HC.SetHazardRespawn(Ref.HC.transform.position, true);
+
+        if (anyRadianceTwo) {
+            SetArenaTwo();
+        }
 
         bossCtrl!.Child("Intro Wall")!.SetActive(false);
 
@@ -158,6 +178,80 @@ public sealed class InfiniteRadianceClimbing : Module {
         Ref.HC.RegainControl();
 
         LogDebug("Hero teleported");
+        if (radCtrl != null) {
+            LogAnyRadianceState(radCtrl.gameObject);
+        }
+    }
+
+    private static void LogAnyRadianceState(GameObject radiance) {
+        try {
+            string component = AnyRadianceComponentName(radiance) ?? "none";
+            FsmStateAction[] aim = radiance.LocateMyFSM("Attack Commands")?.Fsm.GetState("Aim")?.Actions ?? Array.Empty<FsmStateAction>();
+            string endDelay = aim.Length > 10 && aim[10] is SendEventByName end ? end.delay.Value.ToString("0.##") : "?";
+            string repeat = aim.Length > 11 && aim[11] is Wait wait ? wait.time.Value.ToString("0.##") : "?";
+            int? hp = radiance.GetComponent<HealthManager>()?.hp;
+            int? arena = radiance.LocateMyFSM("Attack Choices")?.FsmVariables.FindFsmInt("Arena")?.Value;
+            LogDebug($"[InfiniteRadianceClimbing] AnyRadiance component: {component}; ascend beam end delay {endDelay}s, repeat {repeat}s; hp {hp}, arena {arena}");
+        } catch (Exception ex) {
+            LogSuppressed(ex, "InfiniteRadianceClimbing.cs/AnyRadiance");
+        }
+    }
+
+    private static string? AnyRadianceComponentName(GameObject radiance) =>
+        radiance.GetComponents<MonoBehaviour>()
+            .Where(c => c != null && c.GetType().Assembly.GetName().Name == AnyRadianceAssembly)
+            .Select(c => c.GetType().Name)
+            .FirstOrDefault();
+
+    private static bool IsAnyRadianceTwo(GameObject radiance) =>
+        AnyRadianceComponentName(radiance) == AnyRadianceTwoComponent;
+
+    private static Vector2 StartPosition() =>
+        anyRadianceTwo ? anyRadianceTwoStart : new Vector2(heroX, heroY);
+
+    private static int ClimbHealth(GameObject radiance) {
+        if (!IsAnyRadianceTwo(radiance)) {
+            return int.MaxValue;
+        }
+
+        FsmInt? ascend = radiance.LocateMyFSM("Phase Control")?.FsmVariables.FindFsmInt("P5 Acend");
+        return ascend != null ? Math.Max(1, ascend.Value - 1) : int.MaxValue;
+    }
+
+    private static void SetArenaTwo() {
+        FsmInt? arena = radCtrl?.gameObject.LocateMyFSM("Attack Choices")?.FsmVariables.FindFsmInt("Arena");
+        if (arena != null) {
+            arena.Value = 2;
+        }
+    }
+
+    private static IEnumerator ShowStartPlatform() {
+        GameObject? source = bossCtrl?.Child("Plat Sets", "Ascend Set", "Radiant Plat Small (4)");
+        if (source == null) {
+            LogWarn("InfiniteRadianceClimbing: start platform source not found.");
+            yield break;
+        }
+
+        if (startPlatform == null) {
+            startPlatform = UObject.Instantiate(source, new Vector3(anyRadianceTwoPlatform.x, anyRadianceTwoPlatform.y, source.transform.position.z), Quaternion.identity);
+            startPlatform.name = "GodhomeQoL Climb Start Plat";
+            startPlatform.SetActive(true);
+        }
+
+        PlayMakerFSM? plat = startPlatform.LocateMyFSM("radiant_plat");
+        float deadline = Time.time + 1f;
+        while (plat != null && plat.ActiveStateName != "Out" && Time.time < deadline) {
+            yield return null;
+        }
+
+        plat?.SendEvent("APPEAR");
+        GameObject? colliders = startPlatform.Child("Colliders");
+        deadline = Time.time + 1.5f;
+        while (colliders != null && !colliders.activeSelf && Time.time < deadline) {
+            yield return null;
+        }
+
+        LogDebug($"[InfiniteRadianceClimbing] AnyRadiance 2.0 start platform: state {plat?.ActiveStateName}, colliders {colliders?.activeSelf}");
     }
 
     private static IEnumerator Rewind() {
@@ -186,7 +280,8 @@ public sealed class InfiniteRadianceClimbing : Module {
             localPitCtrl.SendEvent("ASCEND");
 
             Ref.HC.RelinquishControl();
-            Ref.HC.transform.SetPosition2D(heroX, heroY);
+            Vector2 start = StartPosition();
+            Ref.HC.transform.SetPosition2D(start.x, start.y);
             Ref.HC.FaceRight();
             Ref.HC.SetHazardRespawn(Ref.HC.transform.position, true);
             flasher.FlashingSuperDash();
@@ -197,6 +292,11 @@ public sealed class InfiniteRadianceClimbing : Module {
 
             if (pitCtrl == null || bossCtrl == null || radCtrl == null) {
                 yield break;
+            }
+
+            if (anyRadianceTwo) {
+                localRadCtrl.gameObject.manageHealth(ClimbHealth(localRadCtrl.gameObject));
+                LogAnyRadianceState(localRadCtrl.gameObject);
             }
 
             localBossCtrl
@@ -235,6 +335,12 @@ public sealed class InfiniteRadianceClimbing : Module {
         bossCtrl = null;
         radCtrl = null;
         pitCtrl = null;
+        anyRadianceTwo = false;
+        if (startPlatform != null) {
+            UObject.Destroy(startPlatform);
+        }
+
+        startPlatform = null;
 
         if (killPlayer) {
             _ = Ref.HC.StartCoroutine(DelayedKill());

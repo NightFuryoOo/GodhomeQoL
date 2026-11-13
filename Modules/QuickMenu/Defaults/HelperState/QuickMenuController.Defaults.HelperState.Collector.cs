@@ -31,10 +31,11 @@ public sealed partial class QuickMenu : Module
 
             Modules.CollectorPhases.CollectorPhases.collectorPhase = 3;
             Modules.CollectorPhases.CollectorPhases.collectorMaxHP = 1200;
-            Modules.CollectorPhases.CollectorPhases.UseMaxHP = true;
+            Modules.CollectorPhases.CollectorPhases.UseMaxHP = false;
             Modules.CollectorPhases.CollectorPhases.collectorP5Hp = false;
             Modules.CollectorPhases.CollectorPhases.collectorMaxHPBeforeP5 = 1200;
             Modules.CollectorPhases.CollectorPhases.collectorHasStoredMaxHpBeforeP5 = false;
+            Modules.CollectorPhases.CollectorPhases.collectorUseMaxHpBeforeP5 = false;
             Modules.CollectorPhases.CollectorPhases.UseCustomPhase2Threshold = false;
             Modules.CollectorPhases.CollectorPhases.CustomPhase2Threshold = 850;
             Modules.CollectorPhases.CollectorPhases.buzzerHP = 26;

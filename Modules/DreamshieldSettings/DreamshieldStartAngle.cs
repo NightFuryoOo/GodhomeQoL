@@ -88,6 +88,13 @@ public sealed class DreamshieldStartAngle : Module
         ApplyRotationSpeedToPendingPatches();
     }
 
+    internal static void SyncEnabledState(bool previous)
+    {
+        bool target = startAngleEnabled;
+        startAngleEnabled = previous;
+        SetEnabled(target);
+    }
+
     internal static void ResetDefaults()
     {
         SetEnabled(false);

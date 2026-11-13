@@ -70,6 +70,40 @@ public sealed partial class QuickMenu : Module
             }
         }
 
+        private void OnShowHpOpacityChanged(float value)
+        {
+            ShowHPOnDeath.SetOpacityPercent(value);
+            SyncShowHpPercentSlider(showHpOpacitySlider, showHpOpacityValue, ShowHPOnDeath.OpacityPercent);
+            if (!showHpSliderSync)
+            {
+                ShowHPOnDeath.PreviewDisplay();
+            }
+        }
+
+        private void OnShowHpScaleChanged(float value)
+        {
+            ShowHPOnDeath.SetScalePercent(value);
+            SyncShowHpPercentSlider(showHpScaleSlider, showHpScaleValue, ShowHPOnDeath.ScalePercent);
+            if (!showHpSliderSync)
+            {
+                ShowHPOnDeath.PreviewDisplay();
+            }
+        }
+
+        private void SyncShowHpPercentSlider(Slider? slider, Text? valueText, int percent)
+        {
+            UpdateFloatValueText(valueText, percent, 0);
+            if (slider == null || Math.Abs(slider.value - percent) <= 0.0001f)
+            {
+                return;
+            }
+
+            bool previous = showHpSliderSync;
+            showHpSliderSync = true;
+            slider.value = percent;
+            showHpSliderSync = previous;
+        }
+
         private static float ClampShowHpFade(float value)
         {
             return Mathf.Clamp(value, 1f, 10f);
@@ -295,6 +329,7 @@ public sealed partial class QuickMenu : Module
             if (text != null)
             {
                 text.text = value ? "ON" : "OFF";
+                text.color = value ? HkValueColor : HkOffValueColor;
             }
         }
     }

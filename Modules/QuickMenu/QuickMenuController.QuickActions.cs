@@ -14,6 +14,7 @@ public sealed partial class QuickMenu : Module
     {
         private void OpenPanelFromQuick(Action<bool> showPanel)
         {
+            LeaveCustomPantheonModes();
             returnToQuickOnClose = true;
             HideAllPanelsExcept(showPanel);
             showPanel(true);
@@ -31,6 +32,7 @@ public sealed partial class QuickMenu : Module
                 SetShowHpOnDeathVisible,
                 SetMaskDamageVisible,
                 SetFreezeHitboxesVisible,
+                SetHitCounterVisible,
                 SetSpeedChangerVisible,
                 SetTeleportKitVisible,
                 SetBossChallengeVisible,
@@ -54,7 +56,8 @@ public sealed partial class QuickMenu : Module
                 SetBossManipulateVisible,
                 SetCheatsVisible,
                 SetSettingsPresetsVisible,
-                SetBossHistoryVisible
+                SetBossHistoryVisible,
+                SetCustomPantheonVisible
             };
 
             foreach (Action<bool> panel in panels)

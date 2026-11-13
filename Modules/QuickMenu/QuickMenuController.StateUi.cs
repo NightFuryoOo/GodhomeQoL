@@ -107,6 +107,8 @@ public sealed partial class QuickMenu : Module
             SetShowHpOnDeathVisible(false);
             SetMaskDamageVisible(false);
             SetFreezeHitboxesVisible(false);
+            SetHitCounterVisible(false);
+            SetCustomPantheonVisible(false);
             SetFpsBoostVisible(false);
             SetSpeedChangerVisible(false);
             SetTeleportKitVisible(false);

@@ -17,6 +17,7 @@ public sealed partial class QuickMenu : Module
             SetShowHpOnDeathVisible(false);
             SetMaskDamageVisible(false);
             SetFreezeHitboxesVisible(false);
+            SetHitCounterVisible(false);
             SetFpsBoostVisible(false);
             SetSpeedChangerVisible(false);
             SetTeleportKitVisible(false);
@@ -26,6 +27,7 @@ public sealed partial class QuickMenu : Module
             SetCheatsVisible(false);
             SetSettingsPresetsVisible(false);
             SetBossHistoryVisible(false);
+            SetCustomPantheonVisible(false);
             SetAlwaysFuriousVisible(false);
             SetGearSwitcherVisible(false);
             SetGearSwitcherCharmCostVisible(false);
@@ -92,6 +94,8 @@ public sealed partial class QuickMenu : Module
             qolSavedUnlockRadiant = settings.QolSavedUnlockRadiant;
             qolSavedInvincibleIndicator = settings.QolSavedInvincibleIndicator;
             qolSavedScreenShake = settings.QolSavedScreenShake;
+            qolSavedCursorLock = settings.QolSavedCursorLock;
+            qolSavedBlackTransitions = settings.QolSavedBlackTransitions;
 
             menuAnimMasterEnabled = settings.MenuAnimEnabled;
             menuAnimMasterHasSnapshot = settings.MenuAnimHasSnapshot;
@@ -216,6 +220,7 @@ public sealed partial class QuickMenu : Module
 
         private void OnDestroy()
         {
+            ReleaseTypingGameInputBlock();
             DisableCursorHook();
             if (uiActive)
             {
@@ -237,6 +242,7 @@ public sealed partial class QuickMenu : Module
             DestroyRoot(ref showHpOnDeathRoot);
             DestroyRoot(ref maskDamageRoot);
             DestroyRoot(ref freezeHitboxesRoot);
+            DestroyRoot(ref hitCounterRoot);
             DestroyRoot(ref fpsBoostRoot);
             DestroyRoot(ref speedChangerRoot);
             DestroyRoot(ref teleportKitRoot);
@@ -246,6 +252,7 @@ public sealed partial class QuickMenu : Module
             DestroyRoot(ref cheatsRoot);
             DestroyRoot(ref settingsPresetsRoot);
             DestroyRoot(ref bossHistoryRoot);
+            DestroyRoot(ref customPantheonRoot);
             DestroyRoot(ref alwaysFuriousRoot);
             DestroyRoot(ref gearSwitcherRoot);
             DestroyRoot(ref gearSwitcherCharmCostRoot);

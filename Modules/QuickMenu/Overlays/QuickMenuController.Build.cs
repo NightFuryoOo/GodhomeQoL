@@ -22,6 +22,7 @@ public sealed partial class QuickMenu : Module
             BuildShowHpOnDeathOverlayUi();
             BuildMaskDamageOverlayUi();
             BuildFreezeHitboxesOverlayUi();
+            BuildHitCounterOverlayUi();
             BuildFpsBoostOverlayUi();
             BuildSpeedChangerOverlayUi();
             BuildTeleportKitOverlayUi();
@@ -31,6 +32,7 @@ public sealed partial class QuickMenu : Module
             BuildCheatsOverlayUi();
             BuildSettingsPresetsOverlayUi();
             BuildBossHistoryOverlayUi();
+            BuildCustomPantheonOverlayUi();
             BuildAlwaysFuriousOverlayUi();
             BuildGearSwitcherOverlayUi();
             BuildGearSwitcherCharmCostOverlayUi();

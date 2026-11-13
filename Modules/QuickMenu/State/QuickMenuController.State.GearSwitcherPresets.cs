@@ -79,7 +79,7 @@ public sealed partial class QuickMenu : Module
             }
 
             bool edited = IsBuiltinPresetEdited(presetName);
-            gearSwitcherSelectedPresetValue.color = edited ? GearSwitcherPresetEditedColor : Color.white;
+            gearSwitcherSelectedPresetValue.color = edited ? GearSwitcherPresetEditedColor : HkValueColor;
         }
 
         private void MarkGearSwitcherPresetEdited()

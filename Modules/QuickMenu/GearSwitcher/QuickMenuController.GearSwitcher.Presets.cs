@@ -44,7 +44,7 @@ public sealed partial class QuickMenu : Module
 				return;
 			}
 			GetSelectedPreset();
-			gearSwitcherResetGearRow.SetActive(IsBuiltinPresetName(gearSwitcherSelectedPreset));
+			gearSwitcherResetGearRow.SetActive(!IsGearSwitcherChainMode && IsBuiltinPresetName(gearSwitcherSelectedPreset));
 		}
 
 		private void OnGearSwitcherPresetCreateClicked()
@@ -143,6 +143,7 @@ public sealed partial class QuickMenu : Module
 			UpdateGearSwitcherNaillessIcon();
 			UpdateGearSwitcherOvercharmedIcon();
 			UpdateGearSwitcherCharmPromptIcon();
+			UpdateGearSwitcherEquippedCharms();
 			RefreshGearSwitcherCharmCostUi();
 			UpdateGearSwitcherSelectedPresetColor(gearSwitcherSelectedPreset);
 		}

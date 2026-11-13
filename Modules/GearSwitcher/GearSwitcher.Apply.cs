@@ -16,7 +16,7 @@ public sealed partial class GearSwitcher : Module
 
     internal static void ApplyStatsImmediate(GearPreset preset, StatsPart parts = StatsPart.All)
     {
-        if (!IsGloballyEnabled)
+        if (!IsGloballyEnabled || IsEditOnly(preset))
         {
             return;
         }
@@ -70,7 +70,7 @@ public sealed partial class GearSwitcher : Module
 
     internal static void ApplySpellsImmediate(GearPreset preset)
     {
-        if (!IsGloballyEnabled)
+        if (!IsGloballyEnabled || IsEditOnly(preset))
         {
             return;
         }
@@ -88,7 +88,7 @@ public sealed partial class GearSwitcher : Module
 
     internal static void ApplyNailArtsImmediate(GearPreset preset)
     {
-        if (!IsGloballyEnabled)
+        if (!IsGloballyEnabled || IsEditOnly(preset))
         {
             return;
         }
@@ -106,7 +106,7 @@ public sealed partial class GearSwitcher : Module
 
     internal static void ApplyAbilitiesImmediate(GearPreset preset)
     {
-        if (!IsGloballyEnabled)
+        if (!IsGloballyEnabled || IsEditOnly(preset))
         {
             return;
         }
@@ -124,7 +124,7 @@ public sealed partial class GearSwitcher : Module
 
     internal static void ApplyDreamNailImmediate(GearPreset preset)
     {
-        if (!IsGloballyEnabled)
+        if (!IsGloballyEnabled || IsEditOnly(preset))
         {
             return;
         }
@@ -142,7 +142,7 @@ public sealed partial class GearSwitcher : Module
 
     internal static void ApplyOvercharmedImmediate(GearPreset preset)
     {
-        if (!IsGloballyEnabled)
+        if (!IsGloballyEnabled || IsEditOnly(preset))
         {
             return;
         }
@@ -242,8 +242,21 @@ public sealed partial class GearSwitcher : Module
 
         pd.maxHealth = maxHealth;
         pd.maxHealthBase = maxHealth;
-        pd.prevHealth = maxHealth;
-        pd.MaxHealth();
+        if (PreserveHealthOnApply)
+        {
+            int cap = pd.CurrentMaxHealth;
+            if (pd.health > cap)
+            {
+                pd.health = cap;
+            }
+
+            pd.prevHealth = pd.health;
+        }
+        else
+        {
+            pd.prevHealth = maxHealth;
+            pd.MaxHealth();
+        }
 
         int reserve = vessels * 33;
         if (pd.MPReserveMax < reserve && HeroController.instance != null)

@@ -33,6 +33,11 @@ internal static class BossManipulateEntryGuard
             return false;
         }
 
+        if (CustomPantheonIsolation.IsAllowedEntry(nextScene))
+        {
+            return true;
+        }
+
         if (!AllowedEntryScenes.Contains(currentScene))
         {
             return false;

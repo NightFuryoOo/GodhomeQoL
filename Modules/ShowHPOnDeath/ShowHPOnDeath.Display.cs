@@ -152,8 +152,36 @@ public sealed partial class ShowHPOnDeath : Module
         activeInstance.CreateUI();
     }
 
-    private static void UpdateDisplay(string text)
+    internal static void PreviewDisplay()
     {
+        ShowHPOnDeathDisplay.Instance?.ApplyStyle();
+        if (activeInstance == null || !activeInstance.Loaded || !Settings.EnabledMod || (isHudVisible && !previewActive))
+        {
+            return;
+        }
+
+        int generation = ++autoHideGeneration;
+        if (!isHudVisible)
+        {
+            UpdateDisplay(string.IsNullOrWhiteSpace(lastDisplayText) ? PreviewText : lastDisplayText, preview: true);
+        }
+
+        previewActive = true;
+        _ = GlobalCoroutineExecutor.Start(HidePreviewAfterDelay(generation));
+    }
+
+    private static IEnumerator HidePreviewAfterDelay(int generation)
+    {
+        yield return new WaitForSecondsRealtime(PreviewSeconds);
+        if (generation == autoHideGeneration && previewActive)
+        {
+            UpdateDisplay("");
+        }
+    }
+
+    private static void UpdateDisplay(string text, bool preview = false)
+    {
+        previewActive = false;
         if (ShowHPOnDeathDisplay.Instance == null)
         {
             if (string.IsNullOrWhiteSpace(text))
@@ -165,7 +193,7 @@ public sealed partial class ShowHPOnDeath : Module
             EnsureDisplayUi();
         }
 
-        ShowHPOnDeathDisplay.Instance?.Display(text);
+        ShowHPOnDeathDisplay.Instance?.Display(text, preview);
         isHudVisible = !string.IsNullOrWhiteSpace(text);
     }
 

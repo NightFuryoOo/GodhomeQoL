@@ -22,7 +22,36 @@ public sealed partial class QuickMenu : Module
         private InputField? flukemarmMaxHpField;
         private InputField? flukemarmFlyHpField;
         private InputField? flukemarmSummonLimitField;
+        private InputField? flukemarmFlukesPerWaveField;
+        private readonly Text?[] flukemarmSpawnValues = new Text?[Modules.BossChallenge.FlukemarmHelper.SpawnPointCount];
         private Module? flukemarmHelperModule;
+
+        private static readonly string[] FlukemarmSpawnLabelKeys =
+        {
+            "Settings/FlukemarmHelper/SpawnTopLeft",
+            "Settings/FlukemarmHelper/SpawnTopRight",
+            "Settings/FlukemarmHelper/SpawnBottomLeft",
+            "Settings/FlukemarmHelper/SpawnBottomRight"
+        };
+
+        private static string GetFlukemarmSpawnModeLabel(int point) =>
+            Modules.BossChallenge.FlukemarmHelper.GetSpawnMode(point) switch
+            {
+                Modules.BossChallenge.FlukemarmHelper.FlukeSpawnMode.Disabled => "Settings/FlukemarmHelper/SpawnMode/Disabled".Localize(),
+                Modules.BossChallenge.FlukemarmHelper.FlukeSpawnMode.Forced => "Settings/FlukemarmHelper/SpawnMode/Forced".Localize(),
+                _ => "Settings/FlukemarmHelper/SpawnMode/Enabled".Localize()
+            };
+
+        private void CycleFlukemarmSpawnMode(int point)
+        {
+            Modules.BossChallenge.FlukemarmHelper.CycleSpawnMode(point);
+            RefreshFlukemarmHelperUi();
+        }
+
+        private void SetFlukemarmFlukesPerWave(int value)
+        {
+            Modules.BossChallenge.FlukemarmHelper.SetFlukesPerWave(value);
+        }
 
         private static void ResetFlukemarmHelperDefaults()
         {
@@ -38,6 +67,7 @@ public sealed partial class QuickMenu : Module
             Modules.BossChallenge.FlukemarmHelper.flukemarmSummonLimitBeforeP5 = 6;
             Modules.BossChallenge.FlukemarmHelper.flukemarmUseMaxHpBeforeP5 = false;
             Modules.BossChallenge.FlukemarmHelper.flukemarmHasStoredStateBeforeP5 = false;
+            Modules.BossChallenge.FlukemarmHelper.ResetSpawnSettings();
         }
 
         private Module? GetFlukemarmHelperModule()
@@ -132,7 +162,7 @@ public sealed partial class QuickMenu : Module
                 return;
             }
 
-            Modules.BossChallenge.FlukemarmHelper.flukemarmSummonLimit = Mathf.Clamp(value, 6, 999);
+            Modules.BossChallenge.FlukemarmHelper.flukemarmSummonLimit = Mathf.Clamp(value, Modules.BossChallenge.FlukemarmHelper.MinSummonLimit, 999);
             if (Modules.BossChallenge.FlukemarmHelper.flukemarmUseCustomSummonLimit)
             {
                 Modules.BossChallenge.FlukemarmHelper.ApplySummonLimitSettingsIfPresent();
@@ -150,6 +180,15 @@ public sealed partial class QuickMenu : Module
             UpdateIntInputValue(flukemarmMaxHpField, Modules.BossChallenge.FlukemarmHelper.flukemarmMaxHp);
             UpdateIntInputValue(flukemarmFlyHpField, Modules.BossChallenge.FlukemarmHelper.flukemarmFlyHp);
             UpdateIntInputValue(flukemarmSummonLimitField, Modules.BossChallenge.FlukemarmHelper.flukemarmSummonLimit);
+            UpdateIntInputValue(flukemarmFlukesPerWaveField, Modules.BossChallenge.FlukemarmHelper.flukemarmFlukesPerWave);
+            for (int point = 0; point < flukemarmSpawnValues.Length; point++)
+            {
+                Text? value = flukemarmSpawnValues[point];
+                if (value != null)
+                {
+                    value.text = GetFlukemarmSpawnModeLabel(point);
+                }
+            }
 
             UpdateFlukemarmHelperInteractivity();
         }
@@ -292,11 +331,43 @@ public sealed partial class QuickMenu : Module
                 rowY,
                 () => Modules.BossChallenge.FlukemarmHelper.flukemarmSummonLimit,
                 SetFlukemarmSummonLimit,
-                6,
+                Modules.BossChallenge.FlukemarmHelper.MinSummonLimit,
                 999,
                 1,
                 out flukemarmSummonLimitField
             );
+
+            lastY = rowY;
+            rowY += FlukemarmHelperRowSpacing;
+            CreateAdjustInputRow(
+                content,
+                "FlukemarmFlukesPerWaveRow",
+                "Settings/FlukemarmHelper/FlukesPerWave".Localize(),
+                rowY,
+                () => Modules.BossChallenge.FlukemarmHelper.flukemarmFlukesPerWave,
+                SetFlukemarmFlukesPerWave,
+                0,
+                Modules.BossChallenge.FlukemarmHelper.MaxFlukesPerWave,
+                1,
+                out flukemarmFlukesPerWaveField
+            );
+
+            for (int point = 0; point < FlukemarmSpawnLabelKeys.Length; point++)
+            {
+                int index = point;
+                lastY = rowY;
+                rowY += FlukemarmHelperRowSpacing;
+                CreateSelectRow(
+                    content,
+                    $"FlukemarmSpawn{index}Row",
+                    FlukemarmSpawnLabelKeys[index].Localize(),
+                    rowY,
+                    () => GetFlukemarmSpawnModeLabel(index),
+                    () => CycleFlukemarmSpawnMode(index),
+                    out Text spawnValue
+                );
+                flukemarmSpawnValues[index] = spawnValue;
+            }
 
             lastY = rowY;
             rowY += FlukemarmHelperRowSpacing;

@@ -13,7 +13,7 @@ public sealed partial class GearSwitcher : Module
 {
     internal static void ApplyNailInputImmediate(GearPreset preset)
     {
-        if (!IsGloballyEnabled)
+        if (!IsGloballyEnabled || IsEditOnly(preset))
         {
             return;
         }

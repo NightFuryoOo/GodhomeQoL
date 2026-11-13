@@ -97,6 +97,18 @@ public sealed partial class QuickMenu : Module
             );
 
             lastY = rowY;
+            rowY += SpeedChangerRowSpacing;
+            rowY = AddTextScaleRow(
+                content,
+                "SpeedChangerTextScaleRow",
+                "TextSize/Label".Localize(),
+                rowY,
+                SpeedChangerRowSpacing,
+                () => HudTextScales.SpeedText,
+                value => HudTextScales.SpeedText = value,
+                PreviewSpeedChangerText,
+                out lastY
+            );
 
             SetScrollContentHeight(content, viewHeight, lastY, RowHeight);
             CreateButtonRow(panel.transform, "SpeedChangerResetRow", "SpeedChanger/Reset".Localize(), resetY, OnSpeedChangerResetDefaultsClicked);

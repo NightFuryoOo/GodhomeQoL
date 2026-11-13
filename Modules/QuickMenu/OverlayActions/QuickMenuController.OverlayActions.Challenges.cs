@@ -153,9 +153,13 @@ public sealed partial class QuickMenu : Module
             SetUnlockRadiantEnabled(true);
             SetInvincibleIndicatorEnabled(true);
             SetScreenShakeEnabled(true);
+            SetCursorLockEnabled(false);
+            SetBlackTransitionsEnabled(false);
             waitingForNailDamageCheckRebind = false;
             nailDamageCheckPrevKey = string.Empty;
             NailDamageCheck.SetKeybind(string.Empty);
+            HudTextScales.NailDamageText = 1f;
+            HudTextScales.InvincibleText = 1f;
 
             RefreshQolUi();
             SaveMasterSettings();

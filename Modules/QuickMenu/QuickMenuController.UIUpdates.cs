@@ -513,6 +513,7 @@ public sealed partial class QuickMenu : Module
             UpdateQuickMenuEntryColor("ShowHPOnDeath", GetShowHpOnDeathEnabled());
             UpdateQuickMenuEntryColor("MaskDamage", GetMaskDamageEnabled());
             UpdateQuickMenuEntryColor("FreezeHitboxes", GetFreezeHitboxesEnabled());
+            UpdateQuickMenuEntryColor("HitCounter", GetHitCounterEnabled());
             UpdateQuickMenuEntryColor("FpsBoost", GetFpsBoostEnabled());
             UpdateQuickMenuEntryColor("AlwaysFurious", GetAlwaysFuriousEnabled());
             UpdateQuickMenuEntryColor("GearSwitcher", GetGearSwitcherEnabled());

@@ -15,6 +15,9 @@ namespace GodhomeQoL
             GlobalSettings.FastDreamWarp ??= new FastDreamWarpSettings();
             GlobalSettings.MaskDamage ??= new MaskDamageSettings();
             GlobalSettings.GearSwitcher ??= new GearSwitcherSettings();
+            GlobalSettings.CustomPantheon ??= new CustomPantheonSettings();
+            GlobalSettings.CustomPantheon.Normalize();
+            Modules.Tools.GearSwitcher.CleanupTemporaryPreset();
             GlobalSettings.QuickMenuMasters ??= new QuickMenuMasterSettings();
             GlobalSettings.QuickMenuMasters.BossManipulateGlobalP5TouchedModules ??= new List<string>();
             GlobalSettings.QuickMenuMasters.BossManipulateGlobalP5EnabledModules ??= new List<string>();

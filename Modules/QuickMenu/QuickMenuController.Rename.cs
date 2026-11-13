@@ -164,13 +164,10 @@ public sealed partial class QuickMenu : Module
             rect.offsetMax = Vector2.zero;
 
             Image image = fieldObj.AddComponent<Image>();
-            image.color = new Color(1f, 1f, 1f, 0.08f);
 
             InputField input = fieldObj.AddComponent<InputField>();
             input.lineType = InputField.LineType.SingleLine;
             input.contentType = InputField.ContentType.Standard;
-            input.caretColor = Color.white;
-            input.selectionColor = new Color(1f, 1f, 1f, 0.25f);
             input.targetGraphic = image;
             input.text = text;
 
@@ -181,6 +178,7 @@ public sealed partial class QuickMenu : Module
             textRect.offsetMin = new Vector2(6f, 0f);
             textRect.offsetMax = new Vector2(-6f, 0f);
             input.textComponent = inputText;
+            StyleHkInputField(fieldObj, image, input, inputText);
 
             return input;
         }

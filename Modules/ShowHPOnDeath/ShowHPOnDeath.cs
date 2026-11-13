@@ -36,6 +36,9 @@ public sealed partial class ShowHPOnDeath : Module
     private static bool isHudVisible = false;
     private static int trackingGeneration;
     private static int autoHideGeneration;
+    private static bool previewActive;
+    private const float PreviewSeconds = 3f;
+    private const string PreviewText = ShowHPOnDeathDisplay.TitleLine + "\tPreview\n" + ShowHPOnDeathDisplay.BossLine + "\tBoss\t600\t1200\t-1";
     private bool runtimeHooksInstalled;
 
     private static readonly HashSet<string> showAtScenes = new() { "GG_Workshop", "GG_Atrium", "GG_Atrium_Roof" };

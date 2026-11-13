@@ -24,13 +24,10 @@ public sealed partial class QuickMenu : Module
             rect.sizeDelta = size;
 
             Image image = fieldObj.AddComponent<Image>();
-            image.color = new Color(1f, 1f, 1f, 0.08f);
 
             InputField input = fieldObj.AddComponent<InputField>();
             input.contentType = InputField.ContentType.IntegerNumber;
             input.lineType = InputField.LineType.SingleLine;
-            input.caretColor = Color.white;
-            input.selectionColor = new Color(1f, 1f, 1f, 0.25f);
             input.targetGraphic = image;
 
             GameObject textObj = new GameObject("Text");
@@ -46,11 +43,11 @@ public sealed partial class QuickMenu : Module
             valueText.font = GetMenuFont();
             valueText.fontSize = 26;
             valueText.alignment = TextAnchor.MiddleCenter;
-            valueText.color = Color.white;
             valueText.raycastTarget = false;
 
             input.textComponent = valueText;
             input.text = text;
+            StyleHkInputField(fieldObj, image, input, valueText);
 
             return input;
         }
@@ -68,11 +65,6 @@ public sealed partial class QuickMenu : Module
             rect.sizeDelta = new Vector2(InputControlButtonWidth, InputControlButtonHeight);
 
             Image image = buttonObj.AddComponent<Image>();
-            image.color = new Color(1f, 1f, 1f, 0.08f);
-
-            Outline outline = buttonObj.AddComponent<Outline>();
-            outline.effectColor = new Color(1f, 1f, 1f, 0.35f);
-            outline.effectDistance = new Vector2(1f, -1f);
 
             Button button = buttonObj.AddComponent<Button>();
             button.transition = Selectable.Transition.None;
@@ -84,6 +76,7 @@ public sealed partial class QuickMenu : Module
             textRect.anchorMax = Vector2.one;
             textRect.offsetMin = Vector2.zero;
             textRect.offsetMax = Vector2.zero;
+            StyleHkMiniButton(buttonObj, image, text);
 
             return button;
         }
@@ -101,11 +94,6 @@ public sealed partial class QuickMenu : Module
             rect.sizeDelta = new Vector2(InputControlButtonWidth, InputControlButtonHeight);
 
             Image image = buttonObj.AddComponent<Image>();
-            image.color = new Color(1f, 1f, 1f, 0.08f);
-
-            Outline outline = buttonObj.AddComponent<Outline>();
-            outline.effectColor = new Color(1f, 1f, 1f, 0.35f);
-            outline.effectDistance = new Vector2(1f, -1f);
 
             Button button = buttonObj.AddComponent<Button>();
             button.transition = Selectable.Transition.None;
@@ -117,6 +105,7 @@ public sealed partial class QuickMenu : Module
             textRect.anchorMax = Vector2.one;
             textRect.offsetMin = Vector2.zero;
             textRect.offsetMax = Vector2.zero;
+            StyleHkMiniButton(buttonObj, image, text);
 
             return button;
         }
@@ -355,6 +344,7 @@ public sealed partial class QuickMenu : Module
             rect.pivot = new Vector2(0f, 0.5f);
             rect.anchoredPosition = new Vector2(20f, 0f);
             rect.sizeDelta = new Vector2(600f, RowHeight);
+            StyleHkRowLabel(label);
             return label;
         }
 
@@ -412,6 +402,7 @@ public sealed partial class QuickMenu : Module
             rect.pivot = new Vector2(1f, 0.5f);
             rect.anchoredPosition = new Vector2(-20f, 0f);
             rect.sizeDelta = new Vector2(140f, RowHeight);
+            StyleHkRowValue(value);
             return value;
         }
 

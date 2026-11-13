@@ -240,6 +240,16 @@ public sealed partial class QuickMenu : Module
             return GetCachedModule(ref screenShakeModule, typeof(Modules.QoL.ScreenShake));
         }
 
+        private Module? GetCursorLockModule()
+        {
+            return GetCachedModule(ref cursorLockModule, typeof(Modules.QoL.CursorLock));
+        }
+
+        private Module? GetBlackTransitionsModule()
+        {
+            return GetCachedModule(ref blackTransitionsModule, typeof(Modules.QoL.BlackTransitions));
+        }
+
         private static void SetModuleEnabled<T>(bool value) where T : Module
         {
             if (ModuleManager.TryGetModule(typeof(T), out Module? module))

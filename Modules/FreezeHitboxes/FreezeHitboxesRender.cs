@@ -196,41 +196,108 @@ internal sealed class FreezeHitboxesRender : MonoBehaviour
         return new Vector2((int)Math.Round(screen.x), (int)Math.Round(Screen.height - screen.y));
     }
 
-    private GUIStyle? hintStyle;
+    private static readonly Color HintPlateColor = new(0.02f, 0.015f, 0.01f, 0.86f);
+    private static readonly Color HintLineColor = new(0.902f, 0.749f, 0.384f, 0.55f);
+    private static readonly Color HintTextColor = new(0.93f, 0.9f, 0.84f, 1f);
+    private static readonly Color HintLabelColor = new(0.66f, 0.64f, 0.6f, 1f);
+    private const string HitSourceHex = "FF26D9";
+
+    private GUIStyle? hintPlateStyle;
+    private GUIStyle? hintTitleStyle;
+    private GUIStyle? hintBodyStyle;
+    private GUIStyle? hintSourceStyle;
+
+    private void EnsureHintStyles()
+    {
+        if (hintPlateStyle == null)
+        {
+            Sprite plate = QuickMenu.HkUi.SoftPlate;
+            hintPlateStyle = new GUIStyle
+            {
+                border = new RectOffset((int)plate.border.x, (int)plate.border.z, (int)plate.border.w, (int)plate.border.y)
+            };
+            hintPlateStyle.normal.background = plate.texture;
+        }
+
+        hintTitleStyle ??= new GUIStyle
+        {
+            alignment = TextAnchor.UpperCenter,
+            wordWrap = false,
+            richText = false
+        };
+        hintBodyStyle ??= new GUIStyle
+        {
+            alignment = TextAnchor.UpperCenter,
+            wordWrap = false,
+            richText = false
+        };
+        hintSourceStyle ??= new GUIStyle
+        {
+            alignment = TextAnchor.UpperCenter,
+            wordWrap = false,
+            richText = true
+        };
+
+        hintTitleStyle.font = QuickMenu.HkUi.TitleFont;
+        hintTitleStyle.normal.textColor = Color.white;
+        hintBodyStyle.font = QuickMenu.HkUi.BodyFont;
+        hintBodyStyle.normal.textColor = HintTextColor;
+        hintSourceStyle.font = QuickMenu.HkUi.BodyFont;
+        hintSourceStyle.normal.textColor = HintLabelColor;
+    }
 
     private void DrawUnfreezeHint()
     {
+        EnsureHintStyles();
+        float scale = Mathf.Max(0.5f, Screen.height / 1080f) * HudTextScales.Clamp(HudTextScales.FreezeHint);
+        hintTitleStyle!.fontSize = Mathf.RoundToInt(32f * scale);
+        hintBodyStyle!.fontSize = Mathf.RoundToInt(22f * scale);
+        hintSourceStyle!.fontSize = Mathf.RoundToInt(22f * scale);
+
         KeyCode key = FreezeHitboxes.GetUnfreezeKey();
-        string text = key != KeyCode.None
+        string title = "FreezeHitboxes/Title".Localize();
+        string instruction = key != KeyCode.None
             ? string.Format("FreezeHitboxes/HintKey".Localize(), key)
             : string.Format("FreezeHitboxes/HintNoKey".Localize(), QuickMenu.GetQuickMenuHotkeyLabel());
-
-        int fontSize = Mathf.Max(14, Mathf.RoundToInt(Screen.height / 40f));
-        hintStyle ??= new GUIStyle(GUI.skin.label)
-        {
-            alignment = TextAnchor.UpperCenter,
-            fontStyle = FontStyle.Bold,
-            wordWrap = true
-        };
-        hintStyle.fontSize = fontSize;
-
-        Rect rect = new(0f, Screen.height * 0.06f, Screen.width, fontSize * 3f);
-        Rect shadow = new(rect.x + 2f, rect.y + 2f, rect.width, rect.height);
-        Color previous = GUI.color;
-        GUI.color = Color.black;
-        GUI.Label(shadow, text, hintStyle);
-        GUI.color = Color.white;
-        GUI.Label(rect, text, hintStyle);
-
         string source = FreezeHitSource.Name;
-        if (!string.IsNullOrEmpty(source))
+        string? hitText = string.IsNullOrEmpty(source)
+            ? null
+            : string.Format("FreezeHitboxes/HitBy".Localize(), $"<color=#{HitSourceHex}>{source}</color>");
+
+        Vector2 titleSize = hintTitleStyle.CalcSize(new GUIContent(title));
+        Vector2 instructionSize = hintBodyStyle.CalcSize(new GUIContent(instruction));
+        Vector2 hitSize = hitText != null ? hintSourceStyle.CalcSize(new GUIContent(hitText)) : Vector2.zero;
+
+        float padding = 26f * scale;
+        float contentWidth = Mathf.Max(titleSize.x, instructionSize.x, hitSize.x);
+        float width = Mathf.Min(contentWidth + (padding * 2f), Screen.width * 0.94f);
+        float lineGap = 10f * scale;
+        float height = padding + titleSize.y + lineGap + (2f * scale) + lineGap + instructionSize.y
+            + (hitText != null ? (4f * scale) + hitSize.y : 0f) + padding;
+        float x = (Screen.width - width) / 2f;
+        float y = Screen.height * 0.06f;
+
+        Color previous = GUI.color;
+        GUI.color = HintPlateColor;
+        GUI.Box(new Rect(x, y, width, height), GUIContent.none, hintPlateStyle);
+        GUI.color = Color.white;
+
+        float cursor = y + padding;
+        GUI.Label(new Rect(x, cursor, width, titleSize.y), title, hintTitleStyle);
+        cursor += titleSize.y + lineGap;
+
+        GUI.color = HintLineColor;
+        GUI.DrawTexture(new Rect(x + (width * 0.2f), cursor, width * 0.6f, Mathf.Max(1f, 2f * scale)), Texture2D.whiteTexture);
+        GUI.color = Color.white;
+        cursor += (2f * scale) + lineGap;
+
+        GUI.Label(new Rect(x, cursor, width, instructionSize.y), instruction, hintBodyStyle);
+        cursor += instructionSize.y;
+
+        if (hitText != null)
         {
-            string hitText = string.Format("FreezeHitboxes/HitBy".Localize(), source);
-            Rect hitRect = new(0f, rect.y + (fontSize * 2.2f), Screen.width, fontSize * 2f);
-            GUI.color = Color.black;
-            GUI.Label(new Rect(hitRect.x + 2f, hitRect.y + 2f, hitRect.width, hitRect.height), hitText, hintStyle);
-            GUI.color = HitSourceColor;
-            GUI.Label(hitRect, hitText, hintStyle);
+            cursor += 4f * scale;
+            GUI.Label(new Rect(x, cursor, width, hitSize.y), hitText, hintSourceStyle);
         }
 
         GUI.color = previous;

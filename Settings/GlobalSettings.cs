@@ -46,6 +46,8 @@ public sealed class GlobalSettings : SettingBase<GlobalSettingAttribute>
 
     public GearSwitcherSettings GearSwitcher { get; set; } = new();
 
+    public CustomPantheonSettings CustomPantheon { get; set; } = new();
+
     public QuickMenuMasterSettings QuickMenuMasters { get; set; } = new();
 
     public List<string> QuickMenuOrder { get; set; } = new();

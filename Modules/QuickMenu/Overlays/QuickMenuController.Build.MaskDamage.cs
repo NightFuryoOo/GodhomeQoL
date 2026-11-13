@@ -71,6 +71,17 @@ public sealed partial class QuickMenu : Module
 
             lastY = rowY;
             rowY += RowSpacing;
+            rowY = AddTextScaleRow(
+                content,
+                "MaskDamageTextScaleRow",
+                "TextSize/Label".Localize(),
+                rowY,
+                RowSpacing,
+                () => HudTextScales.MaskDamageText,
+                value => HudTextScales.MaskDamageText = value,
+                MaskDamage.PreviewText,
+                out lastY
+            );
 
             SetScrollContentHeight(content, viewHeight, lastY, RowHeight);
             CreateButtonRow(panel.transform, "MaskDamageResetRow", "Reset Defaults", resetY, OnMaskDamageResetDefaultsClicked);

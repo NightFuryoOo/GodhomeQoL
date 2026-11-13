@@ -140,6 +140,30 @@ public sealed partial class QuickMenu : Module
 
             lastY = rowY;
             rowY += QolRowSpacing;
+            CreateToggleRow(
+                content,
+                "QolCursorLockRow",
+                "Modules/CursorLock".Localize(),
+                rowY,
+                GetCursorLockEnabled,
+                SetCursorLockEnabled,
+                out qolCursorLockValue
+            );
+
+            lastY = rowY;
+            rowY += QolRowSpacing;
+            CreateToggleRow(
+                content,
+                "QolBlackTransitionsRow",
+                "Modules/BlackTransitions".Localize(),
+                rowY,
+                GetBlackTransitionsEnabled,
+                SetBlackTransitionsEnabled,
+                out qolBlackTransitionsValue
+            );
+
+            lastY = rowY;
+            rowY += QolRowSpacing;
             CreateKeybindRow(
                 content,
                 "QolNailDamageCheckKeyRow",
@@ -152,6 +176,28 @@ public sealed partial class QuickMenu : Module
 
             lastY = rowY;
             rowY += QolRowSpacing;
+            rowY = AddTextScaleRow(
+                content,
+                "QolNailDamageTextScaleRow",
+                "TextSize/NailDamage".Localize(),
+                rowY,
+                QolRowSpacing,
+                () => HudTextScales.NailDamageText,
+                value => HudTextScales.NailDamageText = value,
+                NailDamageCheck.PreviewText,
+                out _
+            );
+            rowY = AddTextScaleRow(
+                content,
+                "QolInvincibleTextScaleRow",
+                "TextSize/Invincible".Localize(),
+                rowY,
+                QolRowSpacing,
+                () => HudTextScales.InvincibleText,
+                value => HudTextScales.InvincibleText = value,
+                Modules.QoL.InvincibleIndicator.PreviewText,
+                out lastY
+            );
 
             SetScrollContentHeight(content, viewHeight, lastY, RowHeight);
             CreateButtonRow(panel.transform, "QolResetRow", "Settings/QoL/Reset".Localize(), resetY, OnQolResetDefaultsClicked);

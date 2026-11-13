@@ -196,6 +196,132 @@ public sealed partial class QuickMenu : Module
 			button.onClick.AddListener(OnGearSwitcherCharmPromptClicked);
 			gearSwitcherCharmPromptIcon = image2;
 			UpdateGearSwitcherCharmPromptIcon();
+
+			GameObject strip = new GameObject("EquippedCharms");
+			strip.transform.SetParent(gameObject.transform, worldPositionStays: false);
+			RectTransform stripRect = strip.AddComponent<RectTransform>();
+			stripRect.anchorMin = new Vector2(0.5f, 0.5f);
+			stripRect.anchorMax = new Vector2(0.5f, 0.5f);
+			stripRect.pivot = new Vector2(0.5f, 1f);
+			stripRect.anchoredPosition = new Vector2(0f, GearSwitcherBigIconFrameY - (GearSwitcherBigIconFrameHeight * 0.5f) - 8f);
+			stripRect.sizeDelta = new Vector2(GearSwitcherEquippedCharmStep * GearSwitcherEquippedCharmsPerLine, GearSwitcherEquippedCharmsSpace);
+			gearSwitcherEquippedCharmsRoot = stripRect;
+			UpdateGearSwitcherEquippedCharms();
+		}
+
+		private const float GearSwitcherEquippedCharmSize = 34f;
+		private const float GearSwitcherEquippedCharmStep = 40f;
+		private const int GearSwitcherEquippedCharmsPerLine = 16;
+		private const int GearSwitcherEquippedCharmLines = 2;
+		private const float GearSwitcherEquippedCharmsSpace = 84f;
+
+		private RectTransform? gearSwitcherEquippedCharmsRoot;
+		private readonly Dictionary<int, Sprite?> gearSwitcherEquippedCharmSprites = new();
+
+		private void UpdateGearSwitcherEquippedCharms()
+		{
+			RectTransform? root = gearSwitcherEquippedCharmsRoot;
+			if (root == null)
+			{
+				return;
+			}
+
+			for (int i = root.childCount - 1; i >= 0; i--)
+			{
+				UObject.Destroy(root.GetChild(i).gameObject);
+			}
+
+			List<int>? charms = GetSelectedPreset().EquippedCharms;
+			if (charms == null || charms.Count == 0)
+			{
+				Text note = CreateText(root, "Note", (charms == null ? "GearSwitcher/CharmsKept" : "GearSwitcher/NoCharms").Localize(), 20, TextAnchor.MiddleCenter);
+				RectTransform noteRect = note.rectTransform;
+				noteRect.anchorMin = new Vector2(0.5f, 1f);
+				noteRect.anchorMax = new Vector2(0.5f, 1f);
+				noteRect.pivot = new Vector2(0.5f, 1f);
+				noteRect.anchoredPosition = Vector2.zero;
+				noteRect.sizeDelta = new Vector2(root.sizeDelta.x, GearSwitcherEquippedCharmStep);
+				note.color = HkOffValueColor;
+				return;
+			}
+
+			int capacity = GearSwitcherEquippedCharmsPerLine * GearSwitcherEquippedCharmLines;
+			bool overflow = charms.Count > capacity;
+			int shown = overflow ? capacity - 1 : charms.Count;
+			int slots = overflow ? capacity : charms.Count;
+			for (int slot = 0; slot < slots; slot++)
+			{
+				int line = slot / GearSwitcherEquippedCharmsPerLine;
+				int inLine = Math.Min(GearSwitcherEquippedCharmsPerLine, slots - (line * GearSwitcherEquippedCharmsPerLine));
+				int column = slot % GearSwitcherEquippedCharmsPerLine;
+				Vector2 position = new Vector2((column - ((inLine - 1) * 0.5f)) * GearSwitcherEquippedCharmStep, -(GearSwitcherEquippedCharmStep * 0.5f) - (line * GearSwitcherEquippedCharmStep));
+				if (slot >= shown)
+				{
+					Text more = CreateText(root, "More", $"+{charms.Count - shown}", 20, TextAnchor.MiddleCenter);
+					PlaceEquippedCharm(more.rectTransform, position);
+					more.color = HkValueColor;
+					continue;
+				}
+
+				GameObject icon = new GameObject($"Charm{charms[slot]}");
+				icon.transform.SetParent(root, worldPositionStays: false);
+				RectTransform iconRect = icon.AddComponent<RectTransform>();
+				PlaceEquippedCharm(iconRect, position);
+				Image image = icon.AddComponent<Image>();
+				image.preserveAspect = true;
+				image.raycastTarget = false;
+				Sprite? sprite = GetEquippedCharmSprite(charms[slot]);
+				if (sprite != null)
+				{
+					image.sprite = sprite;
+				}
+				else
+				{
+					image.enabled = false;
+				}
+			}
+		}
+
+		private static void PlaceEquippedCharm(RectTransform rect, Vector2 position)
+		{
+			rect.anchorMin = new Vector2(0.5f, 1f);
+			rect.anchorMax = new Vector2(0.5f, 1f);
+			rect.pivot = new Vector2(0.5f, 0.5f);
+			rect.anchoredPosition = position;
+			rect.sizeDelta = new Vector2(GearSwitcherEquippedCharmSize, GearSwitcherEquippedCharmSize);
+		}
+
+		private Sprite? GetEquippedCharmSprite(int charmId)
+		{
+			if (gearSwitcherEquippedCharmSprites.TryGetValue(charmId, out Sprite? cached) && cached != null)
+			{
+				return cached;
+			}
+
+			Sprite? sprite = null;
+			foreach (CharmCostDefinition definition in CharmCostDefinitions)
+			{
+				if (GearSwitcher.TryGetCharmId(definition.Key, out int id) && id == charmId)
+				{
+					sprite = LoadCollectorIconSprite(definition.SpriteFile, definition.Key);
+					break;
+				}
+			}
+
+			if (sprite == null)
+			{
+				try
+				{
+					sprite = CharmIconList.Instance != null ? CharmIconList.Instance.GetSprite(charmId) : null;
+				}
+				catch (Exception ex)
+				{
+					LogSuppressed(ex, "QuickMenuController.GearSwitcher.Rows.cs/CharmSprite");
+				}
+			}
+
+			gearSwitcherEquippedCharmSprites[charmId] = sprite;
+			return sprite;
 		}
     }
 }

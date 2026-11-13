@@ -76,9 +76,7 @@ public sealed partial class QuickMenu : Module
             RefreshBossManipulateCardVisuals();
         }
 
-        private void BuildBossManipulateOtherRoomsImageGrid(RectTransform gridRoot)
-        {
-            var cards = new (string Label, string ImageFile, Type ModuleType, Action OnClick)[]
+        private (string Label, string ImageFile, Type ModuleType, Action OnClick)[] GetBossManipulateOtherRoomsCards() => new (string Label, string ImageFile, Type ModuleType, Action OnClick)[]
             {
                 ("Vengefly King P1", "Vengefly King.png", typeof(Modules.BossChallenge.VengeflyKingP1Helper), OnBossManipulateOtherRoomsVengeflyKingP1Clicked),
                 ("Gruz Mother P1", "Gruz Mother.png", typeof(Modules.BossChallenge.GruzMotherP1Helper), OnBossManipulateOtherRoomsGruzMotherP1Clicked),
@@ -92,6 +90,10 @@ public sealed partial class QuickMenu : Module
                 ("No Eyes P4", "No Eyes.png", typeof(Modules.BossChallenge.NoEyesP4Helper), OnBossManipulateOtherRoomsNoEyesP4Clicked),
                 ("Markoth P4", "Markoth.png", typeof(Modules.BossChallenge.MarkothP4Helper), OnBossManipulateOtherRoomsMarkothP4Clicked),
             };
+
+        private void BuildBossManipulateOtherRoomsImageGrid(RectTransform gridRoot)
+        {
+            var cards = GetBossManipulateOtherRoomsCards();
 
             const int columns = 11;
             const float spacingX = 10f;

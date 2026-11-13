@@ -55,6 +55,17 @@ public sealed partial class QuickMenu : Module
 
             lastY = rowY;
             rowY += RowSpacing;
+            rowY = AddTextScaleRow(
+                content,
+                "FreezeHitboxesTextScaleRow",
+                "TextSize/FreezeHint".Localize(),
+                rowY,
+                RowSpacing,
+                () => HudTextScales.FreezeHint,
+                value => HudTextScales.FreezeHint = value,
+                () => { },
+                out lastY
+            );
 
             SetScrollContentHeight(content, viewHeight, lastY, RowHeight);
             CreateButtonRow(panel.transform, "FreezeHitboxesResetRow", "Reset Defaults", resetY, OnFreezeHitboxesResetDefaultsClicked);

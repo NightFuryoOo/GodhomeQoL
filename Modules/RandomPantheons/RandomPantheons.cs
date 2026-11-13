@@ -193,6 +193,13 @@ public sealed partial class RandomPantheons : Module
 
     private readonly Random rand = new();
 
+    internal static IReadOnlyList<string> GetVanillaOrder(int pantheon) =>
+        pantheon >= 1 && pantheon <= 5 && DefaultPantheonOrder.TryGetValue((Pantheon)pantheon, out string[]? order)
+            ? order
+            : Array.Empty<string>();
+
+    internal static bool HidesHudOnLeave(string scene) => VanishedHud.Contains(scene ?? string.Empty);
+
     private enum Pantheon
     {
         Unknown,

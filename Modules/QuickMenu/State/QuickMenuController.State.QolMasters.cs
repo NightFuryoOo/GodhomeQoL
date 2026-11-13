@@ -123,6 +123,8 @@ public sealed partial class QuickMenu : Module
             qolSavedUnlockRadiant = GetUnlockRadiantEnabled();
             qolSavedInvincibleIndicator = GetInvincibleIndicatorEnabled();
             qolSavedScreenShake = GetScreenShakeEnabled();
+            qolSavedCursorLock = GetCursorLockEnabled();
+            qolSavedBlackTransitions = GetBlackTransitionsEnabled();
         }
 
         private void RestoreQolSnapshot()
@@ -140,6 +142,8 @@ public sealed partial class QuickMenu : Module
             SetUnlockRadiantEnabled(qolSavedUnlockRadiant);
             SetInvincibleIndicatorEnabled(qolSavedInvincibleIndicator);
             SetScreenShakeEnabled(qolSavedScreenShake);
+            SetCursorLockEnabled(qolSavedCursorLock);
+            SetBlackTransitionsEnabled(qolSavedBlackTransitions);
         }
 
         private void SetQolAll(bool value)
@@ -152,6 +156,8 @@ public sealed partial class QuickMenu : Module
             SetUnlockRadiantEnabled(value);
             SetInvincibleIndicatorEnabled(value);
             SetScreenShakeEnabled(value);
+            SetCursorLockEnabled(value);
+            SetBlackTransitionsEnabled(value);
         }
     }
 }
